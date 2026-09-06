@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { provider } from './provider/innerTubeProvider.mjs';
 import { discoveryGraphStore } from './discovery/DiscoveryGraphStore.mjs';
 
-const port = Number(process.env.MOODIFY_SERVER_PORT || 8787);
+// Render injects PORT; MOODIFY_SERVER_PORT is the local dev override
+const port = Number(process.env.PORT || process.env.MOODIFY_SERVER_PORT || 8787);
 const requestTimeoutMs = 20000;
 const maxAttempts = 2;
 const defaultRelayChunkBytes = 1024 * 1024;
@@ -330,4 +331,5 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
-server.listen(port, '127.0.0.1', () => console.log(`Moodify music server listening on http://127.0.0.1:${port}`));
+// Bind to 0.0.0.0 so Render (and other cloud hosts) can detect the open port
+server.listen(port, '0.0.0.0', () => console.log(`Moodify music server listening on http://0.0.0.0:${port}`));
