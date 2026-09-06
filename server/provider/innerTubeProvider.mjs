@@ -282,6 +282,9 @@ class ContinuationRegistry {
 export class InnerTubeProviderAdapter {
   constructor() {
     this.innertubePromise = null;
+    // Separate client for playback resolution — IOS client bypasses
+    // LOGIN_REQUIRED restrictions YouTube applies to web client from datacenter IPs
+    this.playbackClientPromise = null;
     this.sourceSessions = new Map();
     this.trackCache = new Map();
     this.infoCache = new Map();
@@ -291,6 +294,15 @@ export class InnerTubeProviderAdapter {
   async getClient() {
     this.innertubePromise ||= Innertube.create({ generate_session_locally: true });
     return this.innertubePromise;
+  }
+
+  async getPlaybackClient() {
+    // IOS client gets non-DRM audio streams without login from any IP
+    this.playbackClientPromise ||= Innertube.create({
+      generate_session_locally: true,
+      client_type: 'IOS',
+    });
+    return this.playbackClientPromise;
   }
 
   async withTimeout(promise, timeoutMs = requestTimeoutMs) {
@@ -433,32 +445,51 @@ export class InnerTubeProviderAdapter {
   async resolvePlayback(id, force = false) {
     const existing = this.sourceSessions.get(id);
     if (!force && existing && existing.expiresAt - Date.now() > sourceSafetyWindowMs) return existing;
-    const yt = await this.getClient();
-    const info = await this.withRetry(() => this.withTimeout(yt.music.getInfo(id)));
-    if (info.playability_status?.status !== 'OK') throw Object.assign(new Error(info.playability_status?.reason || 'Track is not playable'), { code: 'SOURCE_RESOLUTION_FAILED' });
-    // Prefer audio-only — lighter and less IP-restricted on cloud hosts
-    let format;
-    try {
-      format = info.chooseFormat({ type: 'audio', format: 'any', quality: 'best' });
-    } catch {
-      // Fallback to video+audio if audio-only is unavailable
-      format = info.chooseFormat({ type: 'video+audio', format: 'mp4', quality: 'best' });
+
+    // Try IOS client first — bypasses LOGIN_REQUIRED on datacenter IPs.
+    // Fall back to web music client if IOS fails.
+    const clients = [
+      async () => { const yt = await this.getPlaybackClient(); return { yt, info: await this.withRetry(() => this.withTimeout(yt.getBasicInfo(id, 'IOS'))) }; },
+      async () => { const yt = await this.getClient(); return { yt, info: await this.withRetry(() => this.withTimeout(yt.music.getInfo(id))) }; },
+    ];
+
+    let lastError;
+    for (const makeAttempt of clients) {
+      try {
+        const { yt, info } = await makeAttempt();
+        const status = info.playability_status?.status;
+        // Log for debugging on Render
+        console.info(JSON.stringify({ event: 'resolvePlayback.status', id, status, reason: info.playability_status?.reason || null, at: new Date().toISOString() }));
+        if (status !== 'OK') {
+          lastError = Object.assign(new Error(info.playability_status?.reason || `Not playable (${status})`), { code: 'SOURCE_RESOLUTION_FAILED', status: 502 });
+          continue; // try next client
+        }
+        let format;
+        try {
+          format = info.chooseFormat({ type: 'audio', format: 'any', quality: 'best' });
+        } catch {
+          format = info.chooseFormat({ type: 'video+audio', format: 'mp4', quality: 'best' });
+        }
+        const url = await this.withTimeout(format.decipher(yt.session.player));
+        if (!url) {
+          lastError = Object.assign(new Error('Provider returned no playback URL'), { code: 'SOURCE_RESOLUTION_FAILED', status: 502 });
+          continue;
+        }
+        const parsed = new URL(url);
+        const expiresAt = Number(parsed.searchParams.get('expire')) * 1000;
+        if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+          lastError = Object.assign(new Error('Provider returned an expired playback URL'), { code: 'SOURCE_EXPIRED', status: 502 });
+          continue;
+        }
+        const source = { url, expiresAt, mimeType: format.mime_type || 'audio/mp4', bitrate: format.bitrate || format.average_bitrate || undefined, durationMs: format.approx_duration_ms || undefined, contentLength: format.content_length || Number(parsed.searchParams.get('clen')) || undefined };
+        this.sourceSessions.set(id, source);
+        return source;
+      } catch (err) {
+        console.error(JSON.stringify({ event: 'resolvePlayback.client_failed', id, error: err.message, at: new Date().toISOString() }));
+        lastError = err;
+      }
     }
-    const url = await this.withTimeout(format.decipher(yt.session.player));
-    if (!url) throw Object.assign(new Error('Provider returned no playback URL'), { code: 'SOURCE_RESOLUTION_FAILED' });
-    const parsed = new URL(url);
-    const expiresAt = Number(parsed.searchParams.get('expire')) * 1000;
-    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) throw Object.assign(new Error('Provider returned an expired playback URL'), { code: 'SOURCE_EXPIRED' });
-    const source = {
-      url,
-      expiresAt,
-      mimeType: format.mime_type || 'audio/mp4',
-      bitrate: format.bitrate || format.average_bitrate || undefined,
-      durationMs: format.approx_duration_ms || undefined,
-      contentLength: format.content_length || Number(parsed.searchParams.get('clen')) || undefined,
-    };
-    this.sourceSessions.set(id, source);
-    return source;
+    throw lastError || Object.assign(new Error('All playback clients failed'), { code: 'SOURCE_RESOLUTION_FAILED', status: 502 });
   }
 
   stats() {
