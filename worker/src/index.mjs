@@ -188,6 +188,8 @@ export default {
       return jsonResponse(error.status || 502, {
         error: error.code || 'PROVIDER_ERROR',
         message: 'Music service request failed',
+        details: error.message || String(error),
+        stack: error.stack || null,
       });
     }
   },

@@ -1,5 +1,5 @@
 // Workers have crypto.randomUUID() globally — no node:crypto import needed
-import { Innertube, Platform } from 'youtubei.js/web';
+import { Innertube, Platform } from 'youtubei.js/cf-worker';
 import {
   EDGE_TYPES,
   NODE_TYPES,
@@ -289,7 +289,10 @@ export class InnerTubeProviderAdapter {
   }
 
   async getClient() {
-    this.innertubePromise ||= Innertube.create({ generate_session_locally: true });
+    this.innertubePromise ||= Innertube.create({
+      generate_session_locally: true,
+      retrieve_player: false,
+    });
     return this.innertubePromise;
   }
 
