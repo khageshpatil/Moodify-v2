@@ -289,7 +289,10 @@ export class InnerTubeProviderAdapter {
   }
 
   async getClient() {
-    this.innertubePromise ||= Innertube.create({ generate_session_locally: true });
+    this.innertubePromise ||= Innertube.create({
+      generate_session_locally: true,
+      client_type: 'ANDROID',
+    });
     return this.innertubePromise;
   }
 
@@ -436,7 +439,14 @@ export class InnerTubeProviderAdapter {
     const yt = await this.getClient();
     const info = await this.withRetry(() => this.withTimeout(yt.music.getInfo(id)));
     if (info.playability_status?.status !== 'OK') throw Object.assign(new Error(info.playability_status?.reason || 'Track is not playable'), { code: 'SOURCE_RESOLUTION_FAILED' });
-    const format = info.chooseFormat({ type: 'video+audio', format: 'mp4', quality: 'best' });
+    // Prefer audio-only — lighter and less IP-restricted on cloud hosts
+    let format;
+    try {
+      format = info.chooseFormat({ type: 'audio', format: 'any', quality: 'best' });
+    } catch {
+      // Fallback to video+audio if audio-only is unavailable
+      format = info.chooseFormat({ type: 'video+audio', format: 'mp4', quality: 'best' });
+    }
     const url = await this.withTimeout(format.decipher(yt.session.player));
     if (!url) throw Object.assign(new Error('Provider returned no playback URL'), { code: 'SOURCE_RESOLUTION_FAILED' });
     const parsed = new URL(url);
