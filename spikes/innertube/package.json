@@ -1,0 +1,11 @@
+{
+  "name": "moodify-innertube-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "node probe.mjs"
+  },
+  "dependencies": {
+    "youtubei.js": "18.0.0"
+  }
+}

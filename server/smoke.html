@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Moodify playback smoke test</title></head>
+<body>
+  <main>
+    <h1>Moodify playback smoke test</h1>
+    <input id="query" value="The Weeknd Blinding Lights" aria-label="Search query">
+    <button id="search">Search</button>
+    <select id="tracks" aria-label="Tracks"></select>
+    <button id="play" disabled>Play selected track</button>
+    <audio id="audio" controls preload="metadata"></audio>
+    <pre id="output">idle</pre>
+  </main>
+  <script>
+    const query = document.querySelector('#query');
+    const searchButton = document.querySelector('#search');
+    const trackSelect = document.querySelector('#tracks');
+    const playButton = document.querySelector('#play');
+    const audio = document.querySelector('#audio');
+    const output = document.querySelector('#output');
+    let selectedTrack = null;
+    const events = [];
+    const render = (event, details = {}) => {
+      events.push({ event, at: new Date().toISOString(), currentTime: audio.currentTime, readyState: audio.readyState, ...details });
+      output.textContent = JSON.stringify({ event, events }, null, 2);
+    };
+    ['loadstart', 'loadedmetadata', 'canplay', 'play', 'playing', 'pause', 'waiting', 'stalled', 'error', 'ended'].forEach((event) => {
+      audio.addEventListener(event, () => render(event, { mediaError: audio.error?.code || null }));
+    });
+    searchButton.addEventListener('click', async () => {
+      render('search-started');
+      const response = await fetch('/api/search?q=' + encodeURIComponent(query.value));
+      const data = await response.json();
+      trackSelect.replaceChildren(...data.tracks.map((track) => {
+        const option = new Option(track.title + ' - ' + track.artist.name, track.id);
+        option.dataset.track = JSON.stringify(track);
+        return option;
+      }));
+      selectedTrack = data.tracks[0] || null;
+      playButton.disabled = !selectedTrack;
+      render('search-succeeded', { count: data.tracks.length, firstTrack: selectedTrack?.title || null });
+    });
+    trackSelect.addEventListener('change', () => {
+      selectedTrack = JSON.parse(trackSelect.selectedOptions[0].dataset.track);
+      playButton.disabled = false;
+      render('track-selected', { trackId: selectedTrack.id, title: selectedTrack.title });
+    });
+    playButton.addEventListener('click', async () => {
+      if (!selectedTrack) return;
+      events.length = 0;
+      render('play-requested', { trackId: selectedTrack.id });
+      audio.src = '/api/media/' + encodeURIComponent(selectedTrack.id);
+      audio.load();
+      try {
+        await audio.play();
+      } catch (error) {
+        render('play-rejected', { name: error.name, message: error.message });
+      }
+    });
+    searchButton.click();
+  </script>
+</body>
+</html>

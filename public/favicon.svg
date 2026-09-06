@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="moodifyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#moodifyGradient)" opacity="0.95"/>
+  
+  <!-- Musical Note -->
+  <g filter="url(#glow)">
+    <!-- Note stem -->
+    <rect x="56" y="25" width="6" height="40" fill="white" rx="3"/>
+    
+    <!-- Note flag (eighth note flag) -->
+    <path d="M 62 25 Q 75 28 75 38 Q 75 32 62 30 Z" fill="white"/>
+    
+    <!-- Note head (oval) -->
+    <ellipse cx="52" cy="65" rx="12" ry="10" fill="white"/>
+    
+    <!-- Inner detail -->
+    <ellipse cx="52" cy="65" rx="6" ry="5" fill="url(#moodifyGradient)" opacity="0.3"/>
+  </g>
+  
+  <!-- Decorative sparkles -->
+  <circle cx="30" cy="30" r="3" fill="white" opacity="0.8"/>
+  <circle cx="75" cy="60" r="2.5" fill="white" opacity="0.7"/>
+  <circle cx="25" cy="70" r="2" fill="white" opacity="0.6"/>
+  
+  <!-- Small sparkle stars -->
+  <path d="M 35 75 L 36 77 L 38 76 L 37 78 L 39 79 L 37 80 L 36 82 L 35 80 L 33 79 L 35 78 L 34 76 Z" fill="white" opacity="0.5"/>
+</svg>
+

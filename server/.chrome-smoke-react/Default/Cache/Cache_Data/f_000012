@@ -1,0 +1,574 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/PlaylistManager.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/PlaylistManager.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport2_react_jsxDevRuntime["Fragment"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"];
+import { Plus, Edit, Trash2, Music, X, Download, Share2, Users } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { Button } from "/src/components/ui/button.tsx";
+import { Input } from "/src/components/ui/input.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "/src/components/ui/card.tsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "/src/components/ui/dialog.tsx";
+import { PlaylistSharingDialog } from "/src/components/PlaylistSharingDialog.tsx";
+import { SharedPlaylistAccess } from "/src/components/SharedPlaylistAccess.tsx";
+export const PlaylistManager = ({ playlists, onCreatePlaylist, onDeletePlaylist, onRenamePlaylist, onRemoveFromPlaylist, onPlayPlaylist, onExportPlaylist, currentTrack, currentUser, onPlayTracks })=>{
+    _s();
+    const [newPlaylistName, setNewPlaylistName] = useState('');
+    const [editingPlaylist, setEditingPlaylist] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [sharingPlaylist, setSharingPlaylist] = useState(null);
+    const [showSharedAccess, setShowSharedAccess] = useState(false);
+    const handleCreatePlaylist = ()=>{
+        if (newPlaylistName.trim()) {
+            onCreatePlaylist(newPlaylistName.trim());
+            setNewPlaylistName('');
+            setIsCreateDialogOpen(false);
+        }
+    };
+    const handleRename = (playlistId)=>{
+        if (editName.trim()) {
+            onRenamePlaylist(playlistId, editName.trim());
+            setEditingPlaylist(null);
+            setEditName('');
+        }
+    };
+    const startEdit = (playlist)=>{
+        setEditingPlaylist(playlist.id);
+        setEditName(playlist.name);
+    };
+    const handleAddToLibrary = (sharedPlaylist)=>{
+        // Convert shared playlist to regular playlist and add to library
+        onCreatePlaylist(sharedPlaylist.name);
+    // In a real implementation, you'd also add the tracks
+    };
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "space-y-4",
+        children: [
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "flex items-center justify-between",
+                children: [
+                    /*#__PURE__*/ _jsxDEV("h2", {
+                        className: "text-xl font-bold",
+                        children: "My Playlists"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                        lineNumber: 81,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV("div", {
+                        className: "flex gap-2",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Button, {
+                                size: "sm",
+                                variant: "outline",
+                                onClick: ()=>setShowSharedAccess(true),
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Users, {
+                                        className: "h-4 w-4 mr-2"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                        lineNumber: 88,
+                                        columnNumber: 13
+                                    }, this),
+                                    "Access Shared"
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                lineNumber: 83,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(Dialog, {
+                                open: isCreateDialogOpen,
+                                onOpenChange: setIsCreateDialogOpen,
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(DialogTrigger, {
+                                        asChild: true,
+                                        children: /*#__PURE__*/ _jsxDEV(Button, {
+                                            size: "sm",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Plus, {
+                                                    className: "h-4 w-4 mr-2"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                    lineNumber: 94,
+                                                    columnNumber: 17
+                                                }, this),
+                                                "New Playlist"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                            lineNumber: 93,
+                                            columnNumber: 15
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                        lineNumber: 92,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(DialogContent, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(DialogHeader, {
+                                                children: /*#__PURE__*/ _jsxDEV(DialogTitle, {
+                                                    children: "Create New Playlist"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                    lineNumber: 100,
+                                                    columnNumber: 15
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                lineNumber: 99,
+                                                columnNumber: 13
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "space-y-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(Input, {
+                                                        placeholder: "Playlist name",
+                                                        value: newPlaylistName,
+                                                        onChange: (e)=>setNewPlaylistName(e.target.value),
+                                                        onKeyPress: (e)=>e.key === 'Enter' && handleCreatePlaylist()
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 103,
+                                                        columnNumber: 15
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex gap-2",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                onClick: handleCreatePlaylist,
+                                                                disabled: !newPlaylistName.trim(),
+                                                                children: "Create"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                                lineNumber: 110,
+                                                                columnNumber: 17
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                variant: "outline",
+                                                                onClick: ()=>setIsCreateDialogOpen(false),
+                                                                children: "Cancel"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                                lineNumber: 113,
+                                                                columnNumber: 17
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 109,
+                                                        columnNumber: 15
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                lineNumber: 102,
+                                                columnNumber: 13
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                        lineNumber: 98,
+                                        columnNumber: 11
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                lineNumber: 91,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                        lineNumber: 82,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                lineNumber: 80,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "grid gap-4",
+                children: playlists.map((playlist)=>/*#__PURE__*/ _jsxDEV(Card, {
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                className: "pb-3",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center justify-between",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex items-center gap-2",
+                                                children: editingPlaylist === playlist.id ? /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Input, {
+                                                            value: editName,
+                                                            onChange: (e)=>setEditName(e.target.value),
+                                                            onKeyPress: (e)=>e.key === 'Enter' && handleRename(playlist.id),
+                                                            className: "h-8"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 131,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                                            size: "sm",
+                                                            onClick: ()=>handleRename(playlist.id),
+                                                            children: "Save"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 137,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                                            size: "sm",
+                                                            variant: "ghost",
+                                                            onClick: ()=>setEditingPlaylist(null),
+                                                            children: /*#__PURE__*/ _jsxDEV(X, {
+                                                                className: "h-4 w-4"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                                lineNumber: 148,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 143,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                    lineNumber: 130,
+                                                    columnNumber: 21
+                                                }, this) : /*#__PURE__*/ _jsxDEV(_Fragment, {
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Music, {
+                                                            className: "h-5 w-5"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 153,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                            className: "text-lg",
+                                                            children: playlist.name
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 154,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                lineNumber: 128,
+                                                columnNumber: 17
+                                            }, this),
+                                            editingPlaylist !== playlist.id && /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex gap-2",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        size: "sm",
+                                                        variant: "outline",
+                                                        onClick: ()=>onPlayPlaylist(playlist),
+                                                        children: "Play All"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 160,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        size: "sm",
+                                                        variant: "ghost",
+                                                        onClick: ()=>setSharingPlaylist(playlist),
+                                                        children: /*#__PURE__*/ _jsxDEV(Share2, {
+                                                            className: "h-4 w-4"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 172,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 167,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    onExportPlaylist && /*#__PURE__*/ _jsxDEV(Button, {
+                                                        size: "sm",
+                                                        variant: "ghost",
+                                                        onClick: ()=>onExportPlaylist(playlist.id),
+                                                        children: /*#__PURE__*/ _jsxDEV(Download, {
+                                                            className: "h-4 w-4"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 180,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 175,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        size: "sm",
+                                                        variant: "ghost",
+                                                        onClick: ()=>startEdit(playlist),
+                                                        children: /*#__PURE__*/ _jsxDEV(Edit, {
+                                                            className: "h-4 w-4"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 188,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 183,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        size: "sm",
+                                                        variant: "ghost",
+                                                        onClick: ()=>onDeletePlaylist(playlist.id),
+                                                        children: /*#__PURE__*/ _jsxDEV(Trash2, {
+                                                            className: "h-4 w-4"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 195,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 190,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                lineNumber: 159,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                        lineNumber: 127,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "text-sm text-muted-foreground",
+                                        children: [
+                                            playlist.tracks.length,
+                                            " songs"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                        lineNumber: 200,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                lineNumber: 126,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                children: playlist.tracks.length > 0 ? /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "space-y-2",
+                                    children: playlist.tracks.map((track, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                                            className: `flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 ${currentTrack?.id === track.id ? 'bg-accent' : ''}`,
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                    className: "text-sm text-muted-foreground w-6",
+                                                    children: index + 1
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                    lineNumber: 214,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("img", {
+                                                    src: track.albumArt || 'https://picsum.photos/40/40?random=' + track.id,
+                                                    alt: track.title,
+                                                    className: "w-10 h-10 rounded object-cover"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                    lineNumber: 217,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex-1 min-w-0",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("p", {
+                                                            className: "font-medium truncate",
+                                                            children: track.title
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 223,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("p", {
+                                                            className: "text-sm text-muted-foreground truncate",
+                                                            children: track.artist
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                            lineNumber: 224,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                    lineNumber: 222,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    size: "sm",
+                                                    variant: "ghost",
+                                                    onClick: ()=>onRemoveFromPlaylist(playlist.id, track.id),
+                                                    children: /*#__PURE__*/ _jsxDEV(X, {
+                                                        className: "h-4 w-4"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                        lineNumber: 231,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                                    lineNumber: 226,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, track.id, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                            lineNumber: 208,
+                                            columnNumber: 21
+                                        }, this))
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                    lineNumber: 206,
+                                    columnNumber: 17
+                                }, this) : /*#__PURE__*/ _jsxDEV("p", {
+                                    className: "text-muted-foreground text-center py-4",
+                                    children: "No songs in this playlist yet"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                    lineNumber: 237,
+                                    columnNumber: 17
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                                lineNumber: 204,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, playlist.id, true, {
+                        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                        lineNumber: 125,
+                        columnNumber: 11
+                    }, this))
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                lineNumber: 123,
+                columnNumber: 7
+            }, this),
+            playlists.length === 0 && /*#__PURE__*/ _jsxDEV(Card, {
+                children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                    className: "text-center py-8",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV(Music, {
+                            className: "h-12 w-12 mx-auto mb-4 text-muted-foreground"
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                            lineNumber: 249,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV("p", {
+                            className: "text-muted-foreground",
+                            children: "No playlists yet. Create your first playlist to get started!"
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                            lineNumber: 250,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                    lineNumber: 248,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                lineNumber: 247,
+                columnNumber: 9
+            }, this),
+            /*#__PURE__*/ _jsxDEV(PlaylistSharingDialog, {
+                open: !!sharingPlaylist,
+                onOpenChange: (open)=>!open && setSharingPlaylist(null),
+                playlist: sharingPlaylist,
+                currentUser: currentUser
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                lineNumber: 258,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV(SharedPlaylistAccess, {
+                open: showSharedAccess,
+                onOpenChange: setShowSharedAccess,
+                onPlayPlaylist: onPlayTracks || (()=>{}),
+                onAddToLibrary: handleAddToLibrary,
+                currentUser: currentUser
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+                lineNumber: 266,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/PlaylistManager.tsx",
+        lineNumber: 79,
+        columnNumber: 5
+    }, this);
+};
+_s(PlaylistManager, "IRuBQqyG0/xnq6dZOLri8lpSHlQ=");
+_c = PlaylistManager;
+var _c;
+$RefreshReg$(_c, "PlaylistManager");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/PlaylistManager.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/PlaylistManager.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlBsYXlsaXN0TWFuYWdlci50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBQbHVzLCBFZGl0LCBUcmFzaDIsIE11c2ljLCBYLCBEb3dubG9hZCwgU2hhcmUyLCBVc2VycyB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5pbXBvcnQgeyBCdXR0b24gfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYnV0dG9uJztcbmltcG9ydCB7IElucHV0IH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2lucHV0JztcbmltcG9ydCB7IENhcmQsIENhcmRDb250ZW50LCBDYXJkSGVhZGVyLCBDYXJkVGl0bGUgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvY2FyZCc7XG5pbXBvcnQgeyBEaWFsb2csIERpYWxvZ0NvbnRlbnQsIERpYWxvZ0hlYWRlciwgRGlhbG9nVGl0bGUsIERpYWxvZ1RyaWdnZXIgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvZGlhbG9nJztcbmltcG9ydCB7IFRyYWNrIH0gZnJvbSAnQC9kYXRhL21vY2tNdXNpYyc7XG5pbXBvcnQgeyBNb29kaWZ5SWRlbnRpdHkgfSBmcm9tICdAL2hvb2tzL3VzZUFub255bW91c0lkZW50aXR5JztcbmltcG9ydCB7IFBsYXlsaXN0U2hhcmluZ0RpYWxvZyB9IGZyb20gJy4vUGxheWxpc3RTaGFyaW5nRGlhbG9nJztcbmltcG9ydCB7IFNoYXJlZFBsYXlsaXN0QWNjZXNzIH0gZnJvbSAnLi9TaGFyZWRQbGF5bGlzdEFjY2Vzcyc7XG5cbmV4cG9ydCBpbnRlcmZhY2UgUGxheWxpc3Qge1xuICBpZDogc3RyaW5nO1xuICBuYW1lOiBzdHJpbmc7XG4gIHRyYWNrczogVHJhY2tbXTtcbiAgY3JlYXRlZEF0OiBEYXRlO1xufVxuXG5pbnRlcmZhY2UgUGxheWxpc3RNYW5hZ2VyUHJvcHMge1xuICBwbGF5bGlzdHM6IFBsYXlsaXN0W107XG4gIG9uQ3JlYXRlUGxheWxpc3Q6IChuYW1lOiBzdHJpbmcpID0+IHZvaWQ7XG4gIG9uRGVsZXRlUGxheWxpc3Q6IChpZDogc3RyaW5nKSA9PiB2b2lkO1xuICBvblJlbmFtZVBsYXlsaXN0OiAoaWQ6IHN0cmluZywgbmV3TmFtZTogc3RyaW5nKSA9PiB2b2lkO1xuICBvblJlbW92ZUZyb21QbGF5bGlzdDogKHBsYXlsaXN0SWQ6IHN0cmluZywgdHJhY2tJZDogc3RyaW5nKSA9PiB2b2lkO1xuICBvblBsYXlQbGF5bGlzdDogKHBsYXlsaXN0OiBQbGF5bGlzdCkgPT4gdm9pZDtcbiAgb25FeHBvcnRQbGF5bGlzdD86IChwbGF5bGlzdElkOiBzdHJpbmcpID0+IHZvaWQ7XG4gIGN1cnJlbnRUcmFjaz86IFRyYWNrIHwgbnVsbDtcbiAgY3VycmVudFVzZXI6IHsgbmFtZTogc3RyaW5nOyBhdmF0YXI/OiBzdHJpbmc7IGlkZW50aXR5PzogTW9vZGlmeUlkZW50aXR5IH07XG4gIG9uUGxheVRyYWNrcz86ICh0cmFja3M6IFRyYWNrW10pID0+IHZvaWQ7XG59XG5cbmV4cG9ydCBjb25zdCBQbGF5bGlzdE1hbmFnZXIgPSAoe1xuICBwbGF5bGlzdHMsXG4gIG9uQ3JlYXRlUGxheWxpc3QsXG4gIG9uRGVsZXRlUGxheWxpc3QsXG4gIG9uUmVuYW1lUGxheWxpc3QsXG4gIG9uUmVtb3ZlRnJvbVBsYXlsaXN0LFxuICBvblBsYXlQbGF5bGlzdCxcbiAgb25FeHBvcnRQbGF5bGlzdCxcbiAgY3VycmVudFRyYWNrLFxuICBjdXJyZW50VXNlcixcbiAgb25QbGF5VHJhY2tzXG59OiBQbGF5bGlzdE1hbmFnZXJQcm9wcykgPT4ge1xuICBjb25zdCBbbmV3UGxheWxpc3ROYW1lLCBzZXROZXdQbGF5bGlzdE5hbWVdID0gdXNlU3RhdGUoJycpO1xuICBjb25zdCBbZWRpdGluZ1BsYXlsaXN0LCBzZXRFZGl0aW5nUGxheWxpc3RdID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7XG4gIGNvbnN0IFtlZGl0TmFtZSwgc2V0RWRpdE5hbWVdID0gdXNlU3RhdGUoJycpO1xuICBjb25zdCBbaXNDcmVhdGVEaWFsb2dPcGVuLCBzZXRJc0NyZWF0ZURpYWxvZ09wZW5dID0gdXNlU3RhdGUoZmFsc2UpO1xuICBjb25zdCBbc2hhcmluZ1BsYXlsaXN0LCBzZXRTaGFyaW5nUGxheWxpc3RdID0gdXNlU3RhdGU8UGxheWxpc3QgfCBudWxsPihudWxsKTtcbiAgY29uc3QgW3Nob3dTaGFyZWRBY2Nlc3MsIHNldFNob3dTaGFyZWRBY2Nlc3NdID0gdXNlU3RhdGUoZmFsc2UpO1xuXG4gIGNvbnN0IGhhbmRsZUNyZWF0ZVBsYXlsaXN0ID0gKCkgPT4ge1xuICAgIGlmIChuZXdQbGF5bGlzdE5hbWUudHJpbSgpKSB7XG4gICAgICBvbkNyZWF0ZVBsYXlsaXN0KG5ld1BsYXlsaXN0TmFtZS50cmltKCkpO1xuICAgICAgc2V0TmV3UGxheWxpc3ROYW1lKCcnKTtcbiAgICAgIHNldElzQ3JlYXRlRGlhbG9nT3BlbihmYWxzZSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGhhbmRsZVJlbmFtZSA9IChwbGF5bGlzdElkOiBzdHJpbmcpID0+IHtcbiAgICBpZiAoZWRpdE5hbWUudHJpbSgpKSB7XG4gICAgICBvblJlbmFtZVBsYXlsaXN0KHBsYXlsaXN0SWQsIGVkaXROYW1lLnRyaW0oKSk7XG4gICAgICBzZXRFZGl0aW5nUGxheWxpc3QobnVsbCk7XG4gICAgICBzZXRFZGl0TmFtZSgnJyk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IHN0YXJ0RWRpdCA9IChwbGF5bGlzdDogUGxheWxpc3QpID0+IHtcbiAgICBzZXRFZGl0aW5nUGxheWxpc3QocGxheWxpc3QuaWQpO1xuICAgIHNldEVkaXROYW1lKHBsYXlsaXN0Lm5hbWUpO1xuICB9O1xuXG4gIGNvbnN0IGhhbmRsZUFkZFRvTGlicmFyeSA9IChzaGFyZWRQbGF5bGlzdDogYW55KSA9PiB7XG4gICAgLy8gQ29udmVydCBzaGFyZWQgcGxheWxpc3QgdG8gcmVndWxhciBwbGF5bGlzdCBhbmQgYWRkIHRvIGxpYnJhcnlcbiAgICBvbkNyZWF0ZVBsYXlsaXN0KHNoYXJlZFBsYXlsaXN0Lm5hbWUpO1xuICAgIC8vIEluIGEgcmVhbCBpbXBsZW1lbnRhdGlvbiwgeW91J2QgYWxzbyBhZGQgdGhlIHRyYWNrc1xuICB9O1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTRcIj5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgIDxoMiBjbGFzc05hbWU9XCJ0ZXh0LXhsIGZvbnQtYm9sZFwiPk15IFBsYXlsaXN0czwvaDI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMlwiPlxuICAgICAgICAgIDxCdXR0b24gXG4gICAgICAgICAgICBzaXplPVwic21cIiBcbiAgICAgICAgICAgIHZhcmlhbnQ9XCJvdXRsaW5lXCJcbiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldFNob3dTaGFyZWRBY2Nlc3ModHJ1ZSl9XG4gICAgICAgICAgPlxuICAgICAgICAgICAgPFVzZXJzIGNsYXNzTmFtZT1cImgtNCB3LTQgbXItMlwiIC8+XG4gICAgICAgICAgICBBY2Nlc3MgU2hhcmVkXG4gICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgPERpYWxvZyBvcGVuPXtpc0NyZWF0ZURpYWxvZ09wZW59IG9uT3BlbkNoYW5nZT17c2V0SXNDcmVhdGVEaWFsb2dPcGVufT5cbiAgICAgICAgICAgIDxEaWFsb2dUcmlnZ2VyIGFzQ2hpbGQ+XG4gICAgICAgICAgICAgIDxCdXR0b24gc2l6ZT1cInNtXCI+XG4gICAgICAgICAgICAgICAgPFBsdXMgY2xhc3NOYW1lPVwiaC00IHctNCBtci0yXCIgLz5cbiAgICAgICAgICAgICAgICBOZXcgUGxheWxpc3RcbiAgICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgICA8L0RpYWxvZ1RyaWdnZXI+XG4gICAgICAgICAgPERpYWxvZ0NvbnRlbnQ+XG4gICAgICAgICAgICA8RGlhbG9nSGVhZGVyPlxuICAgICAgICAgICAgICA8RGlhbG9nVGl0bGU+Q3JlYXRlIE5ldyBQbGF5bGlzdDwvRGlhbG9nVGl0bGU+XG4gICAgICAgICAgICA8L0RpYWxvZ0hlYWRlcj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XG4gICAgICAgICAgICAgIDxJbnB1dFxuICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwiUGxheWxpc3QgbmFtZVwiXG4gICAgICAgICAgICAgICAgdmFsdWU9e25ld1BsYXlsaXN0TmFtZX1cbiAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldE5ld1BsYXlsaXN0TmFtZShlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgICAgb25LZXlQcmVzcz17KGUpID0+IGUua2V5ID09PSAnRW50ZXInICYmIGhhbmRsZUNyZWF0ZVBsYXlsaXN0KCl9XG4gICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMlwiPlxuICAgICAgICAgICAgICAgIDxCdXR0b24gb25DbGljaz17aGFuZGxlQ3JlYXRlUGxheWxpc3R9IGRpc2FibGVkPXshbmV3UGxheWxpc3ROYW1lLnRyaW0oKX0+XG4gICAgICAgICAgICAgICAgICBDcmVhdGVcbiAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgICA8QnV0dG9uIHZhcmlhbnQ9XCJvdXRsaW5lXCIgb25DbGljaz17KCkgPT4gc2V0SXNDcmVhdGVEaWFsb2dPcGVuKGZhbHNlKX0+XG4gICAgICAgICAgICAgICAgICBDYW5jZWxcbiAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L0RpYWxvZ0NvbnRlbnQ+XG4gICAgICAgIDwvRGlhbG9nPlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImdyaWQgZ2FwLTRcIj5cbiAgICAgICAge3BsYXlsaXN0cy5tYXAoKHBsYXlsaXN0KSA9PiAoXG4gICAgICAgICAgPENhcmQga2V5PXtwbGF5bGlzdC5pZH0+XG4gICAgICAgICAgICA8Q2FyZEhlYWRlciBjbGFzc05hbWU9XCJwYi0zXCI+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxuICAgICAgICAgICAgICAgICAge2VkaXRpbmdQbGF5bGlzdCA9PT0gcGxheWxpc3QuaWQgPyAoXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cbiAgICAgICAgICAgICAgICAgICAgICA8SW5wdXRcbiAgICAgICAgICAgICAgICAgICAgICAgIHZhbHVlPXtlZGl0TmFtZX1cbiAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0RWRpdE5hbWUoZS50YXJnZXQudmFsdWUpfVxuICAgICAgICAgICAgICAgICAgICAgICAgb25LZXlQcmVzcz17KGUpID0+IGUua2V5ID09PSAnRW50ZXInICYmIGhhbmRsZVJlbmFtZShwbGF5bGlzdC5pZCl9XG4gICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJoLThcIlxuICAgICAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcbiAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGhhbmRsZVJlbmFtZShwbGF5bGlzdC5pZCl9XG4gICAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgICAgU2F2ZVxuICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXG4gICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZ2hvc3RcIlxuICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0RWRpdGluZ1BsYXlsaXN0KG51bGwpfVxuICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxYIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICAgICAgICAgIDw+XG4gICAgICAgICAgICAgICAgICAgICAgPE11c2ljIGNsYXNzTmFtZT1cImgtNSB3LTVcIiAvPlxuICAgICAgICAgICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwidGV4dC1sZ1wiPntwbGF5bGlzdC5uYW1lfTwvQ2FyZFRpdGxlPlxuICAgICAgICAgICAgICAgICAgICA8Lz5cbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAge2VkaXRpbmdQbGF5bGlzdCAhPT0gcGxheWxpc3QuaWQgJiYgKFxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yXCI+XG4gICAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgICBzaXplPVwic21cIlxuICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJvdXRsaW5lXCJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBvblBsYXlQbGF5bGlzdChwbGF5bGlzdCl9XG4gICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICBQbGF5IEFsbFxuICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXG4gICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cImdob3N0XCJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRTaGFyaW5nUGxheWxpc3QocGxheWxpc3QpfVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgPFNoYXJlMiBjbGFzc05hbWU9XCJoLTQgdy00XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgICAgICAgICAgIHtvbkV4cG9ydFBsYXlsaXN0ICYmIChcbiAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgICBzaXplPVwic21cIlxuICAgICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cImdob3N0XCJcbiAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uRXhwb3J0UGxheWxpc3QocGxheWxpc3QuaWQpfVxuICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxEb3dubG9hZCBjbGFzc05hbWU9XCJoLTQgdy00XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXG4gICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cImdob3N0XCJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzdGFydEVkaXQocGxheWxpc3QpfVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgPEVkaXQgY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcbiAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZ2hvc3RcIlxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uRGVsZXRlUGxheWxpc3QocGxheWxpc3QuaWQpfVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgPFRyYXNoMiBjbGFzc05hbWU9XCJoLTQgdy00XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cbiAgICAgICAgICAgICAgICB7cGxheWxpc3QudHJhY2tzLmxlbmd0aH0gc29uZ3NcbiAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxuICAgICAgICAgICAgPENhcmRDb250ZW50PlxuICAgICAgICAgICAgICB7cGxheWxpc3QudHJhY2tzLmxlbmd0aCA+IDAgPyAoXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cbiAgICAgICAgICAgICAgICAgIHtwbGF5bGlzdC50cmFja3MubWFwKCh0cmFjaywgaW5kZXgpID0+IChcbiAgICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICAgIGtleT17dHJhY2suaWR9XG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcC0yIHJvdW5kZWQtbWQgaG92ZXI6YmctYWNjZW50LzUwICR7XG4gICAgICAgICAgICAgICAgICAgICAgICBjdXJyZW50VHJhY2s/LmlkID09PSB0cmFjay5pZCA/ICdiZy1hY2NlbnQnIDogJydcbiAgICAgICAgICAgICAgICAgICAgICB9YH1cbiAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIHctNlwiPlxuICAgICAgICAgICAgICAgICAgICAgICAge2luZGV4ICsgMX1cbiAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgPGltZ1xuICAgICAgICAgICAgICAgICAgICAgICAgc3JjPXt0cmFjay5hbGJ1bUFydCB8fCAnaHR0cHM6Ly9waWNzdW0ucGhvdG9zLzQwLzQwP3JhbmRvbT0nICsgdHJhY2suaWR9XG4gICAgICAgICAgICAgICAgICAgICAgICBhbHQ9e3RyYWNrLnRpdGxlfVxuICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy0xMCBoLTEwIHJvdW5kZWQgb2JqZWN0LWNvdmVyXCJcbiAgICAgICAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIG1pbi13LTBcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtIHRydW5jYXRlXCI+e3RyYWNrLnRpdGxlfTwvcD5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIHRydW5jYXRlXCI+e3RyYWNrLmFydGlzdH08L3A+XG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcbiAgICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJnaG9zdFwiXG4gICAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBvblJlbW92ZUZyb21QbGF5bGlzdChwbGF5bGlzdC5pZCwgdHJhY2suaWQpfVxuICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxYIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICkpfVxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtbXV0ZWQtZm9yZWdyb3VuZCB0ZXh0LWNlbnRlciBweS00XCI+XG4gICAgICAgICAgICAgICAgICBObyBzb25ncyBpbiB0aGlzIHBsYXlsaXN0IHlldFxuICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XG4gICAgICAgICAgPC9DYXJkPlxuICAgICAgICApKX1cbiAgICAgIDwvZGl2PlxuXG4gICAgICB7cGxheWxpc3RzLmxlbmd0aCA9PT0gMCAmJiAoXG4gICAgICAgIDxDYXJkPlxuICAgICAgICAgIDxDYXJkQ29udGVudCBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBweS04XCI+XG4gICAgICAgICAgICA8TXVzaWMgY2xhc3NOYW1lPVwiaC0xMiB3LTEyIG14LWF1dG8gbWItNCB0ZXh0LW11dGVkLWZvcmVncm91bmRcIiAvPlxuICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+XG4gICAgICAgICAgICAgIE5vIHBsYXlsaXN0cyB5ZXQuIENyZWF0ZSB5b3VyIGZpcnN0IHBsYXlsaXN0IHRvIGdldCBzdGFydGVkIVxuICAgICAgICAgICAgPC9wPlxuICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XG4gICAgICAgIDwvQ2FyZD5cbiAgICAgICl9XG5cbiAgICAgIHsvKiBQbGF5bGlzdCBTaGFyaW5nIERpYWxvZyAqL31cbiAgICAgIDxQbGF5bGlzdFNoYXJpbmdEaWFsb2dcbiAgICAgICAgb3Blbj17ISFzaGFyaW5nUGxheWxpc3R9XG4gICAgICAgIG9uT3BlbkNoYW5nZT17KG9wZW4pID0+ICFvcGVuICYmIHNldFNoYXJpbmdQbGF5bGlzdChudWxsKX1cbiAgICAgICAgcGxheWxpc3Q9e3NoYXJpbmdQbGF5bGlzdH1cbiAgICAgICAgY3VycmVudFVzZXI9e2N1cnJlbnRVc2VyfVxuICAgICAgLz5cblxuICAgICAgey8qIFNoYXJlZCBQbGF5bGlzdCBBY2Nlc3MgRGlhbG9nICovfVxuICAgICAgPFNoYXJlZFBsYXlsaXN0QWNjZXNzXG4gICAgICAgIG9wZW49e3Nob3dTaGFyZWRBY2Nlc3N9XG4gICAgICAgIG9uT3BlbkNoYW5nZT17c2V0U2hvd1NoYXJlZEFjY2Vzc31cbiAgICAgICAgb25QbGF5UGxheWxpc3Q9e29uUGxheVRyYWNrcyB8fCAoKCkgPT4ge30pfVxuICAgICAgICBvbkFkZFRvTGlicmFyeT17aGFuZGxlQWRkVG9MaWJyYXJ5fVxuICAgICAgICBjdXJyZW50VXNlcj17Y3VycmVudFVzZXJ9XG4gICAgICAvPlxuICAgIDwvZGl2PlxuICApO1xufTsiXSwibmFtZXMiOlsidXNlU3RhdGUiLCJQbHVzIiwiRWRpdCIsIlRyYXNoMiIsIk11c2ljIiwiWCIsIkRvd25sb2FkIiwiU2hhcmUyIiwiVXNlcnMiLCJCdXR0b24iLCJJbnB1dCIsIkNhcmQiLCJDYXJkQ29udGVudCIsIkNhcmRIZWFkZXIiLCJDYXJkVGl0bGUiLCJEaWFsb2ciLCJEaWFsb2dDb250ZW50IiwiRGlhbG9nSGVhZGVyIiwiRGlhbG9nVGl0bGUiLCJEaWFsb2dUcmlnZ2VyIiwiUGxheWxpc3RTaGFyaW5nRGlhbG9nIiwiU2hhcmVkUGxheWxpc3RBY2Nlc3MiLCJQbGF5bGlzdE1hbmFnZXIiLCJwbGF5bGlzdHMiLCJvbkNyZWF0ZVBsYXlsaXN0Iiwib25EZWxldGVQbGF5bGlzdCIsIm9uUmVuYW1lUGxheWxpc3QiLCJvblJlbW92ZUZyb21QbGF5bGlzdCIsIm9uUGxheVBsYXlsaXN0Iiwib25FeHBvcnRQbGF5bGlzdCIsImN1cnJlbnRUcmFjayIsImN1cnJlbnRVc2VyIiwib25QbGF5VHJhY2tzIiwibmV3UGxheWxpc3ROYW1lIiwic2V0TmV3UGxheWxpc3ROYW1lIiwiZWRpdGluZ1BsYXlsaXN0Iiwic2V0RWRpdGluZ1BsYXlsaXN0IiwiZWRpdE5hbWUiLCJzZXRFZGl0TmFtZSIsImlzQ3JlYXRlRGlhbG9nT3BlbiIsInNldElzQ3JlYXRlRGlhbG9nT3BlbiIsInNoYXJpbmdQbGF5bGlzdCIsInNldFNoYXJpbmdQbGF5bGlzdCIsInNob3dTaGFyZWRBY2Nlc3MiLCJzZXRTaG93U2hhcmVkQWNjZXNzIiwiaGFuZGxlQ3JlYXRlUGxheWxpc3QiLCJ0cmltIiwiaGFuZGxlUmVuYW1lIiwicGxheWxpc3RJZCIsInN0YXJ0RWRpdCIsInBsYXlsaXN0IiwiaWQiLCJuYW1lIiwiaGFuZGxlQWRkVG9MaWJyYXJ5Iiwic2hhcmVkUGxheWxpc3QiLCJkaXYiLCJjbGFzc05hbWUiLCJoMiIsInNpemUiLCJ2YXJpYW50Iiwib25DbGljayIsIm9wZW4iLCJvbk9wZW5DaGFuZ2UiLCJhc0NoaWxkIiwicGxhY2Vob2xkZXIiLCJ2YWx1ZSIsIm9uQ2hhbmdlIiwiZSIsInRhcmdldCIsIm9uS2V5UHJlc3MiLCJrZXkiLCJkaXNhYmxlZCIsIm1hcCIsInAiLCJ0cmFja3MiLCJsZW5ndGgiLCJ0cmFjayIsImluZGV4Iiwic3BhbiIsImltZyIsInNyYyIsImFsYnVtQXJ0IiwiYWx0IiwidGl0bGUiLCJhcnRpc3QiLCJvbkFkZFRvTGlicmFyeSJdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsU0FBU0EsUUFBUSxRQUFRLFFBQVE7QUFDakMsU0FBU0Ms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

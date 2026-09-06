@@ -1,0 +1,511 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/identity/IdentityOnboardingModal.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport2_react_jsxDevRuntime["Fragment"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const React = __vite__cjsImport3_react.__esModule ? __vite__cjsImport3_react.default : __vite__cjsImport3_react; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"];
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "/src/components/ui/dialog.tsx";
+import { Input } from "/src/components/ui/input.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Label } from "/src/components/ui/label.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "/src/components/ui/tabs.tsx";
+import { IdentityAvatarLarge } from "/src/components/identity/IdentityAvatar.tsx";
+import { Sparkles, Download, RefreshCw } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+export const IdentityOnboardingModal = ({ open, onComplete, suggestedNickname, onGenerateNewNickname })=>{
+    _s();
+    const [displayName, setDisplayName] = useState(suggestedNickname);
+    const [importCode, setImportCode] = useState('');
+    const [previewSeed, setPreviewSeed] = useState(suggestedNickname);
+    const [activeTab, setActiveTab] = useState('create');
+    const [isCreating, setIsCreating] = useState(false);
+    // Update preview seed when name changes
+    useEffect(()=>{
+        if (displayName) {
+            setPreviewSeed(displayName + Date.now().toString());
+        }
+    }, [
+        displayName
+    ]);
+    const handleCreate = ()=>{
+        if (!displayName.trim()) {
+            return;
+        }
+        setIsCreating(true);
+        setTimeout(()=>{
+            onComplete(displayName.trim());
+        }, 300);
+    };
+    const handleImport = ()=>{
+        if (!importCode.trim()) {
+            return;
+        }
+        setIsCreating(true);
+        setTimeout(()=>{
+            onComplete('', importCode.trim());
+        }, 300);
+    };
+    const handleGenerateNew = ()=>{
+        const newNickname = onGenerateNewNickname();
+        setDisplayName(newNickname);
+    };
+    const handleKeyPress = (e, action)=>{
+        if (e.key === 'Enter') {
+            action();
+        }
+    };
+    return /*#__PURE__*/ _jsxDEV(Dialog, {
+        open: open,
+        onOpenChange: ()=>{},
+        children: /*#__PURE__*/ _jsxDEV(DialogContent, {
+            className: "sm:max-w-[500px] glass-panel border-purple-500/30 bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-indigo-900/40 backdrop-blur-xl animate-fade-in",
+            onPointerDownOutside: (e)=>e.preventDefault(),
+            onEscapeKeyDown: (e)=>e.preventDefault(),
+            children: [
+                /*#__PURE__*/ _jsxDEV(DialogHeader, {
+                    className: "space-y-3",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "flex items-center justify-center mb-2",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "relative",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Sparkles, {
+                                        className: "w-12 h-12 text-pink-400 animate-pulse"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                        lineNumber: 83,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "absolute inset-0 bg-pink-400/20 blur-xl rounded-full animate-pulse"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                        lineNumber: 84,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                lineNumber: 82,
+                                columnNumber: 13
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                            lineNumber: 81,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(DialogTitle, {
+                            className: "text-3xl font-bold text-center bg-gradient-to-r from-pink-400 to-violet-400 bg-clip-text text-transparent",
+                            children: "Welcome to Moodify"
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                            lineNumber: 87,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(DialogDescription, {
+                            className: "text-center text-gray-300 text-base",
+                            children: "Create your anonymous identity to unlock social features"
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                            lineNumber: 90,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                    lineNumber: 80,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ _jsxDEV(Tabs, {
+                    value: activeTab,
+                    onValueChange: (v)=>setActiveTab(v),
+                    className: "mt-4",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV(TabsList, {
+                            className: "grid w-full grid-cols-2 bg-black/30",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                    value: "create",
+                                    className: "data-[state=active]:bg-purple-600/50",
+                                    children: "Create New"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                    lineNumber: 97,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                    value: "import",
+                                    className: "data-[state=active]:bg-purple-600/50",
+                                    children: "Import"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                    lineNumber: 100,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                            lineNumber: 96,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(TabsContent, {
+                            value: "create",
+                            className: "space-y-5 mt-6",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex flex-col items-center space-y-4 py-4",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "relative group",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(IdentityAvatarLarge, {
+                                                    seed: previewSeed,
+                                                    animate: true,
+                                                    className: "transition-all duration-500 group-hover:scale-110"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                    lineNumber: 109,
+                                                    columnNumber: 17
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "absolute inset-0 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500 -z-10"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                    lineNumber: 114,
+                                                    columnNumber: 17
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 108,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("p", {
+                                            className: "text-sm text-gray-400 text-center",
+                                            children: "Your unique avatar preview"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 116,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                    lineNumber: 107,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "space-y-3",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(Label, {
+                                            htmlFor: "nickname",
+                                            className: "text-gray-200 font-medium",
+                                            children: "Choose Your Nickname"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 123,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex gap-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "relative flex-1",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Input, {
+                                                            id: "nickname",
+                                                            value: displayName,
+                                                            onChange: (e)=>setDisplayName(e.target.value),
+                                                            onKeyPress: (e)=>handleKeyPress(e, handleCreate),
+                                                            placeholder: "Enter a cool nickname...",
+                                                            maxLength: 20,
+                                                            className: "glass-input bg-black/30 border-purple-500/30 focus:border-pink-500/50 focus:ring-pink-500/20 text-white placeholder:text-gray-500 pr-12 transition-all duration-300 focus:scale-[1.02]",
+                                                            autoFocus: true
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                            lineNumber: 128,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500",
+                                                            children: [
+                                                                displayName.length,
+                                                                "/20"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                            lineNumber: 138,
+                                                            columnNumber: 19
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                    lineNumber: 127,
+                                                    columnNumber: 17
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    type: "button",
+                                                    variant: "outline",
+                                                    size: "icon",
+                                                    onClick: handleGenerateNew,
+                                                    className: "glass-button border-purple-500/30 hover:border-pink-500/50 transition-all duration-300 hover:scale-105",
+                                                    title: "Generate new nickname",
+                                                    children: /*#__PURE__*/ _jsxDEV(RefreshCw, {
+                                                        className: "h-4 w-4"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                        lineNumber: 150,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                    lineNumber: 142,
+                                                    columnNumber: 17
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 126,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("p", {
+                                            className: "text-xs text-gray-500",
+                                            children: "This will be visible to others in Listen Together and shared playlists"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 153,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                    lineNumber: 122,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(Button, {
+                                    onClick: handleCreate,
+                                    disabled: !displayName.trim() || isCreating,
+                                    className: "w-full glass-button bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 border-0 text-white font-semibold py-6 text-lg transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100",
+                                    children: isCreating ? /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center gap-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                lineNumber: 166,
+                                                columnNumber: 19
+                                            }, this),
+                                            "Creating..."
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                        lineNumber: 165,
+                                        columnNumber: 17
+                                    }, this) : /*#__PURE__*/ _jsxDEV(_Fragment, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Sparkles, {
+                                                className: "w-5 h-5 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                lineNumber: 171,
+                                                columnNumber: 19
+                                            }, this),
+                                            "Enter Moodify"
+                                        ]
+                                    }, void 0, true)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                    lineNumber: 159,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                            lineNumber: 105,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(TabsContent, {
+                            value: "import",
+                            className: "space-y-5 mt-6",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "space-y-3",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(Label, {
+                                            htmlFor: "import-code",
+                                            className: "text-gray-200 font-medium flex items-center gap-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Download, {
+                                                    className: "w-4 h-4"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                    lineNumber: 181,
+                                                    columnNumber: 17
+                                                }, this),
+                                                "Recovery Code"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 180,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV(Input, {
+                                            id: "import-code",
+                                            value: importCode,
+                                            onChange: (e)=>setImportCode(e.target.value),
+                                            onKeyPress: (e)=>handleKeyPress(e, handleImport),
+                                            placeholder: "Paste your recovery code here...",
+                                            className: "glass-input bg-black/30 border-purple-500/30 focus:border-pink-500/50 focus:ring-pink-500/20 text-white placeholder:text-gray-500 font-mono transition-all duration-300 focus:scale-[1.02]"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 184,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("p", {
+                                            className: "text-xs text-gray-500",
+                                            children: "Import your identity from another device using your recovery code"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                            lineNumber: 192,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                    lineNumber: 179,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(Button, {
+                                    onClick: handleImport,
+                                    disabled: !importCode.trim() || isCreating,
+                                    className: "w-full glass-button bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-0 text-white font-semibold py-6 text-lg transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100",
+                                    children: isCreating ? /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center gap-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                lineNumber: 204,
+                                                columnNumber: 19
+                                            }, this),
+                                            "Importing..."
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                        lineNumber: 203,
+                                        columnNumber: 17
+                                    }, this) : /*#__PURE__*/ _jsxDEV(_Fragment, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Download, {
+                                                className: "w-5 h-5 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                                lineNumber: 209,
+                                                columnNumber: 19
+                                            }, this),
+                                            "Restore Identity"
+                                        ]
+                                    }, void 0, true)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                    lineNumber: 197,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                            lineNumber: 178,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                    lineNumber: 95,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ _jsxDEV("div", {
+                    className: "mt-4 p-4 rounded-lg bg-black/20 border border-purple-500/20",
+                    children: /*#__PURE__*/ _jsxDEV("p", {
+                        className: "text-xs text-gray-400 text-center leading-relaxed",
+                        children: [
+                            "🔒 ",
+                            /*#__PURE__*/ _jsxDEV("span", {
+                                className: "font-semibold text-gray-300",
+                                children: "100% Anonymous & Private"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                lineNumber: 220,
+                                columnNumber: 16
+                            }, this),
+                            " • No email, no phone, no tracking.",
+                            /*#__PURE__*/ _jsxDEV("br", {}, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                                lineNumber: 221,
+                                columnNumber: 13
+                            }, this),
+                            "Your identity stays on your device."
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                        lineNumber: 219,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+                    lineNumber: 218,
+                    columnNumber: 9
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+            lineNumber: 75,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx",
+        lineNumber: 74,
+        columnNumber: 5
+    }, this);
+};
+_s(IdentityOnboardingModal, "m0ettKsF9ywWSy8StWr7zRVVCwI=");
+_c = IdentityOnboardingModal;
+var _c;
+$RefreshReg$(_c, "IdentityOnboardingModal");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/identity/IdentityOnboardingModal.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIklkZW50aXR5T25ib2FyZGluZ01vZGFsLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUsIHVzZUVmZmVjdCB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHtcclxuICBEaWFsb2csXHJcbiAgRGlhbG9nQ29udGVudCxcclxuICBEaWFsb2dEZXNjcmlwdGlvbixcclxuICBEaWFsb2dIZWFkZXIsXHJcbiAgRGlhbG9nVGl0bGUsXHJcbn0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2RpYWxvZyc7XHJcbmltcG9ydCB7IElucHV0IH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2lucHV0JztcclxuaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2J1dHRvbic7XHJcbmltcG9ydCB7IExhYmVsIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2xhYmVsJztcclxuaW1wb3J0IHsgVGFicywgVGFic0NvbnRlbnQsIFRhYnNMaXN0LCBUYWJzVHJpZ2dlciB9IGZyb20gJ0AvY29tcG9uZW50cy91aS90YWJzJztcclxuaW1wb3J0IHsgSWRlbnRpdHlBdmF0YXJMYXJnZSB9IGZyb20gJy4vSWRlbnRpdHlBdmF0YXInO1xyXG5pbXBvcnQgeyBTcGFya2xlcywgRG93bmxvYWQsIFJlZnJlc2hDdyB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XHJcblxyXG5pbnRlcmZhY2UgSWRlbnRpdHlPbmJvYXJkaW5nTW9kYWxQcm9wcyB7XHJcbiAgb3BlbjogYm9vbGVhbjtcclxuICBvbkNvbXBsZXRlOiAoZGlzcGxheU5hbWU6IHN0cmluZywgaW1wb3J0Q29kZT86IHN0cmluZykgPT4gdm9pZDtcclxuICBzdWdnZXN0ZWROaWNrbmFtZTogc3RyaW5nO1xyXG4gIG9uR2VuZXJhdGVOZXdOaWNrbmFtZTogKCkgPT4gc3RyaW5nO1xyXG59XHJcblxyXG5leHBvcnQgY29uc3QgSWRlbnRpdHlPbmJvYXJkaW5nTW9kYWw6IFJlYWN0LkZDPElkZW50aXR5T25ib2FyZGluZ01vZGFsUHJvcHM+ID0gKHtcclxuICBvcGVuLFxyXG4gIG9uQ29tcGxldGUsXHJcbiAgc3VnZ2VzdGVkTmlja25hbWUsXHJcbiAgb25HZW5lcmF0ZU5ld05pY2tuYW1lLFxyXG59KSA9PiB7XHJcbiAgY29uc3QgW2Rpc3BsYXlOYW1lLCBzZXREaXNwbGF5TmFtZV0gPSB1c2VTdGF0ZShzdWdnZXN0ZWROaWNrbmFtZSk7XHJcbiAgY29uc3QgW2ltcG9ydENvZGUsIHNldEltcG9ydENvZGVdID0gdXNlU3RhdGUoJycpO1xyXG4gIGNvbnN0IFtwcmV2aWV3U2VlZCwgc2V0UHJldmlld1NlZWRdID0gdXNlU3RhdGUoc3VnZ2VzdGVkTmlja25hbWUpO1xyXG4gIGNvbnN0IFthY3RpdmVUYWIsIHNldEFjdGl2ZVRhYl0gPSB1c2VTdGF0ZTwnY3JlYXRlJyB8ICdpbXBvcnQnPignY3JlYXRlJyk7XHJcbiAgY29uc3QgW2lzQ3JlYXRpbmcsIHNldElzQ3JlYXRpbmddID0gdXNlU3RhdGUoZmFsc2UpO1xyXG5cclxuICAvLyBVcGRhdGUgcHJldmlldyBzZWVkIHdoZW4gbmFtZSBjaGFuZ2VzXHJcbiAgdXNlRWZmZWN0KCgpID0+IHtcclxuICAgIGlmIChkaXNwbGF5TmFtZSkge1xyXG4gICAgICBzZXRQcmV2aWV3U2VlZChkaXNwbGF5TmFtZSArIERhdGUubm93KCkudG9TdHJpbmcoKSk7XHJcbiAgICB9XHJcbiAgfSwgW2Rpc3BsYXlOYW1lXSk7XHJcblxyXG4gIGNvbnN0IGhhbmRsZUNyZWF0ZSA9ICgpID0+IHtcclxuICAgIGlmICghZGlzcGxheU5hbWUudHJpbSgpKSB7XHJcbiAgICAgIHJldHVybjtcclxuICAgIH1cclxuICAgIHNldElzQ3JlYXRpbmcodHJ1ZSk7XHJcbiAgICBzZXRUaW1lb3V0KCgpID0+IHtcclxuICAgICAgb25Db21wbGV0ZShkaXNwbGF5TmFtZS50cmltKCkpO1xyXG4gICAgfSwgMzAwKTtcclxuICB9O1xyXG5cclxuICBjb25zdCBoYW5kbGVJbXBvcnQgPSAoKSA9PiB7XHJcbiAgICBpZiAoIWltcG9ydENvZGUudHJpbSgpKSB7XHJcbiAgICAgIHJldHVybjtcclxuICAgIH1cclxuICAgIHNldElzQ3JlYXRpbmcodHJ1ZSk7XHJcbiAgICBzZXRUaW1lb3V0KCgpID0+IHtcclxuICAgICAgb25Db21wbGV0ZSgnJywgaW1wb3J0Q29kZS50cmltKCkpO1xyXG4gICAgfSwgMzAwKTtcclxuICB9O1xyXG5cclxuICBjb25zdCBoYW5kbGVHZW5lcmF0ZU5ldyA9ICgpID0+IHtcclxuICAgIGNvbnN0IG5ld05pY2tuYW1lID0gb25HZW5lcmF0ZU5ld05pY2tuYW1lKCk7XHJcbiAgICBzZXREaXNwbGF5TmFtZShuZXdOaWNrbmFtZSk7XHJcbiAgfTtcclxuXHJcbiAgY29uc3QgaGFuZGxlS2V5UHJlc3MgPSAoZTogUmVhY3QuS2V5Ym9hcmRFdmVudCwgYWN0aW9uOiAoKSA9PiB2b2lkKSA9PiB7XHJcbiAgICBpZiAoZS5rZXkgPT09ICdFbnRlcicpIHtcclxuICAgICAgYWN0aW9uKCk7XHJcbiAgICB9XHJcbiAgfTtcclxuXHJcbiAgcmV0dXJuIChcclxuICAgIDxEaWFsb2cgb3Blbj17b3Blbn0gb25PcGVuQ2hhbmdlPXsoKSA9PiB7fX0+XHJcbiAgICAgIDxEaWFsb2dDb250ZW50IFxyXG4gICAgICAgIGNsYXNzTmFtZT1cInNtOm1heC13LVs1MDBweF0gZ2xhc3MtcGFuZWwgYm9yZGVyLXB1cnBsZS01MDAvMzAgYmctZ3JhZGllbnQtdG8tYnIgZnJvbS1wdXJwbGUtOTAwLzQwIHZpYS1ibHVlLTkwMC80MCB0by1pbmRpZ28tOTAwLzQwIGJhY2tkcm9wLWJsdXIteGwgYW5pbWF0ZS1mYWRlLWluXCJcclxuICAgICAgICBvblBvaW50ZXJEb3duT3V0c2lkZT17KGUpID0+IGUucHJldmVudERlZmF1bHQoKX1cclxuICAgICAgICBvbkVzY2FwZUtleURvd249eyhlKSA9PiBlLnByZXZlbnREZWZhdWx0KCl9XHJcbiAgICAgID5cclxuICAgICAgICA8RGlhbG9nSGVhZGVyIGNsYXNzTmFtZT1cInNwYWNlLXktM1wiPlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBtYi0yXCI+XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVsYXRpdmVcIj5cclxuICAgICAgICAgICAgICA8U3BhcmtsZXMgY2xhc3NOYW1lPVwidy0xMiBoLTEyIHRleHQtcGluay00MDAgYW5pbWF0ZS1wdWxzZVwiIC8+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhYnNvbHV0ZSBpbnNldC0wIGJnLXBpbmstNDAwLzIwIGJsdXIteGwgcm91bmRlZC1mdWxsIGFuaW1hdGUtcHVsc2VcIiAvPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPERpYWxvZ1RpdGxlIGNsYXNzTmFtZT1cInRleHQtM3hsIGZvbnQtYm9sZCB0ZXh0LWNlbnRlciBiZy1ncmFkaWVudC10by1yIGZyb20tcGluay00MDAgdG8tdmlvbGV0LTQwMCBiZy1jbGlwLXRleHQgdGV4dC10cmFuc3BhcmVudFwiPlxyXG4gICAgICAgICAgICBXZWxjb21lIHRvIE1vb2RpZnlcclxuICAgICAgICAgIDwvRGlhbG9nVGl0bGU+XHJcbiAgICAgICAgICA8RGlhbG9nRGVzY3JpcHRpb24gY2xhc3NOYW1lPVwidGV4dC1jZW50ZXIgdGV4dC1ncmF5LTMwMCB0ZXh0LWJhc2VcIj5cclxuICAgICAgICAgICAgQ3JlYXRlIHlvdXIgYW5vbnltb3VzIGlkZW50aXR5IHRvIHVubG9jayBzb2NpYWwgZmVhdHVyZXNcclxuICAgICAgICAgIDwvRGlhbG9nRGVzY3JpcHRpb24+XHJcbiAgICAgICAgPC9EaWFsb2dIZWFkZXI+XHJcblxyXG4gICAgICAgIDxUYWJzIHZhbHVlPXthY3RpdmVUYWJ9IG9uVmFsdWVDaGFuZ2U9eyh2KSA9PiBzZXRBY3RpdmVUYWIodiBhcyAnY3JlYXRlJyB8ICdpbXBvcnQnKX0gY2xhc3NOYW1lPVwibXQtNFwiPlxyXG4gICAgICAgICAgPFRhYnNMaXN0IGNsYXNzTmFtZT1cImdyaWQgdy1mdWxsIGdyaWQtY29scy0yIGJnLWJsYWNrLzMwXCI+XHJcbiAgICAgICAgICAgIDxUYWJzVHJpZ2dlciB2YWx1ZT1cImNyZWF0ZVwiIGNsYXNzTmFtZT1cImRhdGEtW3N0YXRlPWFjdGl2ZV06YmctcHVycGxlLTYwMC81MFwiPlxyXG4gICAgICAgICAgICAgIENyZWF0ZSBOZXdcclxuICAgICAgICAgICAgPC9UYWJzVHJpZ2dlcj5cclxuICAgICAgICAgICAgPFRhYnNUcmlnZ2VyIHZhbHVlPVwiaW1wb3J0XCIgY2xhc3NOYW1lPVwiZGF0YS1bc3RhdGU9YWN0aXZlXTpiZy1wdXJwbGUtNjAwLzUwXCI+XHJcbiAgICAgICAgICAgICAgSW1wb3J0XHJcbiAgICAgICAgICAgIDwvVGFic1RyaWdnZXI+XHJcbiAgICAgICAgICA8L1RhYnNMaXN0PlxyXG5cclxuICAgICAgICAgIDxUYWJzQ29udGVudCB2YWx1ZT1cImNyZWF0ZVwiIGNsYXNzTmFtZT1cInNwYWNlLXktNSBtdC02XCI+XHJcbiAgICAgICAgICAgIHsvKiBBdmF0YXIgUHJldmlldyAqL31cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGl0ZW1zLWNlbnRlciBzcGFjZS15LTQgcHktNFwiPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVsYXRpdmUgZ3JvdXBcIj5cclxuICAgICAgICAgICAgICAgIDxJZGVudGl0eUF2YXRhckxhcmdlIFxyXG4gICAgICAgICAgICAgICAgICBzZWVkPXtwcmV2aWV3U2VlZH0gXHJcbiAgICAgICAgICAgICAgICAgIGFuaW1hdGUgXHJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInRyYW5zaXRpb24tYWxsIGR1cmF0aW9uLTUwMCBncm91cC1ob3ZlcjpzY2FsZS0xMTBcIlxyXG4gICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgaW5zZXQtMCBiZy1ncmFkaWVudC10by1iciBmcm9tLXBpbmstNTAwLzIwIHRvLXB1cnBsZS01MDAvMjAgcm91bmRlZC1mdWxsIGJsdXItMnhsIGdyb3VwLWhvdmVyOmJsdXItM3hsIHRyYW5zaXRpb24tYWxsIGR1cmF0aW9uLTUwMCAtei0xMFwiIC8+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LWdyYXktNDAwIHRleHQtY2VudGVyXCI+XHJcbiAgICAgICAgICAgICAgICBZb3VyIHVuaXF1ZSBhdmF0YXIgcHJldmlld1xyXG4gICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICB7LyogTmlja25hbWUgSW5wdXQgKi99XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0zXCI+XHJcbiAgICAgICAgICAgICAgPExhYmVsIGh0bWxGb3I9XCJuaWNrbmFtZVwiIGNsYXNzTmFtZT1cInRleHQtZ3JheS0yMDAgZm9udC1tZWRpdW1cIj5cclxuICAgICAgICAgICAgICAgIENob29zZSBZb3VyIE5pY2tuYW1lXHJcbiAgICAgICAgICAgICAgPC9MYWJlbD5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVsYXRpdmUgZmxleC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxJbnB1dFxyXG4gICAgICAgICAgICAgICAgICAgIGlkPVwibmlja25hbWVcIlxyXG4gICAgICAgICAgICAgICAgICAgIHZhbHVlPXtkaXNwbGF5TmFtZX1cclxuICAgICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldERpc3BsYXlOYW1lKGUudGFyZ2V0LnZhbHVlKX1cclxuICAgICAgICAgICAgICAgICAgICBvbktleVByZXNzPXsoZSkgPT4gaGFuZGxlS2V5UHJlc3MoZSwgaGFuZGxlQ3JlYXRlKX1cclxuICAgICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cIkVudGVyIGEgY29vbCBuaWNrbmFtZS4uLlwiXHJcbiAgICAgICAgICAgICAgICAgICAgbWF4TGVuZ3RoPXsyMH1cclxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJnbGFzcy1pbnB1dCBiZy1ibGFjay8zMCBib3JkZXItcHVycGxlLTUwMC8zMCBmb2N1czpib3JkZXItcGluay01MDAvNTAgZm9jdXM6cmluZy1waW5rLTUwMC8yMCB0ZXh0LXdoaXRlIHBsYWNlaG9sZGVyOnRleHQtZ3JheS01MDAgcHItMTIgdHJhbnNpdGlvbi1hbGwgZHVyYXRpb24tMzAwIGZvY3VzOnNjYWxlLVsxLjAyXVwiXHJcbiAgICAgICAgICAgICAgICAgICAgYXV0b0ZvY3VzXHJcbiAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgcmlnaHQtMyB0b3AtMS8yIC10cmFuc2xhdGUteS0xLzIgdGV4dC14cyB0ZXh0LWdyYXktNTAwXCI+XHJcbiAgICAgICAgICAgICAgICAgICAge2Rpc3BsYXlOYW1lLmxlbmd0aH0vMjBcclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJvdXRsaW5lXCJcclxuICAgICAgICAgICAgICAgICAgc2l6ZT1cImljb25cIlxyXG4gICAgICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVHZW5lcmF0ZU5ld31cclxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZ2xhc3MtYnV0dG9uIGJvcmRlci1wdXJwbGUtNTAwLzMwIGhvdmVyOmJvcmRlci1waW5rLTUwMC81MCB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0zMDAgaG92ZXI6c2NhbGUtMTA1XCJcclxuICAgICAgICAgICAgICAgICAgdGl0bGU9XCJHZW5lcmF0ZSBuZXcgbmlja25hbWVcIlxyXG4gICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICA8UmVmcmVzaEN3IGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LWdyYXktNTAwXCI+XHJcbiAgICAgICAgICAgICAgICBUaGlzIHdpbGwgYmUgdmlzaWJsZSB0byBvdGhlcnMgaW4gTGlzdGVuIFRvZ2V0aGVyIGFuZCBzaGFyZWQgcGxheWxpc3RzXHJcbiAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgIHsvKiBDcmVhdGUgQnV0dG9uICovfVxyXG4gICAgICAgICAgICA8QnV0dG9uXHJcbiAgICAgICAgICAgICAgb25DbGljaz17aGFuZGxlQ3JlYXRlfVxyXG4gICAgICAgICAgICAgIGRpc2FibGVkPXshZGlzcGxheU5hbWUudHJpbSgpIHx8IGlzQ3JlYXRpbmd9XHJcbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIGdsYXNzLWJ1dHRvbiBiZy1ncmFkaWVudC10by1yIGZyb20tcGluay02MDAgdG8tcHVycGxlLTYwMCBob3Zlcjpmcm9tLXBpbmstNTAwIGhvdmVyOnRvLXB1cnBsZS01MDAgYm9yZGVyLTAgdGV4dC13aGl0ZSBmb250LXNlbWlib2xkIHB5LTYgdGV4dC1sZyB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0zMDAgaG92ZXI6c2NhbGUtWzEuMDJdIGRpc2FibGVkOm9wYWNpdHktNTAgZGlzYWJsZWQ6aG92ZXI6c2NhbGUtMTAwXCJcclxuICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgIHtpc0NyZWF0aW5nID8gKFxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctNSBoLTUgYm9yZGVyLTIgYm9yZGVyLXdoaXRlLzMwIGJvcmRlci10LXdoaXRlIHJvdW5kZWQtZnVsbCBhbmltYXRlLXNwaW5cIiAvPlxyXG4gICAgICAgICAgICAgICAgICBDcmVhdGluZy4uLlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgICAgIDw+XHJcbiAgICAgICAgICAgICAgICAgIDxTcGFya2xlcyBjbGFzc05hbWU9XCJ3LTUgaC01IG1yLTJcIiAvPlxyXG4gICAgICAgICAgICAgICAgICBFbnRlciBNb29kaWZ5XHJcbiAgICAgICAgICAgICAgICA8Lz5cclxuICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgIDwvVGFic0NvbnRlbnQ+XHJcblxyXG4gICAgICAgICAgPFRhYnNDb250ZW50IHZhbHVlPVwiaW1wb3J0XCIgY2xhc3NOYW1lPVwic3BhY2UteS01IG10LTZcIj5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTNcIj5cclxuICAgICAgICAgICAgICA8TGFiZWwgaHRtbEZvcj1cImltcG9ydC1jb2RlXCIgY2xhc3NOYW1lPVwidGV4dC1ncmF5LTIwMCBmb250LW1lZGl1bSBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgPERvd25sb2FkIGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgUmVjb3ZlcnkgQ29kZVxyXG4gICAgICAgICAgICAgIDwvTGFiZWw+XHJcbiAgICAgICAgICAgICAgPElucHV0XHJcbiAgICAgICAgICAgICAgICBpZD1cImltcG9ydC1jb2RlXCJcclxuICAgICAgICAgICAgICAgIHZhbHVlPXtpbXBvcnRDb2RlfVxyXG4gICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRJbXBvcnRDb2RlKGUudGFyZ2V0LnZhbHVlKX1cclxuICAgICAgICAgICAgICAgIG9uS2V5UHJlc3M9eyhlKSA9PiBoYW5kbGVLZXlQcmVzcyhlLCBoYW5kbGVJbXBvcnQpfVxyXG4gICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJQYXN0ZSB5b3VyIHJlY292ZXJ5IGNvZGUgaGVyZS4uLlwiXHJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJnbGFzcy1pbnB1dCBiZy1ibGFjay8zMCBib3JkZXItcHVycGxlLTUwMC8zMCBmb2N1czpib3JkZXItcGluay01MDAvNTAgZm9jdXM6cmluZy1waW5rLTUwMC8yMCB0ZXh0LXdoaXRlIHBsYWNlaG9sZGVyOnRleHQtZ3JheS01MDAgZm9udC1tb25vIHRyYW5zaXRpb24tYWxsIGR1cmF0aW9uLTMwMCBmb2N1czpzY2FsZS1bMS4wMl1cIlxyXG4gICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LWdyYXktNTAwXCI+XHJcbiAgICAgICAgICAgICAgICBJbXBvcnQgeW91ciBpZGVudGl0eSBmcm9tIGFub3RoZXIgZGV2aWNlIHVzaW5nIHlvdXIgcmVjb3ZlcnkgY29kZVxyXG4gICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8QnV0dG9uXHJcbiAgICAgICAgICAgICAgb25DbGljaz17aGFuZGxlSW1wb3J0fVxyXG4gICAgICAgICAgICAgIGRpc2FibGVkPXshaW1wb3J0Q29kZS50cmltKCkgfHwgaXNDcmVhdGluZ31cclxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgZ2xhc3MtYnV0dG9uIGJnLWdyYWRpZW50LXRvLXIgZnJvbS1pbmRpZ28tNjAwIHRvLXB1cnBsZS02MDAgaG92ZXI6ZnJvbS1pbmRpZ28tNTAwIGhvdmVyOnRvLXB1cnBsZS01MDAgYm9yZGVyLTAgdGV4dC13aGl0ZSBmb250LXNlbWlib2xkIHB5LTYgdGV4dC1sZyB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0zMDAgaG92ZXI6c2NhbGUtWzEuMDJdIGRpc2FibGVkOm9wYWNpdHktNTAgZGlzYWJsZWQ6aG92ZXI6c2NhbGUtMTAwXCJcclxuICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgIHtpc0NyZWF0aW5nID8gKFxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctNSBoLTUgYm9yZGVyLTIgYm9yZGVyLXdoaXRlLzMwIGJvcmRlci10LXdoaXRlIHJvdW5kZWQtZnVsbCBhbmltYXRlLXNwaW5cIiAvPlxyXG4gICAgICAgICAgICAgICAgICBJbXBvcnRpbmcuLi5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICkgOiAoXHJcbiAgICAgICAgICAgICAgICA8PlxyXG4gICAgICAgICAgICAgICAgICA8RG93bmxvYWQgY2xhc3NOYW1lPVwidy01IGgtNSBtci0yXCIgLz5cclxuICAgICAgICAgICAgICAgICAgUmVzdG9yZSBJZGVudGl0eVxyXG4gICAgICAgICAgICAgICAgPC8+XHJcbiAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICA8L1RhYnNDb250ZW50PlxyXG4gICAgICAgIDwvVGFicz5cclxuXHJcbiAgICAgICAgey8qIEZvb3RlciBOb3RlICovfVxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibXQtNCBwLTQgcm91bmRlZC1sZyBiZy1ibGFjay8yMCBib3JkZXIgYm9yZGVyLXB1cnBsZS01MDAvMjBcIj5cclxuICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1ncmF5LTQwMCB0ZXh0LWNlbnRlciBsZWFkaW5nLXJlbGF4ZWRcIj5cclxuICAgICAgICAgICAg8J+UkiA8c3BhbiBjbGFzc05hbWU9XCJmb250LXNlbWlib2xkIHRleHQtZ3JheS0zMDBcIj4xMDAlIEFub255bW91cyAmIFByaXZhdGU8L3NwYW4+IOKAoiBObyBlbWFpbCwgbm8gcGhvbmUsIG5vIHRyYWNraW5nLlxyXG4gICAgICAgICAgICA8YnIgLz5cclxuICAgICAgICAgICAgWW91ciBpZGVudGl0eSBzdGF5cyBvbiB5b3VyIGRldmljZS5cclxuICAgICAgICAgIDwvcD5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9EaWFsb2dDb250ZW50PlxyXG4gICAgPC9EaWFsb2c+XHJcbiAgKTtcclxufTtcclxuXHJcbiJdLCJuYW1lcyI6WyJSZWFjdCIsInVzZVN0YXRlIiwidXNlRWZmZWN0IiwiRGlhbG9nIiwiRGlhbG9nQ29udGVudCIsIkRpYWxvZ0Rlc2NyaXB0aW9uIiwiRGlhbG9nSGVhZGVyIiwiRGlhbG9nVGl0bGUiLCJJbnB1dCIsIkJ1dHRvbiIsIkxhYmVsIiwiVGFicyIsIlRhYnNDb250ZW50IiwiVGFic0xpc3QiLCJUYWJzVHJpZ2dlciIsIklkZW50aXR5QXZhdGFyTGFyZ2UiLCJTcGFya2xlcyIsIkRvd25sb2FkIiwiUmVmcmVzaEN3IiwiSWRlbnRpdHlPbmJvYXJkaW5nTW9kYWwiLCJvcGVuIiwib25Db21wbGV0ZSIsInN1Z2dlc3RlZE5pY2tuYW1lIiwib25HZW5lcmF0ZU5ld05pY2tuYW1lIiwiZGlzcGxheU5hbWUiLCJzZXREaXNwbGF5TmFtZSIsImltcG9ydENvZGUiLCJzZXRJbXBvcnRDb2RlIiwicHJldmlld1NlZWQiLCJzZXRQcmV2aWV3U2VlZCIsImFjdGl2ZVRhYiIsInNldEFjdGl2ZVRhYiIsImlzQ3JlYXRpbmciLCJzZXRJc0NyZWF0aW5nIiwiRGF0ZSIsIm5vdyIsInRvU3RyaW5nIiwiaGFuZGxlQ3JlYXRlIiwidHJpbSIsInNldFRpbWVvdXQiLCJoYW5kbGVJbXBvcnQiLCJoYW5kbGVHZW5lcmF0ZU5ldyIsIm5ld05pY2tuYW1lIiwiaGFuZGxlS2V5UHJlc3MiLCJlIiwiYWN0aW9uIiwia2V5Iiwib25PcGVuQ2hhbmdlIiwiY2xhc3NOYW1lIiwib25Qb2ludGVyRG93bk91dHNpZGUiLCJwcmV2ZW50RGVmYXVsdCIsIm9uRXNjYXBlS2V5RG93biIsImRpdiIsInZhbHVlIiwib25WYWx1ZUNoYW5nZSIsInYiLCJzZWVkIiwiYW5pbWF0ZSIsInAiLCJodG1sRm9yIiwiaWQiLCJvbkNoYW5nZSIsInRhcmdldCIsIm9uS2V5UHJlc3MiLCJwbGFjZWhvbGRlciIsIm1heExlbmd0aCIsImF1dG9Gb2N1cyIsImxlbmd0aCIsInR5cGUiLCJ2YXJpYW50Iiwic2l6ZSIsIm9uQ2xpY2siLCJ0aXRsZSIsImRpc2FibGVkIiwic3BhbiIsImJyIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSxPQUFPQSxTQUFTQyxRQUFRLEVBQUVDLFNBQVMsUUFBUSxRQUFRO0FBQ25ELFNBQ0VDLE1BQU0sRUFDTkMsYUFBYSxFQUNiQyxpQkFBaUIsRUFDakJDLFlBQVksRUFDWkMsV0FBVyxRQUNOLHlCQUF5QjtBQUNoQyxTQUFTQyxLQUFLLFFBQVEsd0JBQXdCO0FBQzlDLFNBQVNDLE1BQU0sUUFBUSx5QkFBeUI7QUFDaEQsU0FBU0MsS0FBSyxRQUFRLHdCQUF3QjtBQUM5QyxTQUFTQyxJQUFJLEVBQUVDLFdBQVcsRUFBRUMsUUFBUSxFQUFFQyxXQUFXLFFBQVEsdUJBQXVCO0FBQ2hGLFNBQVNDLG1CQUFtQixRQUFRLG1CQUFtQjtBQUN2RCxTQUFTQyxRQUFRLEVBQUVDLFFBQVEsRUFBRUMsU0FBUyxRQUFRLGVBQWU7QUFTN0QsT0FBTyxNQUFNQywwQkFBa0UsQ0FBQyxFQUM5RUMsSUFBSSxFQUNKQyxVQUFVLEVBQ1ZDLGlCQUFpQixFQUNqQkMscUJBQXFCLEVBQ3RCOztJQUNDLE1BQU0sQ0FBQ0MsYUFBYUMsZUFBZSxHQUFHeEIsU0FBU3FCO0lB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

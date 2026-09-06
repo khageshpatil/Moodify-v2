@@ -1,0 +1,270 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/identity/IdentityAvatar.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const React = __vite__cjsImport3_react.__esModule ? __vite__cjsImport3_react.default : __vite__cjsImport3_react; const useMemo = __vite__cjsImport3_react["useMemo"];
+import { cn } from "/src/lib/utils.ts";
+// Generate deterministic color from seed
+const seedToColor = (seed, index)=>{
+    let hash = 0;
+    const str = seed + index;
+    for(let i = 0; i < str.length; i++){
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // Generate vibrant colors in the purple-pink spectrum (matching Moodify theme)
+    const hue = hash % 60 + 280; // 280-340 range (purple to pink)
+    const saturation = 60 + hash % 30; // 60-90%
+    const lightness = 50 + hash % 20; // 50-70%
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+// Generate pattern grid from seed
+const seedToPattern = (seed, gridSize = 5)=>{
+    const pattern = [];
+    let hash = 0;
+    for(let i = 0; i < seed.length; i++){
+        hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // Generate symmetric pattern (mirror on Y axis)
+    const halfSize = Math.ceil(gridSize / 2);
+    for(let y = 0; y < gridSize; y++){
+        pattern[y] = [];
+        for(let x = 0; x < halfSize; x++){
+            const index = y * halfSize + x;
+            const value = hash >> index & 1;
+            pattern[y][x] = value === 1;
+            // Mirror for symmetry
+            if (x !== halfSize - 1 || gridSize % 2 === 0) {
+                pattern[y][gridSize - 1 - x] = value === 1;
+            }
+        }
+    }
+    return pattern;
+};
+export const IdentityAvatar = ({ seed, size = 48, className, animate = false })=>{
+    _s();
+    const avatarData = useMemo(()=>{
+        const gridSize = 5;
+        const pattern = seedToPattern(seed, gridSize);
+        const primaryColor = seedToColor(seed, 0);
+        const secondaryColor = seedToColor(seed, 1);
+        const bgColor = seedToColor(seed, 2);
+        return {
+            pattern,
+            primaryColor,
+            secondaryColor,
+            bgColor,
+            gridSize
+        };
+    }, [
+        seed
+    ]);
+    const cellSize = size / avatarData.gridSize;
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: cn('relative overflow-hidden rounded-full flex-shrink-0', animate && 'animate-pulse-subtle', className),
+        style: {
+            width: size,
+            height: size,
+            background: `linear-gradient(135deg, ${avatarData.bgColor}, ${avatarData.secondaryColor})`
+        },
+        children: [
+            /*#__PURE__*/ _jsxDEV("svg", {
+                width: size,
+                height: size,
+                viewBox: `0 0 ${size} ${size}`,
+                xmlns: "http://www.w3.org/2000/svg",
+                children: [
+                    /*#__PURE__*/ _jsxDEV("circle", {
+                        cx: size / 2,
+                        cy: size / 2,
+                        r: size / 2,
+                        fill: `url(#gradient-${seed})`
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                        lineNumber: 94,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV("defs", {
+                        children: [
+                            /*#__PURE__*/ _jsxDEV("linearGradient", {
+                                id: `gradient-${seed}`,
+                                x1: "0%",
+                                y1: "0%",
+                                x2: "100%",
+                                y2: "100%",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV("stop", {
+                                        offset: "0%",
+                                        stopColor: avatarData.bgColor,
+                                        stopOpacity: "0.8"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                        lineNumber: 104,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("stop", {
+                                        offset: "100%",
+                                        stopColor: avatarData.secondaryColor,
+                                        stopOpacity: "0.9"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                        lineNumber: 105,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                lineNumber: 103,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("filter", {
+                                id: `glow-${seed}`,
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV("feGaussianBlur", {
+                                        stdDeviation: "2",
+                                        result: "coloredBlur"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                        lineNumber: 108,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("feMerge", {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("feMergeNode", {
+                                                in: "coloredBlur"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                                lineNumber: 110,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("feMergeNode", {
+                                                in: "SourceGraphic"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                                lineNumber: 111,
+                                                columnNumber: 15
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                        lineNumber: 109,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                lineNumber: 107,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                        lineNumber: 102,
+                        columnNumber: 9
+                    }, this),
+                    avatarData.pattern.map((row, y)=>row.map((cell, x)=>cell ? /*#__PURE__*/ _jsxDEV("rect", {
+                                x: x * cellSize,
+                                y: y * cellSize,
+                                width: cellSize,
+                                height: cellSize,
+                                fill: avatarData.primaryColor,
+                                opacity: "0.9",
+                                filter: `url(#glow-${seed})`
+                            }, `${x}-${y}`, false, {
+                                fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                                lineNumber: 120,
+                                columnNumber: 15
+                            }, this) : null)),
+                    /*#__PURE__*/ _jsxDEV("circle", {
+                        cx: size / 3,
+                        cy: size / 3,
+                        r: size / 4,
+                        fill: "white",
+                        opacity: "0.15"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                        lineNumber: 135,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                lineNumber: 87,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent pointer-events-none"
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+                lineNumber: 145,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+        lineNumber: 75,
+        columnNumber: 5
+    }, this);
+};
+_s(IdentityAvatar, "xIf5Qj36RUygdRtUwHJLF50hywc=");
+_c = IdentityAvatar;
+// Compact version for inline use
+export const IdentityAvatarSmall = (props)=>/*#__PURE__*/ _jsxDEV(IdentityAvatar, {
+        ...props,
+        size: 32
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+        lineNumber: 154,
+        columnNumber: 3
+    }, this);
+_c1 = IdentityAvatarSmall;
+// Large version for profile/settings
+export const IdentityAvatarLarge = (props)=>/*#__PURE__*/ _jsxDEV(IdentityAvatar, {
+        ...props,
+        size: 96
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx",
+        lineNumber: 159,
+        columnNumber: 3
+    }, this);
+_c2 = IdentityAvatarLarge;
+var _c, _c1, _c2;
+$RefreshReg$(_c, "IdentityAvatar");
+$RefreshReg$(_c1, "IdentityAvatarSmall");
+$RefreshReg$(_c2, "IdentityAvatarLarge");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/identity/IdentityAvatar.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIklkZW50aXR5QXZhdGFyLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlTWVtbyB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgY24gfSBmcm9tICdAL2xpYi91dGlscyc7XHJcblxyXG5pbnRlcmZhY2UgSWRlbnRpdHlBdmF0YXJQcm9wcyB7XHJcbiAgc2VlZDogc3RyaW5nO1xyXG4gIHNpemU/OiBudW1iZXI7XHJcbiAgY2xhc3NOYW1lPzogc3RyaW5nO1xyXG4gIGFuaW1hdGU/OiBib29sZWFuO1xyXG59XHJcblxyXG4vLyBHZW5lcmF0ZSBkZXRlcm1pbmlzdGljIGNvbG9yIGZyb20gc2VlZFxyXG5jb25zdCBzZWVkVG9Db2xvciA9IChzZWVkOiBzdHJpbmcsIGluZGV4OiBudW1iZXIpOiBzdHJpbmcgPT4ge1xyXG4gIGxldCBoYXNoID0gMDtcclxuICBjb25zdCBzdHIgPSBzZWVkICsgaW5kZXg7XHJcbiAgZm9yIChsZXQgaSA9IDA7IGkgPCBzdHIubGVuZ3RoOyBpKyspIHtcclxuICAgIGhhc2ggPSBzdHIuY2hhckNvZGVBdChpKSArICgoaGFzaCA8PCA1KSAtIGhhc2gpO1xyXG4gIH1cclxuICBcclxuICAvLyBHZW5lcmF0ZSB2aWJyYW50IGNvbG9ycyBpbiB0aGUgcHVycGxlLXBpbmsgc3BlY3RydW0gKG1hdGNoaW5nIE1vb2RpZnkgdGhlbWUpXHJcbiAgY29uc3QgaHVlID0gKGhhc2ggJSA2MCkgKyAyODA7IC8vIDI4MC0zNDAgcmFuZ2UgKHB1cnBsZSB0byBwaW5rKVxyXG4gIGNvbnN0IHNhdHVyYXRpb24gPSA2MCArIChoYXNoICUgMzApOyAvLyA2MC05MCVcclxuICBjb25zdCBsaWdodG5lc3MgPSA1MCArIChoYXNoICUgMjApOyAvLyA1MC03MCVcclxuICBcclxuICByZXR1cm4gYGhzbCgke2h1ZX0sICR7c2F0dXJhdGlvbn0lLCAke2xpZ2h0bmVzc30lKWA7XHJcbn07XHJcblxyXG4vLyBHZW5lcmF0ZSBwYXR0ZXJuIGdyaWQgZnJvbSBzZWVkXHJcbmNvbnN0IHNlZWRUb1BhdHRlcm4gPSAoc2VlZDogc3RyaW5nLCBncmlkU2l6ZTogbnVtYmVyID0gNSk6IGJvb2xlYW5bXVtdID0+IHtcclxuICBjb25zdCBwYXR0ZXJuOiBib29sZWFuW11bXSA9IFtdO1xyXG4gIGxldCBoYXNoID0gMDtcclxuICBcclxuICBmb3IgKGxldCBpID0gMDsgaSA8IHNlZWQubGVuZ3RoOyBpKyspIHtcclxuICAgIGhhc2ggPSBzZWVkLmNoYXJDb2RlQXQoaSkgKyAoKGhhc2ggPDwgNSkgLSBoYXNoKTtcclxuICB9XHJcbiAgXHJcbiAgLy8gR2VuZXJhdGUgc3ltbWV0cmljIHBhdHRlcm4gKG1pcnJvciBvbiBZIGF4aXMpXHJcbiAgY29uc3QgaGFsZlNpemUgPSBNYXRoLmNlaWwoZ3JpZFNpemUgLyAyKTtcclxuICBcclxuICBmb3IgKGxldCB5ID0gMDsgeSA8IGdyaWRTaXplOyB5KyspIHtcclxuICAgIHBhdHRlcm5beV0gPSBbXTtcclxuICAgIGZvciAobGV0IHggPSAwOyB4IDwgaGFsZlNpemU7IHgrKykge1xyXG4gICAgICBjb25zdCBpbmRleCA9IHkgKiBoYWxmU2l6ZSArIHg7XHJcbiAgICAgIGNvbnN0IHZhbHVlID0gKGhhc2ggPj4gaW5kZXgpICYgMTtcclxuICAgICAgcGF0dGVyblt5XVt4XSA9IHZhbHVlID09PSAxO1xyXG4gICAgICBcclxuICAgICAgLy8gTWlycm9yIGZvciBzeW1tZXRyeVxyXG4gICAgICBpZiAoeCAhPT0gaGFsZlNpemUgLSAxIHx8IGdyaWRTaXplICUgMiA9PT0gMCkge1xyXG4gICAgICAgIHBhdHRlcm5beV1bZ3JpZFNpemUgLSAxIC0geF0gPSB2YWx1ZSA9PT0gMTtcclxuICAgICAgfVxyXG4gICAgfVxyXG4gIH1cclxuICBcclxuICByZXR1cm4gcGF0dGVybjtcclxufTtcclxuXHJcbmV4cG9ydCBjb25zdCBJZGVudGl0eUF2YXRhcjogUmVhY3QuRkM8SWRlbnRpdHlBdmF0YXJQcm9wcz4gPSAoeyBcclxuICBzZWVkLCBcclxuICBzaXplID0gNDgsIFxyXG4gIGNsYXNzTmFtZSxcclxuICBhbmltYXRlID0gZmFsc2UgXHJcbn0pID0+IHtcclxuICBjb25zdCBhdmF0YXJEYXRhID0gdXNlTWVtbygoKSA9PiB7XHJcbiAgICBjb25zdCBncmlkU2l6ZSA9IDU7XHJcbiAgICBjb25zdCBwYXR0ZXJuID0gc2VlZFRvUGF0dGVybihzZWVkLCBncmlkU2l6ZSk7XHJcbiAgICBjb25zdCBwcmltYXJ5Q29sb3IgPSBzZWVkVG9Db2xvcihzZWVkLCAwKTtcclxuICAgIGNvbnN0IHNlY29uZGFyeUNvbG9yID0gc2VlZFRvQ29sb3Ioc2VlZCwgMSk7XHJcbiAgICBjb25zdCBiZ0NvbG9yID0gc2VlZFRvQ29sb3Ioc2VlZCwgMik7XHJcbiAgICBcclxuICAgIHJldHVybiB7IHBhdHRlcm4sIHByaW1hcnlDb2xvciwgc2Vjb25kYXJ5Q29sb3IsIGJnQ29sb3IsIGdyaWRTaXplIH07XHJcbiAgfSwgW3NlZWRdKTtcclxuXHJcbiAgY29uc3QgY2VsbFNpemUgPSBzaXplIC8gYXZhdGFyRGF0YS5ncmlkU2l6ZTtcclxuXHJcbiAgcmV0dXJuIChcclxuICAgIDxkaXZcclxuICAgICAgY2xhc3NOYW1lPXtjbihcclxuICAgICAgICAncmVsYXRpdmUgb3ZlcmZsb3ctaGlkZGVuIHJvdW5kZWQtZnVsbCBmbGV4LXNocmluay0wJyxcclxuICAgICAgICBhbmltYXRlICYmICdhbmltYXRlLXB1bHNlLXN1YnRsZScsXHJcbiAgICAgICAgY2xhc3NOYW1lXHJcbiAgICAgICl9XHJcbiAgICAgIHN0eWxlPXt7XHJcbiAgICAgICAgd2lkdGg6IHNpemUsXHJcbiAgICAgICAgaGVpZ2h0OiBzaXplLFxyXG4gICAgICAgIGJhY2tncm91bmQ6IGBsaW5lYXItZ3JhZGllbnQoMTM1ZGVnLCAke2F2YXRhckRhdGEuYmdDb2xvcn0sICR7YXZhdGFyRGF0YS5zZWNvbmRhcnlDb2xvcn0pYCxcclxuICAgICAgfX1cclxuICAgID5cclxuICAgICAgPHN2Z1xyXG4gICAgICAgIHdpZHRoPXtzaXplfVxyXG4gICAgICAgIGhlaWdodD17c2l6ZX1cclxuICAgICAgICB2aWV3Qm94PXtgMCAwICR7c2l6ZX0gJHtzaXplfWB9XHJcbiAgICAgICAgeG1sbnM9XCJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Z1wiXHJcbiAgICAgID5cclxuICAgICAgICB7LyogQmFja2dyb3VuZCBjaXJjbGUgKi99XHJcbiAgICAgICAgPGNpcmNsZVxyXG4gICAgICAgICAgY3g9e3NpemUgLyAyfVxyXG4gICAgICAgICAgY3k9e3NpemUgLyAyfVxyXG4gICAgICAgICAgcj17c2l6ZSAvIDJ9XHJcbiAgICAgICAgICBmaWxsPXtgdXJsKCNncmFkaWVudC0ke3NlZWR9KWB9XHJcbiAgICAgICAgLz5cclxuICAgICAgICBcclxuICAgICAgICB7LyogR3JhZGllbnQgZGVmaW5pdGlvbiAqL31cclxuICAgICAgICA8ZGVmcz5cclxuICAgICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD17YGdyYWRpZW50LSR7c2VlZH1gfSB4MT1cIjAlXCIgeTE9XCIwJVwiIHgyPVwiMTAwJVwiIHkyPVwiMTAwJVwiPlxyXG4gICAgICAgICAgICA8c3RvcCBvZmZzZXQ9XCIwJVwiIHN0b3BDb2xvcj17YXZhdGFyRGF0YS5iZ0NvbG9yfSBzdG9wT3BhY2l0eT1cIjAuOFwiIC8+XHJcbiAgICAgICAgICAgIDxzdG9wIG9mZnNldD1cIjEwMCVcIiBzdG9wQ29sb3I9e2F2YXRhckRhdGEuc2Vjb25kYXJ5Q29sb3J9IHN0b3BPcGFjaXR5PVwiMC45XCIgLz5cclxuICAgICAgICAgIDwvbGluZWFyR3JhZGllbnQ+XHJcbiAgICAgICAgICA8ZmlsdGVyIGlkPXtgZ2xvdy0ke3NlZWR9YH0+XHJcbiAgICAgICAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249XCIyXCIgcmVzdWx0PVwiY29sb3JlZEJsdXJcIi8+XHJcbiAgICAgICAgICAgIDxmZU1lcmdlPlxyXG4gICAgICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj1cImNvbG9yZWRCbHVyXCIvPlxyXG4gICAgICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj1cIlNvdXJjZUdyYXBoaWNcIi8+XHJcbiAgICAgICAgICAgIDwvZmVNZXJnZT5cclxuICAgICAgICAgIDwvZmlsdGVyPlxyXG4gICAgICAgIDwvZGVmcz5cclxuICAgICAgICBcclxuICAgICAgICB7LyogUGF0dGVybiBncmlkICovfVxyXG4gICAgICAgIHthdmF0YXJEYXRhLnBhdHRlcm4ubWFwKChyb3csIHkpID0+XHJcbiAgICAgICAgICByb3cubWFwKChjZWxsLCB4KSA9PlxyXG4gICAgICAgICAgICBjZWxsID8gKFxyXG4gICAgICAgICAgICAgIDxyZWN0XHJcbiAgICAgICAgICAgICAgICBrZXk9e2Ake3h9LSR7eX1gfVxyXG4gICAgICAgICAgICAgICAgeD17eCAqIGNlbGxTaXplfVxyXG4gICAgICAgICAgICAgICAgeT17eSAqIGNlbGxTaXplfVxyXG4gICAgICAgICAgICAgICAgd2lkdGg9e2NlbGxTaXplfVxyXG4gICAgICAgICAgICAgICAgaGVpZ2h0PXtjZWxsU2l6ZX1cclxuICAgICAgICAgICAgICAgIGZpbGw9e2F2YXRhckRhdGEucHJpbWFyeUNvbG9yfVxyXG4gICAgICAgICAgICAgICAgb3BhY2l0eT1cIjAuOVwiXHJcbiAgICAgICAgICAgICAgICBmaWx0ZXI9e2B1cmwoI2dsb3ctJHtzZWVkfSlgfVxyXG4gICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICkgOiBudWxsXHJcbiAgICAgICAgICApXHJcbiAgICAgICAgKX1cclxuICAgICAgICBcclxuICAgICAgICB7LyogT3ZlcmxheSBzaGluZSBlZmZlY3QgKi99XHJcbiAgICAgICAgPGNpcmNsZVxyXG4gICAgICAgICAgY3g9e3NpemUgLyAzfVxyXG4gICAgICAgICAgY3k9e3NpemUgLyAzfVxyXG4gICAgICAgICAgcj17c2l6ZSAvIDR9XHJcbiAgICAgICAgICBmaWxsPVwid2hpdGVcIlxyXG4gICAgICAgICAgb3BhY2l0eT1cIjAuMTVcIlxyXG4gICAgICAgIC8+XHJcbiAgICAgIDwvc3ZnPlxyXG4gICAgICBcclxuICAgICAgey8qIEdsYXNzIG92ZXJsYXkgKi99XHJcbiAgICAgIDxkaXYgXHJcbiAgICAgICAgY2xhc3NOYW1lPVwiYWJzb2x1dGUgaW5zZXQtMCByb3VuZGVkLWZ1bGwgYmctZ3JhZGllbnQtdG8tYnIgZnJvbS13aGl0ZS8yMCB0by10cmFuc3BhcmVudCBwb2ludGVyLWV2ZW50cy1ub25lXCJcclxuICAgICAgLz5cclxuICAgIDwvZGl2PlxyXG4gICk7XHJcbn07XHJcblxyXG4vLyBDb21wYWN0IHZlcnNpb24gZm9yIGlubGluZSB1c2VcclxuZXhwb3J0IGNvbnN0IElkZW50aXR5QXZhdGFyU21hbGw6IFJlYWN0LkZDPE9taXQ8SWRlbnRpdHlBdmF0YXJQcm9wcywgJ3NpemUnPj4gPSAocHJvcHMpID0+IChcclxuICA8SWRlbnRpdHlBdmF0YXIgey4uLnByb3BzfSBzaXplPXszMn0gLz5cclxuKTtcclxuXHJcbi8vIExhcmdlIHZlcnNpb24gZm9yIHByb2ZpbGUvc2V0dGluZ3NcclxuZXhwb3J0IGNvbnN0IElkZW50aXR5QXZhdGFyTGFyZ2U6IFJlYWN0LkZDPE9taXQ8SWRlbnRpdHlBdmF0YXJQcm9wcywgJ3NpemUnPj4gPSAocHJvcHMpID0+IChcclxuICA8SWRlbnRpdHlBdmF0YXIgey4uLnByb3BzfSBzaXplPXs5Nn0gLz5cclxuKTtcclxuXHJcbiJdLCJuYW1lcyI6WyJSZWFjdCIsInVzZU1lbW8iLCJjbiIsInNlZWRUb0NvbG9yIiwic2VlZCIsImluZGV4IiwiaGFzaCIsInN0ciIsImkiLCJsZW5ndGgiLCJjaGFyQ29kZUF0IiwiaHVlIiwic2F0dXJhdGlvbiIsImxpZ2h0bmVzcyIsInNlZWRUb1BhdHRlcm4iLCJncmlkU2l6ZSIsInBhdHRlcm4iLCJoYWxmU2l6ZSIsIk1hdGgiLCJjZWlsIiwieSIsIngiLCJ2YWx1ZSIsIklkZW50aXR5QXZhdGFyIiwic2l6ZSIsImNsYXNzTmFtZSIsImFuaW1hdGUiLCJhdmF0YXJEYXRhIiwicHJpbWFyeUNvbG9yIiwic2Vjb25kYXJ5Q29sb3IiLCJiZ0NvbG9yIiwiY2VsbFNpemUiLCJkaXYiLCJzdHlsZSIsIndpZHRoIiwiaGVpZ2h0IiwiYmFja2dyb3VuZCIsInN2ZyIsInZpZXdCb3giLCJ4bWxucyIsImNpcmNsZSIsImN4IiwiY3kiLCJyIiwiZmlsbCIsImRlZnMiLCJsaW5lYXJHcmFkaWVudCIsImlkIiwieDEiLCJ5MSIsIngyIiwieTIiLCJzdG9wIiwib2Zmc2V0Iiwic3RvcENvbG9yIiwic3RvcE9wYWNpdHkiLCJmaWx0ZXIiLCJmZUdhdXNzaWFuQmx1ciIsInN0ZERldmlhdGlvbiIsInJlc3VsdCIsImZlTWVyZ2UiLCJmZU1lcmdlTm9kZSIsImluIiwibWFwIiwicm93IiwiY2VsbCIsInJlY3QiLCJvcGFjaXR5IiwiSWRlbnRpdHlBdmF0YXJTbWFsbCIsInByb3BzIiwiSWRlbnRpdHlBdmF0YXJMYXJnZSJdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsT0FBT0EsU0FBU0MsT0FBTyxRQUFRLFFBQVE7QUFDdkMsU0FBU0MsRUFBRSxRQUFRLGNBQWM7QUFTakMseUNBQXlDO0FBQ3pDLE1BQU1DLGNBQWMsQ0FBQ0MsTUFBY0M7SUFDakMsSUFBSUMsT0FBTztJQUNYLE1BQU1DLE1BQU1ILE9BQU9DO0lBQ25CLElBQUssSUFBSUcsSUFBSSxHQUFHQSxJQUFJRCxJQUFJRSxNQUFNLEVBQUVELElBQUs7UUFDbkNGLE9BQU9DLElBQUlHLFVBQVUsQ0FBQ0YsS0FBTSxDQUFBLEFBQUNGLENBQUFBLFFBQVEsQ0FBQSxJQUFLQSxJQUFHO0lBQy9DO0lBRUEsK0VBQStFO0lBQy9FLE1BQU1LLE1BQU0sQUFBQ0wsT0FBTyxLQUFNLEtBQUssaUNBQWlDO0lBQ2hFLE1BQU1NLGFBQWEsS0FBTU4sT0FBTyxJQUFLLFNBQVM7SUFDOUMsTUFBTU8sWUFBWSxLQUFNUCxPQUFPLElBQUssU0FBUztJQUU3QyxPQUFPLENBQUMs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

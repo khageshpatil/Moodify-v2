@@ -1,0 +1,26 @@
+console.log('starting-react-cdp');
+const response = await fetch('http://127.0.0.1:9222/json/new?http://127.0.0.1:8080/', { method: 'PUT' });
+console.log('target-status', response.status);
+const target = await response.json();
+const socket = new WebSocket(target.webSocketDebuggerUrl);
+let id = 0; const pending = new Map();
+socket.addEventListener('message', (event) => { const message = JSON.parse(event.data); const resolver = pending.get(message.id); if (resolver) { pending.delete(message.id); resolver(message); } });
+await new Promise((resolve, reject) => { socket.addEventListener('open', resolve, { once: true }); socket.addEventListener('error', reject, { once: true }); });
+const command = (method, params = {}) => new Promise((resolve, reject) => { const requestId = ++id; pending.set(requestId, (message) => message.error ? reject(new Error(JSON.stringify(message.error))) : resolve(message.result)); socket.send(JSON.stringify({ id: requestId, method, params })); });
+await command('Runtime.enable');
+const result = await command('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  const visible = (selector) => [...document.querySelectorAll(selector)].find((item) => item.offsetParent !== null);
+  const nav = [...document.querySelectorAll('button')].find((item) => item.textContent?.trim() === 'Search' && item.offsetParent !== null); nav?.click();
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const input = visible('input[placeholder^="Search for songs"]');
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  setter.call(input, 'The Weeknd Blinding Lights'); input.dispatchEvent(new Event('input', { bubbles: true }));
+  visible('button') && [...document.querySelectorAll('button')].find((item) => item.textContent?.trim() === 'Search' && item.offsetParent !== null)?.click();
+  await new Promise((resolve) => setTimeout(resolve, 7000));
+  [...document.querySelectorAll('button')].find((item) => item.textContent?.trim() === 'Play' && item.offsetParent !== null)?.click();
+  await new Promise((resolve) => setTimeout(resolve, 35000));
+  const engine = window.__moodifyPlaybackEngine;
+  return { status: engine?.getSnapshot().status, currentTime: engine?.getSnapshot().currentTime, duration: engine?.getSnapshot().duration, error: engine?.getSnapshot().error, audioElements: document.querySelectorAll('audio').length, mediaRequests: performance.getEntriesByType('resource').filter((entry) => entry.name.includes('/api/media/')).map((entry) => entry.name) };
+})()` });
+console.log(JSON.stringify(result.result?.value || result.exceptionDetails, null, 2));
+socket.close();

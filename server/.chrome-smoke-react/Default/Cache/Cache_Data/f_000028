@@ -1,0 +1,262 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/ui/loading.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/ui/loading.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const React = __vite__cjsImport3_react.__esModule ? __vite__cjsImport3_react.default : __vite__cjsImport3_react;
+import { Loader2, Music, Heart, Users, Search } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+export const LoadingState = ({ type = 'default', message = 'Loading...', size = 'md' })=>{
+    const sizeClasses = {
+        sm: 'w-4 h-4',
+        md: 'w-8 h-8',
+        lg: 'w-12 h-12'
+    };
+    const getIcon = ()=>{
+        switch(type){
+            case 'music':
+                return /*#__PURE__*/ _jsxDEV(Music, {
+                    className: `${sizeClasses[size]} animate-pulse text-primary`
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                    lineNumber: 24,
+                    columnNumber: 16
+                }, this);
+            case 'search':
+                return /*#__PURE__*/ _jsxDEV(Search, {
+                    className: `${sizeClasses[size]} animate-spin text-secondary`
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                    lineNumber: 26,
+                    columnNumber: 16
+                }, this);
+            case 'social':
+                return /*#__PURE__*/ _jsxDEV(Users, {
+                    className: `${sizeClasses[size]} animate-bounce text-accent`
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                    lineNumber: 28,
+                    columnNumber: 16
+                }, this);
+            case 'playlist':
+                return /*#__PURE__*/ _jsxDEV(Heart, {
+                    className: `${sizeClasses[size]} animate-pulse text-mood-love`
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                    lineNumber: 30,
+                    columnNumber: 16
+                }, this);
+            default:
+                return /*#__PURE__*/ _jsxDEV(Loader2, {
+                    className: `${sizeClasses[size]} animate-spin text-primary`
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                    lineNumber: 32,
+                    columnNumber: 16
+                }, this);
+        }
+    };
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "flex flex-col items-center justify-center p-8 space-y-4",
+        children: [
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "relative",
+                children: [
+                    getIcon(),
+                    /*#__PURE__*/ _jsxDEV("div", {
+                        className: "absolute inset-0 animate-ping opacity-25",
+                        children: getIcon()
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                        lineNumber: 40,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                lineNumber: 38,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV("p", {
+                className: "text-sm text-muted-foreground animate-pulse",
+                children: message
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                lineNumber: 44,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+        lineNumber: 37,
+        columnNumber: 5
+    }, this);
+};
+_c = LoadingState;
+export const Skeleton = ({ className = '', variant = 'text' })=>{
+    const baseClasses = 'animate-pulse bg-gradient-to-r from-muted via-muted/50 to-muted';
+    const variantClasses = {
+        text: 'h-4 rounded',
+        circular: 'rounded-full',
+        rectangular: 'rounded-md'
+    };
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: `${baseClasses} ${variantClasses[variant]} ${className}`
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+        lineNumber: 64,
+        columnNumber: 5
+    }, this);
+};
+_c1 = Skeleton;
+export const TrackSkeleton = ()=>/*#__PURE__*/ _jsxDEV("div", {
+        className: "flex items-center gap-3 p-3 animate-pulse",
+        children: [
+            /*#__PURE__*/ _jsxDEV(Skeleton, {
+                variant: "circular",
+                className: "w-12 h-12"
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                lineNumber: 70,
+                columnNumber: 5
+            }, this),
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "flex-1 space-y-2",
+                children: [
+                    /*#__PURE__*/ _jsxDEV(Skeleton, {
+                        className: "h-4 w-3/4"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                        lineNumber: 72,
+                        columnNumber: 7
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(Skeleton, {
+                        className: "h-3 w-1/2"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                        lineNumber: 73,
+                        columnNumber: 7
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                lineNumber: 71,
+                columnNumber: 5
+            }, this),
+            /*#__PURE__*/ _jsxDEV(Skeleton, {
+                className: "h-8 w-16"
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                lineNumber: 75,
+                columnNumber: 5
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+        lineNumber: 69,
+        columnNumber: 3
+    }, this);
+_c2 = TrackSkeleton;
+export const PlaylistSkeleton = ()=>/*#__PURE__*/ _jsxDEV("div", {
+        className: "space-y-4 animate-pulse",
+        children: [
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "flex items-center gap-3",
+                children: [
+                    /*#__PURE__*/ _jsxDEV(Skeleton, {
+                        variant: "rectangular",
+                        className: "w-16 h-16"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                        lineNumber: 82,
+                        columnNumber: 7
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV("div", {
+                        className: "space-y-2",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Skeleton, {
+                                className: "h-6 w-48"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                                lineNumber: 84,
+                                columnNumber: 9
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(Skeleton, {
+                                className: "h-4 w-32"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                                lineNumber: 85,
+                                columnNumber: 9
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                        lineNumber: 83,
+                        columnNumber: 7
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                lineNumber: 81,
+                columnNumber: 5
+            }, this),
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "space-y-2",
+                children: Array.from({
+                    length: 3
+                }).map((_, i)=>/*#__PURE__*/ _jsxDEV(TrackSkeleton, {}, i, false, {
+                        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                        lineNumber: 90,
+                        columnNumber: 9
+                    }, this))
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+                lineNumber: 88,
+                columnNumber: 5
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/ui/loading.tsx",
+        lineNumber: 80,
+        columnNumber: 3
+    }, this);
+_c3 = PlaylistSkeleton;
+var _c, _c1, _c2, _c3;
+$RefreshReg$(_c, "LoadingState");
+$RefreshReg$(_c1, "Skeleton");
+$RefreshReg$(_c2, "TrackSkeleton");
+$RefreshReg$(_c3, "PlaylistSkeleton");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/ui/loading.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/ui/loading.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImxvYWRpbmcudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XHJcbmltcG9ydCB7IExvYWRlcjIsIE11c2ljLCBIZWFydCwgVXNlcnMsIFNlYXJjaCB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XHJcblxyXG5pbnRlcmZhY2UgTG9hZGluZ1N0YXRlUHJvcHMge1xyXG4gIHR5cGU/OiAnZGVmYXVsdCcgfCAnbXVzaWMnIHwgJ3NlYXJjaCcgfCAnc29jaWFsJyB8ICdwbGF5bGlzdCc7XHJcbiAgbWVzc2FnZT86IHN0cmluZztcclxuICBzaXplPzogJ3NtJyB8ICdtZCcgfCAnbGcnO1xyXG59XHJcblxyXG5leHBvcnQgY29uc3QgTG9hZGluZ1N0YXRlID0gKHsgXHJcbiAgdHlwZSA9ICdkZWZhdWx0JywgXHJcbiAgbWVzc2FnZSA9ICdMb2FkaW5nLi4uJywgXHJcbiAgc2l6ZSA9ICdtZCcgXHJcbn06IExvYWRpbmdTdGF0ZVByb3BzKSA9PiB7XHJcbiAgY29uc3Qgc2l6ZUNsYXNzZXMgPSB7XHJcbiAgICBzbTogJ3ctNCBoLTQnLFxyXG4gICAgbWQ6ICd3LTggaC04JyxcclxuICAgIGxnOiAndy0xMiBoLTEyJ1xyXG4gIH07XHJcblxyXG4gIGNvbnN0IGdldEljb24gPSAoKSA9PiB7XHJcbiAgICBzd2l0Y2ggKHR5cGUpIHtcclxuICAgICAgY2FzZSAnbXVzaWMnOlxyXG4gICAgICAgIHJldHVybiA8TXVzaWMgY2xhc3NOYW1lPXtgJHtzaXplQ2xhc3Nlc1tzaXplXX0gYW5pbWF0ZS1wdWxzZSB0ZXh0LXByaW1hcnlgfSAvPjtcclxuICAgICAgY2FzZSAnc2VhcmNoJzpcclxuICAgICAgICByZXR1cm4gPFNlYXJjaCBjbGFzc05hbWU9e2Ake3NpemVDbGFzc2VzW3NpemVdfSBhbmltYXRlLXNwaW4gdGV4dC1zZWNvbmRhcnlgfSAvPjtcclxuICAgICAgY2FzZSAnc29jaWFsJzpcclxuICAgICAgICByZXR1cm4gPFVzZXJzIGNsYXNzTmFtZT17YCR7c2l6ZUNsYXNzZXNbc2l6ZV19IGFuaW1hdGUtYm91bmNlIHRleHQtYWNjZW50YH0gLz47XHJcbiAgICAgIGNhc2UgJ3BsYXlsaXN0JzpcclxuICAgICAgICByZXR1cm4gPEhlYXJ0IGNsYXNzTmFtZT17YCR7c2l6ZUNsYXNzZXNbc2l6ZV19IGFuaW1hdGUtcHVsc2UgdGV4dC1tb29kLWxvdmVgfSAvPjtcclxuICAgICAgZGVmYXVsdDpcclxuICAgICAgICByZXR1cm4gPExvYWRlcjIgY2xhc3NOYW1lPXtgJHtzaXplQ2xhc3Nlc1tzaXplXX0gYW5pbWF0ZS1zcGluIHRleHQtcHJpbWFyeWB9IC8+O1xyXG4gICAgfVxyXG4gIH07XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC1jb2wgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHAtOCBzcGFjZS15LTRcIj5cclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZVwiPlxyXG4gICAgICAgIHtnZXRJY29uKCl9XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhYnNvbHV0ZSBpbnNldC0wIGFuaW1hdGUtcGluZyBvcGFjaXR5LTI1XCI+XHJcbiAgICAgICAgICB7Z2V0SWNvbigpfVxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L2Rpdj5cclxuICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQgYW5pbWF0ZS1wdWxzZVwiPnttZXNzYWdlfTwvcD5cclxuICAgIDwvZGl2PlxyXG4gICk7XHJcbn07XHJcblxyXG5pbnRlcmZhY2UgU2tlbGV0b25Qcm9wcyB7XHJcbiAgY2xhc3NOYW1lPzogc3RyaW5nO1xyXG4gIHZhcmlhbnQ/OiAndGV4dCcgfCAnY2lyY3VsYXInIHwgJ3JlY3Rhbmd1bGFyJztcclxufVxyXG5cclxuZXhwb3J0IGNvbnN0IFNrZWxldG9uID0gKHsgY2xhc3NOYW1lID0gJycsIHZhcmlhbnQgPSAndGV4dCcgfTogU2tlbGV0b25Qcm9wcykgPT4ge1xyXG4gIGNvbnN0IGJhc2VDbGFzc2VzID0gJ2FuaW1hdGUtcHVsc2UgYmctZ3JhZGllbnQtdG8tciBmcm9tLW11dGVkIHZpYS1tdXRlZC81MCB0by1tdXRlZCc7XHJcbiAgXHJcbiAgY29uc3QgdmFyaWFudENsYXNzZXMgPSB7XHJcbiAgICB0ZXh0OiAnaC00IHJvdW5kZWQnLFxyXG4gICAgY2lyY3VsYXI6ICdyb3VuZGVkLWZ1bGwnLFxyXG4gICAgcmVjdGFuZ3VsYXI6ICdyb3VuZGVkLW1kJ1xyXG4gIH07XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8ZGl2IGNsYXNzTmFtZT17YCR7YmFzZUNsYXNzZXN9ICR7dmFyaWFudENsYXNzZXNbdmFyaWFudF19ICR7Y2xhc3NOYW1lfWB9IC8+XHJcbiAgKTtcclxufTtcclxuXHJcbmV4cG9ydCBjb25zdCBUcmFja1NrZWxldG9uID0gKCkgPT4gKFxyXG4gIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcC0zIGFuaW1hdGUtcHVsc2VcIj5cclxuICAgIDxTa2VsZXRvbiB2YXJpYW50PVwiY2lyY3VsYXJcIiBjbGFzc05hbWU9XCJ3LTEyIGgtMTJcIiAvPlxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4LTEgc3BhY2UteS0yXCI+XHJcbiAgICAgIDxTa2VsZXRvbiBjbGFzc05hbWU9XCJoLTQgdy0zLzRcIiAvPlxyXG4gICAgICA8U2tlbGV0b24gY2xhc3NOYW1lPVwiaC0zIHctMS8yXCIgLz5cclxuICAgIDwvZGl2PlxyXG4gICAgPFNrZWxldG9uIGNsYXNzTmFtZT1cImgtOCB3LTE2XCIgLz5cclxuICA8L2Rpdj5cclxuKTtcclxuXHJcbmV4cG9ydCBjb25zdCBQbGF5bGlzdFNrZWxldG9uID0gKCkgPT4gKFxyXG4gIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00IGFuaW1hdGUtcHVsc2VcIj5cclxuICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTNcIj5cclxuICAgICAgPFNrZWxldG9uIHZhcmlhbnQ9XCJyZWN0YW5ndWxhclwiIGNsYXNzTmFtZT1cInctMTYgaC0xNlwiIC8+XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XHJcbiAgICAgICAgPFNrZWxldG9uIGNsYXNzTmFtZT1cImgtNiB3LTQ4XCIgLz5cclxuICAgICAgICA8U2tlbGV0b24gY2xhc3NOYW1lPVwiaC00IHctMzJcIiAvPlxyXG4gICAgICA8L2Rpdj5cclxuICAgIDwvZGl2PlxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cclxuICAgICAge0FycmF5LmZyb20oeyBsZW5ndGg6IDMgfSkubWFwKChfLCBpKSA9PiAoXHJcbiAgICAgICAgPFRyYWNrU2tlbGV0b24ga2V5PXtpfSAvPlxyXG4gICAgICApKX1cclxuICAgIDwvZGl2PlxyXG4gIDwvZGl2PlxyXG4pO1xyXG4iXSwibmFtZXMiOlsiUmVhY3QiLCJMb2FkZXIyIiwiTXVzaWMiLCJIZWFydCIsIlVzZXJzIiwiU2VhcmNoIiwiTG9hZGluZ1N0YXRlIiwidHlwZSIsIm1lc3NhZ2UiLCJzaXplIiwic2l6ZUNsYXNzZXMiLCJzbSIsIm1kIiwibGciLCJnZXRJY29uIiwiY2xhc3NOYW1lIiwiZGl2IiwicCIsIlNrZWxldG9uIiwidmFyaWFudCIsImJhc2VDbGFzc2VzIiwidmFyaWFudENsYXNzZXMiLCJ0ZXh0IiwiY2lyY3VsYXIiLCJyZWN0YW5ndWxhciIsIlRyYWNrU2tlbGV0b24iLCJQbGF5bGlzdFNrZWxldG9uIiwiQXJyYXkiLCJmcm9tIiwibGVuZ3RoIiwibWFwIiwiXyIsImkiXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsT0FBT0EsV0FBVyxRQUFRO0FBQzFCLFNBQVNDLE9BQU8sRUFBRUMsS0FBSyxFQUFFQyxLQUFLLEVBQUVDLEtBQUssRUFBRUMsTUFBTSxRQUFRLGVBQWU7QUFRcEUsT0FBTyxNQUFNQyxlQUFlLENBQUMsRUFDM0JDLE9BQU8sU0FBUyxF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

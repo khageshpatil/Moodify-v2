@@ -1,0 +1,540 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/ChatDialog.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/ChatDialog.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"]; const _Fragment = __vite__cjsImport2_react_jsxDevRuntime["Fragment"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"]; const useRef = __vite__cjsImport3_react["useRef"];
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "/src/components/ui/dialog.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Input } from "/src/components/ui/input.tsx";
+import { ScrollArea } from "/src/components/ui/scroll-area.tsx";
+import { IdentityAvatar } from "/src/components/identity/IdentityAvatar.tsx";
+import { Badge } from "/src/components/ui/badge.tsx";
+import { Alert, AlertDescription } from "/src/components/ui/alert.tsx";
+import { Send, Wifi, WifiOff, Clock, Check, CheckCheck, AlertCircle } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { useFriends } from "/src/hooks/useFriends.ts";
+export const ChatDialog = ({ open, onOpenChange, friendId, identity })=>{
+    _s();
+    const { friends, getChatHistory, sendMessage, markMessagesAsRead } = useFriends(identity);
+    const [messageText, setMessageText] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const scrollRef = useRef(null);
+    const inputRef = useRef(null);
+    // Get friend data
+    const friend = friendId ? friends.find((f)=>f.id === friendId) : null;
+    const chatHistory = friendId ? getChatHistory(friendId) : [];
+    // Auto-scroll to bottom on new messages
+    useEffect(()=>{
+        if (scrollRef.current) {
+            scrollRef.current.scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+    }, [
+        chatHistory
+    ]);
+    // Mark messages as read when dialog opens
+    useEffect(()=>{
+        if (open && friendId) {
+            markMessagesAsRead(friendId);
+        }
+    }, [
+        open,
+        friendId,
+        markMessagesAsRead
+    ]);
+    // Focus input when dialog opens
+    useEffect(()=>{
+        if (open && inputRef.current) {
+            setTimeout(()=>inputRef.current?.focus(), 100);
+        }
+    }, [
+        open
+    ]);
+    const handleSendMessage = async ()=>{
+        if (!friendId || !messageText.trim()) return;
+        const text = messageText.trim();
+        setMessageText('');
+        setIsSending(true);
+        try {
+            await sendMessage(friendId, text);
+        } catch (error) {
+            console.error('Failed to send message:', error);
+        } finally{
+            setIsSending(false);
+        }
+    };
+    const handleKeyPress = (e)=>{
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
+    const formatTime = (timestamp)=>{
+        const date = new Date(timestamp);
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+        if (isToday) {
+            return date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isYesterday = date.toDateString() === yesterday.toDateString();
+        if (isYesterday) {
+            return `Yesterday ${date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            })}`;
+        }
+        return date.toLocaleDateString([], {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+    const getDeliveryIcon = (message)=>{
+        if (message.senderId !== identity.anonId) return null;
+        switch(message.status){
+            case 'read':
+                return /*#__PURE__*/ _jsxDEV(CheckCheck, {
+                    className: "w-3 h-3 text-blue-500"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 116,
+                    columnNumber: 16
+                }, this);
+            case 'delivered':
+                return /*#__PURE__*/ _jsxDEV(CheckCheck, {
+                    className: "w-3 h-3 text-muted-foreground"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 118,
+                    columnNumber: 16
+                }, this);
+            case 'sent':
+                return /*#__PURE__*/ _jsxDEV(Check, {
+                    className: "w-3 h-3 text-muted-foreground"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 120,
+                    columnNumber: 16
+                }, this);
+            case 'sending':
+                return /*#__PURE__*/ _jsxDEV(Clock, {
+                    className: "w-3 h-3 text-muted-foreground animate-pulse"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 122,
+                    columnNumber: 16
+                }, this);
+            case 'failed':
+                return /*#__PURE__*/ _jsxDEV(AlertCircle, {
+                    className: "w-3 h-3 text-red-500"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 124,
+                    columnNumber: 16
+                }, this);
+            default:
+                return /*#__PURE__*/ _jsxDEV(Check, {
+                    className: "w-3 h-3 text-muted-foreground"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 126,
+                    columnNumber: 16
+                }, this);
+        }
+    };
+    if (!friend) {
+        return null;
+    }
+    return /*#__PURE__*/ _jsxDEV(Dialog, {
+        open: open,
+        onOpenChange: onOpenChange,
+        children: /*#__PURE__*/ _jsxDEV(DialogContent, {
+            className: "sm:max-w-[600px] h-[80vh] flex flex-col p-0",
+            children: [
+                /*#__PURE__*/ _jsxDEV(DialogHeader, {
+                    className: "p-6 pb-4 border-b",
+                    children: /*#__PURE__*/ _jsxDEV("div", {
+                        className: "flex items-center gap-4",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "relative",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(IdentityAvatar, {
+                                        seed: friend.avatar,
+                                        size: 48,
+                                        className: "w-12 h-12"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                        lineNumber: 141,
+                                        columnNumber: 15
+                                    }, this),
+                                    friend.isOnline && /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                        lineNumber: 147,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                lineNumber: 140,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "flex-1 min-w-0",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(DialogTitle, {
+                                        className: "text-xl",
+                                        children: friend.displayName
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                        lineNumber: 152,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center gap-2 mt-1",
+                                        children: [
+                                            friend.isOnline ? /*#__PURE__*/ _jsxDEV(Badge, {
+                                                variant: "default",
+                                                className: "bg-green-500",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(Wifi, {
+                                                        className: "w-3 h-3 mr-1"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                        lineNumber: 158,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    "Online"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                lineNumber: 157,
+                                                columnNumber: 19
+                                            }, this) : /*#__PURE__*/ _jsxDEV(Badge, {
+                                                variant: "secondary",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(WifiOff, {
+                                                        className: "w-3 h-3 mr-1"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                        lineNumber: 163,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    "Offline"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                lineNumber: 162,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                className: "text-xs text-muted-foreground font-mono",
+                                                children: friend.peerCode
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                lineNumber: 167,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                        lineNumber: 155,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                lineNumber: 151,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                        lineNumber: 139,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 138,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                    className: "flex-1 p-6",
+                    children: /*#__PURE__*/ _jsxDEV("div", {
+                        className: "space-y-4",
+                        children: chatHistory.length === 0 ? /*#__PURE__*/ _jsxDEV(Alert, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(AlertCircle, {
+                                    className: "h-4 w-4"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                    lineNumber: 180,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(AlertDescription, {
+                                    children: "No messages yet. Start the conversation!"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                    lineNumber: 181,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                            lineNumber: 179,
+                            columnNumber: 15
+                        }, this) : /*#__PURE__*/ _jsxDEV(_Fragment, {
+                            children: [
+                                chatHistory.map((message, index)=>{
+                                    const isMe = message.senderId === identity.anonId;
+                                    const showAvatar = index === 0 || chatHistory[index - 1].senderId !== message.senderId;
+                                    const showTime = index === chatHistory.length - 1 || chatHistory[index + 1].senderId !== message.senderId || chatHistory[index + 1].timestamp - message.timestamp > 300000; // 5 minutes
+                                    return /*#__PURE__*/ _jsxDEV("div", {
+                                        className: `flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`,
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "w-8 h-8 flex-shrink-0",
+                                                children: showAvatar && /*#__PURE__*/ _jsxDEV(IdentityAvatar, {
+                                                    seed: isMe ? identity.avatarSeed : friend.avatar,
+                                                    size: 32,
+                                                    className: "w-8 h-8"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                    lineNumber: 202,
+                                                    columnNumber: 27
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                lineNumber: 200,
+                                                columnNumber: 23
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: `flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%]`,
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: `rounded-2xl px-4 py-2 ${isMe ? 'bg-primary text-primary-foreground' : 'bg-muted'}`,
+                                                        children: [
+                                                            message.text && /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-sm whitespace-pre-wrap break-words",
+                                                                children: message.text
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                                lineNumber: 220,
+                                                                columnNumber: 29
+                                                            }, this),
+                                                            message.attachments && message.attachments.length > 0 && /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-xs opacity-70 mt-1",
+                                                                children: "[Media message - viewer coming soon]"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                                lineNumber: 226,
+                                                                columnNumber: 29
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                        lineNumber: 212,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    showTime && /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: `flex items-center gap-1 mt-1 px-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`,
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-xs text-muted-foreground",
+                                                                children: formatTime(message.timestamp)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                                lineNumber: 234,
+                                                                columnNumber: 29
+                                                            }, this),
+                                                            getDeliveryIcon(message)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                        lineNumber: 233,
+                                                        columnNumber: 27
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                                lineNumber: 211,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, message.id, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                        lineNumber: 195,
+                                        columnNumber: 21
+                                    }, this);
+                                }),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    ref: scrollRef
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                    lineNumber: 244,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                        lineNumber: 177,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 176,
+                    columnNumber: 9
+                }, this),
+                !friend.isOnline && /*#__PURE__*/ _jsxDEV("div", {
+                    className: "px-6",
+                    children: /*#__PURE__*/ _jsxDEV(Alert, {
+                        variant: "default",
+                        className: "bg-yellow-500/10 border-yellow-500/20",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Clock, {
+                                className: "h-4 w-4 text-yellow-500"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                lineNumber: 254,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(AlertDescription, {
+                                className: "text-yellow-700 dark:text-yellow-400",
+                                children: "Friend is offline. Messages will be delivered when they come online."
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                lineNumber: 255,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                        lineNumber: 253,
+                        columnNumber: 13
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 252,
+                    columnNumber: 11
+                }, this),
+                /*#__PURE__*/ _jsxDEV("div", {
+                    className: "p-6 pt-4 border-t",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "flex gap-2",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(Input, {
+                                    ref: inputRef,
+                                    placeholder: friend.isOnline ? 'Type a message...' : 'Friend is offline',
+                                    value: messageText,
+                                    onChange: (e)=>setMessageText(e.target.value),
+                                    onKeyPress: handleKeyPress,
+                                    disabled: isSending,
+                                    className: "flex-1"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                    lineNumber: 265,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(Button, {
+                                    onClick: handleSendMessage,
+                                    disabled: isSending || !messageText.trim(),
+                                    size: "icon",
+                                    children: /*#__PURE__*/ _jsxDEV(Send, {
+                                        className: "w-4 h-4"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                        lineNumber: 279,
+                                        columnNumber: 15
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                                    lineNumber: 274,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                            lineNumber: 264,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV("p", {
+                            className: "text-xs text-muted-foreground mt-2",
+                            children: "🔒 End-to-end encrypted via P2P. Press Enter to send."
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                            lineNumber: 282,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+                    lineNumber: 263,
+                    columnNumber: 9
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+            lineNumber: 136,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/ChatDialog.tsx",
+        lineNumber: 135,
+        columnNumber: 5
+    }, this);
+};
+_s(ChatDialog, "B2ghv2V/PhQGfwWHtvQE4mGTdNg=", false, function() {
+    return [
+        useFriends
+    ];
+});
+_c = ChatDialog;
+var _c;
+$RefreshReg$(_c, "ChatDialog");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/ChatDialog.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/ChatDialog.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkNoYXREaWFsb2cudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QsIHVzZVJlZiB9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IERpYWxvZywgRGlhbG9nQ29udGVudCwgRGlhbG9nSGVhZGVyLCBEaWFsb2dUaXRsZSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9kaWFsb2cnO1xuaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2J1dHRvbic7XG5pbXBvcnQgeyBJbnB1dCB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9pbnB1dCc7XG5pbXBvcnQgeyBTY3JvbGxBcmVhIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL3Njcm9sbC1hcmVhJztcbmltcG9ydCB7IEF2YXRhciwgQXZhdGFyRmFsbGJhY2ssIEF2YXRhckltYWdlIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2F2YXRhcic7XG5pbXBvcnQgeyBJZGVudGl0eUF2YXRhciB9IGZyb20gJ0AvY29tcG9uZW50cy9pZGVudGl0eS9JZGVudGl0eUF2YXRhcic7XG5pbXBvcnQgeyBCYWRnZSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9iYWRnZSc7XG5pbXBvcnQgeyBBbGVydCwgQWxlcnREZXNjcmlwdGlvbiB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9hbGVydCc7XG5pbXBvcnQge1xuICBTZW5kLFxuICBVc2VyLFxuICBXaWZpLFxuICBXaWZpT2ZmLFxuICBDbG9jayxcbiAgQ2hlY2ssXG4gIENoZWNrQ2hlY2ssXG4gIEFsZXJ0Q2lyY2xlXG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5pbXBvcnQgeyB1c2VGcmllbmRzLCBDaGF0TWVzc2FnZSB9IGZyb20gJ0AvaG9va3MvdXNlRnJpZW5kcyc7XG5pbXBvcnQgeyBNb29kaWZ5SWRlbnRpdHkgfSBmcm9tICdAL2hvb2tzL3VzZUFub255bW91c0lkZW50aXR5JztcblxuaW50ZXJmYWNlIENoYXREaWFsb2dQcm9wcyB7XG4gIG9wZW46IGJvb2xlYW47XG4gIG9uT3BlbkNoYW5nZTogKG9wZW46IGJvb2xlYW4pID0+IHZvaWQ7XG4gIGZyaWVuZElkOiBzdHJpbmcgfCBudWxsO1xuICBpZGVudGl0eTogTW9vZGlmeUlkZW50aXR5O1xufVxuXG5leHBvcnQgY29uc3QgQ2hhdERpYWxvZyA9ICh7IG9wZW4sIG9uT3BlbkNoYW5nZSwgZnJpZW5kSWQsIGlkZW50aXR5IH06IENoYXREaWFsb2dQcm9wcykgPT4ge1xuICBjb25zdCB7XG4gICAgZnJpZW5kcyxcbiAgICBnZXRDaGF0SGlzdG9yeSxcbiAgICBzZW5kTWVzc2FnZSxcbiAgICBtYXJrTWVzc2FnZXNBc1JlYWRcbiAgfSA9IHVzZUZyaWVuZHMoaWRlbnRpdHkpO1xuXG4gIGNvbnN0IFttZXNzYWdlVGV4dCwgc2V0TWVzc2FnZVRleHRdID0gdXNlU3RhdGUoJycpO1xuICBjb25zdCBbaXNTZW5kaW5nLCBzZXRJc1NlbmRpbmddID0gdXNlU3RhdGUoZmFsc2UpO1xuICBjb25zdCBzY3JvbGxSZWYgPSB1c2VSZWY8SFRNTERpdkVsZW1lbnQ+KG51bGwpO1xuICBjb25zdCBpbnB1dFJlZiA9IHVzZVJlZjxIVE1MSW5wdXRFbGVtZW50PihudWxsKTtcblxuICAvLyBHZXQgZnJpZW5kIGRhdGFcbiAgY29uc3QgZnJpZW5kID0gZnJpZW5kSWQgPyBmcmllbmRzLmZpbmQoZiA9PiBmLmlkID09PSBmcmllbmRJZCkgOiBudWxsO1xuICBjb25zdCBjaGF0SGlzdG9yeSA9IGZyaWVuZElkID8gZ2V0Q2hhdEhpc3RvcnkoZnJpZW5kSWQpIDogW107XG5cbiAgLy8gQXV0by1zY3JvbGwgdG8gYm90dG9tIG9uIG5ldyBtZXNzYWdlc1xuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIGlmIChzY3JvbGxSZWYuY3VycmVudCkge1xuICAgICAgc2Nyb2xsUmVmLmN1cnJlbnQuc2Nyb2xsSW50b1ZpZXcoeyBiZWhhdmlvcjogJ3Ntb290aCcgfSk7XG4gICAgfVxuICB9LCBbY2hhdEhpc3RvcnldKTtcblxuICAvLyBNYXJrIG1lc3NhZ2VzIGFzIHJlYWQgd2hlbiBkaWFsb2cgb3BlbnNcbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAob3BlbiAmJiBmcmllbmRJZCkge1xuICAgICAgbWFya01lc3NhZ2VzQXNSZWFkKGZyaWVuZElkKTtcbiAgICB9XG4gIH0sIFtvcGVuLCBmcmllbmRJZCwgbWFya01lc3NhZ2VzQXNSZWFkXSk7XG5cbiAgLy8gRm9jdXMgaW5wdXQgd2hlbiBkaWFsb2cgb3BlbnNcbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAob3BlbiAmJiBpbnB1dFJlZi5jdXJyZW50KSB7XG4gICAgICBzZXRUaW1lb3V0KCgpID0+IGlucHV0UmVmLmN1cnJlbnQ/LmZvY3VzKCksIDEwMCk7XG4gICAgfVxuICB9LCBbb3Blbl0pO1xuXG4gIGNvbnN0IGhhbmRsZVNlbmRNZXNzYWdlID0gYXN5bmMgKCkgPT4ge1xuICAgIGlmICghZnJpZW5kSWQgfHwgIW1lc3NhZ2VUZXh0LnRyaW0oKSkgcmV0dXJuO1xuXG4gICAgY29uc3QgdGV4dCA9IG1lc3NhZ2VUZXh0LnRyaW0oKTtcbiAgICBzZXRNZXNzYWdlVGV4dCgnJyk7XG4gICAgc2V0SXNTZW5kaW5nKHRydWUpO1xuXG4gICAgdHJ5IHtcbiAgICAgIGF3YWl0IHNlbmRNZXNzYWdlKGZyaWVuZElkLCB0ZXh0KTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgY29uc29sZS5lcnJvcignRmFpbGVkIHRvIHNlbmQgbWVzc2FnZTonLCBlcnJvcik7XG4gICAgfSBmaW5hbGx5IHtcbiAgICAgIHNldElzU2VuZGluZyhmYWxzZSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGhhbmRsZUtleVByZXNzID0gKGU6IFJlYWN0LktleWJvYXJkRXZlbnQpID0+IHtcbiAgICBpZiAoZS5rZXkgPT09ICdFbnRlcicgJiYgIWUuc2hpZnRLZXkpIHtcbiAgICAgIGUucHJldmVudERlZmF1bHQoKTtcbiAgICAgIGhhbmRsZVNlbmRNZXNzYWdlKCk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGZvcm1hdFRpbWUgPSAodGltZXN0YW1wOiBudW1iZXIpID0+IHtcbiAgICBjb25zdCBkYXRlID0gbmV3IERhdGUodGltZXN0YW1wKTtcbiAgICBjb25zdCBub3cgPSBuZXcgRGF0ZSgpO1xuICAgIGNvbnN0IGlzVG9kYXkgPSBkYXRlLnRvRGF0ZVN0cmluZygpID09PSBub3cudG9EYXRlU3RyaW5nKCk7XG4gICAgXG4gICAgaWYgKGlzVG9kYXkpIHtcbiAgICAgIHJldHVybiBkYXRlLnRvTG9jYWxlVGltZVN0cmluZyhbXSwgeyBob3VyOiAnMi1kaWdpdCcsIG1pbnV0ZTogJzItZGlnaXQnIH0pO1xuICAgIH1cbiAgICBcbiAgICBjb25zdCB5ZXN0ZXJkYXkgPSBuZXcgRGF0ZShub3cpO1xuICAgIHllc3RlcmRheS5zZXREYXRlKHllc3RlcmRheS5nZXREYXRlKCkgLSAxKTtcbiAgICBjb25zdCBpc1llc3RlcmRheSA9IGRhdGUudG9EYXRlU3RyaW5nKCkgPT09IHllc3RlcmRheS50b0RhdGVTdHJpbmcoKTtcbiAgICBcbiAgICBpZiAoaXNZZXN0ZXJkYXkpIHtcbiAgICAgIHJldHVybiBgWWVzdGVyZGF5ICR7ZGF0ZS50b0xvY2FsZVRpbWVTdHJpbmcoW10sIHsgaG91cjogJzItZGlnaXQnLCBtaW51dGU6ICcyLWRpZ2l0JyB9KX1gO1xuICAgIH1cbiAgICBcbiAgICByZXR1cm4gZGF0ZS50b0xvY2FsZURhdGVTdHJpbmcoW10sIHsgbW9udGg6ICdzaG9ydCcsIGRheTogJ251bWVyaWMnLCBob3VyOiAnMi1kaWdpdCcsIG1pbnV0ZTogJzItZGlnaXQnIH0pO1xuICB9O1xuXG4gIGNvbnN0IGdldERlbGl2ZXJ5SWNvbiA9IChtZXNzYWdlOiBDaGF0TWVzc2FnZSkgPT4ge1xuICAgIGlmIChtZXNzYWdlLnNlbmRlcklkICE9PSBpZGVudGl0eS5hbm9uSWQpIHJldHVybiBudWxsO1xuICAgIFxuICAgIHN3aXRjaCAobWVzc2FnZS5zdGF0dXMpIHtcbiAgICAgIGNhc2UgJ3JlYWQnOlxuICAgICAgICByZXR1cm4gPENoZWNrQ2hlY2sgY2xhc3NOYW1lPVwidy0zIGgtMyB0ZXh0LWJsdWUtNTAwXCIgLz47XG4gICAgICBjYXNlICdkZWxpdmVyZWQnOlxuICAgICAgICByZXR1cm4gPENoZWNrQ2hlY2sgY2xhc3NOYW1lPVwidy0zIGgtMyB0ZXh0LW11dGVkLWZvcmVncm91bmRcIiAvPjtcbiAgICAgIGNhc2UgJ3NlbnQnOlxuICAgICAgICByZXR1cm4gPENoZWNrIGNsYXNzTmFtZT1cInctMyBoLTMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCIgLz47XG4gICAgICBjYXNlICdzZW5kaW5nJzpcbiAgICAgICAgcmV0dXJuIDxDbG9jayBjbGFzc05hbWU9XCJ3LTMgaC0zIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCBhbmltYXRlLXB1bHNlXCIgLz47XG4gICAgICBjYXNlICdmYWlsZWQnOlxuICAgICAgICByZXR1cm4gPEFsZXJ0Q2lyY2xlIGNsYXNzTmFtZT1cInctMyBoLTMgdGV4dC1yZWQtNTAwXCIgLz47XG4gICAgICBkZWZhdWx0OlxuICAgICAgICByZXR1cm4gPENoZWNrIGNsYXNzTmFtZT1cInctMyBoLTMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCIgLz47XG4gICAgfVxuICB9O1xuXG4gIGlmICghZnJpZW5kKSB7XG4gICAgcmV0dXJuIG51bGw7XG4gIH1cblxuICByZXR1cm4gKFxuICAgIDxEaWFsb2cgb3Blbj17b3Blbn0gb25PcGVuQ2hhbmdlPXtvbk9wZW5DaGFuZ2V9PlxuICAgICAgPERpYWxvZ0NvbnRlbnQgY2xhc3NOYW1lPVwic206bWF4LXctWzYwMHB4XSBoLVs4MHZoXSBmbGV4IGZsZXgtY29sIHAtMFwiPlxuICAgICAgICB7LyogSGVhZGVyICovfVxuICAgICAgICA8RGlhbG9nSGVhZGVyIGNsYXNzTmFtZT1cInAtNiBwYi00IGJvcmRlci1iXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtNFwiPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZVwiPlxuICAgICAgICAgICAgICA8SWRlbnRpdHlBdmF0YXIgXG4gICAgICAgICAgICAgICAgc2VlZD17ZnJpZW5kLmF2YXRhcn1cbiAgICAgICAgICAgICAgICBzaXplPXs0OH1cbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LTEyIGgtMTJcIlxuICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICB7ZnJpZW5kLmlzT25saW5lICYmIChcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImFic29sdXRlIC1ib3R0b20tMSAtcmlnaHQtMSB3LTQgaC00IGJnLWdyZWVuLTUwMCByb3VuZGVkLWZ1bGwgYm9yZGVyLTIgYm9yZGVyLWJhY2tncm91bmRcIiAvPlxuICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIG1pbi13LTBcIj5cbiAgICAgICAgICAgICAgPERpYWxvZ1RpdGxlIGNsYXNzTmFtZT1cInRleHQteGxcIj5cbiAgICAgICAgICAgICAgICB7ZnJpZW5kLmRpc3BsYXlOYW1lfVxuICAgICAgICAgICAgICA8L0RpYWxvZ1RpdGxlPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIG10LTFcIj5cbiAgICAgICAgICAgICAgICB7ZnJpZW5kLmlzT25saW5lID8gKFxuICAgICAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9XCJkZWZhdWx0XCIgY2xhc3NOYW1lPVwiYmctZ3JlZW4tNTAwXCI+XG4gICAgICAgICAgICAgICAgICAgIDxXaWZpIGNsYXNzTmFtZT1cInctMyBoLTMgbXItMVwiIC8+XG4gICAgICAgICAgICAgICAgICAgIE9ubGluZVxuICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cbiAgICAgICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9XCJzZWNvbmRhcnlcIj5cbiAgICAgICAgICAgICAgICAgICAgPFdpZmlPZmYgY2xhc3NOYW1lPVwidy0zIGgtMyBtci0xXCIgLz5cbiAgICAgICAgICAgICAgICAgICAgT2ZmbGluZVxuICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cbiAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIGZvbnQtbW9ub1wiPlxuICAgICAgICAgICAgICAgICAge2ZyaWVuZC5wZWVyQ29kZX1cbiAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvRGlhbG9nSGVhZGVyPlxuXG4gICAgICAgIHsvKiBDaGF0IE1lc3NhZ2VzICovfVxuICAgICAgICA8U2Nyb2xsQXJlYSBjbGFzc05hbWU9XCJmbGV4LTEgcC02XCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTRcIj5cbiAgICAgICAgICAgIHtjaGF0SGlzdG9yeS5sZW5ndGggPT09IDAgPyAoXG4gICAgICAgICAgICAgIDxBbGVydD5cbiAgICAgICAgICAgICAgICA8QWxlcnRDaXJjbGUgY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgICAgPEFsZXJ0RGVzY3JpcHRpb24+XG4gICAgICAgICAgICAgICAgICBObyBtZXNzYWdlcyB5ZXQuIFN0YXJ0IHRoZSBjb252ZXJzYXRpb24hXG4gICAgICAgICAgICAgICAgPC9BbGVydERlc2NyaXB0aW9uPlxuICAgICAgICAgICAgICA8L0FsZXJ0PlxuICAgICAgICAgICAgKSA6IChcbiAgICAgICAgICAgICAgPD5cbiAgICAgICAgICAgICAgICB7Y2hhdEhpc3RvcnkubWFwKChtZXNzYWdlLCBpbmRleCkgPT4ge1xuICAgICAgICAgICAgICAgICAgY29uc3QgaXNNZSA9IG1lc3NhZ2Uuc2VuZGVySWQgPT09IGlkZW50aXR5LmFub25JZDtcbiAgICAgICAgICAgICAgICAgIGNvbnN0IHNob3dBdmF0YXIgPSBpbmRleCA9PT0gMCB8fCBjaGF0SGlzdG9yeVtpbmRleCAtIDFdLnNlbmRlcklkICE9PSBtZXNzYWdlLnNlbmRlcklkO1xuICAgICAgICAgICAgICAgICAgY29uc3Qgc2hvd1RpbWUgPSBpbmRleCA9PT0gY2hhdEhpc3RvcnkubGVuZ3RoIC0gMSB8fCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY2hhdEhpc3RvcnlbaW5kZXggKyAxXS5zZW5kZXJJZCAhPT0gbWVzc2FnZS5zZW5kZXJJZCB8fFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjaGF0SGlzdG9yeVtpbmRleCArIDFdLnRpbWVzdGFtcCAtIG1lc3NhZ2UudGltZXN0YW1wID4gMzAwMDAwOyAvLyA1IG1pbnV0ZXNcblxuICAgICAgICAgICAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICAgIGtleT17bWVzc2FnZS5pZH1cbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9e2BmbGV4IGdhcC0zICR7aXNNZSA/ICdmbGV4LXJvdy1yZXZlcnNlJyA6ICdmbGV4LXJvdyd9YH1cbiAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgIHsvKiBBdmF0YXIgKi99XG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTggaC04IGZsZXgtc2hyaW5rLTBcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIHtzaG93QXZhdGFyICYmIChcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPElkZW50aXR5QXZhdGFyIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNlZWQ9e2lzTWUgPyBpZGVudGl0eS5hdmF0YXJTZWVkIDogZnJpZW5kLmF2YXRhcn1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplPXszMn1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LTggaC04XCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgICAgICB7LyogTWVzc2FnZSBCdWJibGUgKi99XG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e2BmbGV4IGZsZXgtY29sICR7aXNNZSA/ICdpdGVtcy1lbmQnIDogJ2l0ZW1zLXN0YXJ0J30gbWF4LXctWzcwJV1gfT5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgcm91bmRlZC0yeGwgcHgtNCBweS0yICR7XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgaXNNZVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPyAnYmctcHJpbWFyeSB0ZXh0LXByaW1hcnktZm9yZWdyb3VuZCdcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDogJ2JnLW11dGVkJ1xuICAgICAgICAgICAgICAgICAgICAgICAgICB9YH1cbiAgICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgICAge21lc3NhZ2UudGV4dCAmJiAoXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB3aGl0ZXNwYWNlLXByZS13cmFwIGJyZWFrLXdvcmRzXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7bWVzc2FnZS50ZXh0fVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgey8qIFRPRE86IFJlbmRlciBtZWRpYSBhdHRhY2htZW50cyBoZXJlICovfVxuICAgICAgICAgICAgICAgICAgICAgICAgICB7bWVzc2FnZS5hdHRhY2htZW50cyAmJiBtZXNzYWdlLmF0dGFjaG1lbnRzLmxlbmd0aCA+IDAgJiYgKFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgb3BhY2l0eS03MCBtdC0xXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICBbTWVkaWEgbWVzc2FnZSAtIHZpZXdlciBjb21pbmcgc29vbl1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICAgIFxuICAgICAgICAgICAgICAgICAgICAgICAge3Nob3dUaW1lICYmIChcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e2BmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMSBtdC0xIHB4LTIgJHtpc01lID8gJ2ZsZXgtcm93LXJldmVyc2UnIDogJ2ZsZXgtcm93J31gfT5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge2Zvcm1hdFRpbWUobWVzc2FnZS50aW1lc3RhbXApfVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Z2V0RGVsaXZlcnlJY29uKG1lc3NhZ2UpfVxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgKTtcbiAgICAgICAgICAgICAgICB9KX1cbiAgICAgICAgICAgICAgICA8ZGl2IHJlZj17c2Nyb2xsUmVmfSAvPlxuICAgICAgICAgICAgICA8Lz5cbiAgICAgICAgICAgICl9XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvU2Nyb2xsQXJlYT5cblxuICAgICAgICB7LyogQ29ubmVjdGlvbiBTdGF0dXMgQWxlcnQgKi99XG4gICAgICAgIHshZnJpZW5kLmlzT25saW5lICYmIChcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInB4LTZcIj5cbiAgICAgICAgICAgIDxBbGVydCB2YXJpYW50PVwiZGVmYXVsdFwiIGNsYXNzTmFtZT1cImJnLXllbGxvdy01MDAvMTAgYm9yZGVyLXllbGxvdy01MDAvMjBcIj5cbiAgICAgICAgICAgICAgPENsb2NrIGNsYXNzTmFtZT1cImgtNCB3LTQgdGV4dC15ZWxsb3ctNTAwXCIgLz5cbiAgICAgICAgICAgICAgPEFsZXJ0RGVzY3JpcHRpb24gY2xhc3NOYW1lPVwidGV4dC15ZWxsb3ctNzAwIGRhcms6dGV4dC15ZWxsb3ctNDAwXCI+XG4gICAgICAgICAgICAgICAgRnJpZW5kIGlzIG9mZmxpbmUuIE1lc3NhZ2VzIHdpbGwgYmUgZGVsaXZlcmVkIHdoZW4gdGhleSBjb21lIG9ubGluZS5cbiAgICAgICAgICAgICAgPC9BbGVydERlc2NyaXB0aW9uPlxuICAgICAgICAgICAgPC9BbGVydD5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cblxuICAgICAgICB7LyogTWVzc2FnZSBJbnB1dCAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTYgcHQtNCBib3JkZXItdFwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMlwiPlxuICAgICAgICAgICAgPElucHV0XG4gICAgICAgICAgICAgIHJlZj17aW5wdXRSZWZ9XG4gICAgICAgICAgICAgIHBsYWNlaG9sZGVyPXtmcmllbmQuaXNPbmxpbmUgPyAnVHlwZSBhIG1lc3NhZ2UuLi4nIDogJ0ZyaWVuZCBpcyBvZmZsaW5lJ31cbiAgICAgICAgICAgICAgdmFsdWU9e21lc3NhZ2VUZXh0fVxuICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldE1lc3NhZ2VUZXh0KGUudGFyZ2V0LnZhbHVlKX1cbiAgICAgICAgICAgICAgb25LZXlQcmVzcz17aGFuZGxlS2V5UHJlc3N9XG4gICAgICAgICAgICAgIGRpc2FibGVkPXtpc1NlbmRpbmd9XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXgtMVwiXG4gICAgICAgICAgICAvPlxuICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVTZW5kTWVzc2FnZX1cbiAgICAgICAgICAgICAgZGlzYWJsZWQ9e2lzU2VuZGluZyB8fCAhbWVzc2FnZVRleHQudHJpbSgpfVxuICAgICAgICAgICAgICBzaXplPVwiaWNvblwiXG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIDxTZW5kIGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxuICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmQgbXQtMlwiPlxuICAgICAgICAgICAg8J+UkiBFbmQtdG8tZW5kIGVuY3J5cHRlZCB2aWEgUDJQLiBQcmVzcyBFbnRlciB0byBzZW5kLlxuICAgICAgICAgIDwvcD5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L0RpYWxvZ0NvbnRlbnQ+XG4gICAgPC9EaWFsb2c+XG4gICk7XG59O1xuIl0sIm5hbWVzIjpbInVzZVN0YXRlIiwidXNlRWZmZWN0IiwidXNlUmVmIiwiRGlhbG9nIiwiRGlhbG9nQ29udGVudCIsIkRpYWxvZ0hlYWRlciIsIkRpYWxvZ1RpdGxlIiwiQnV0dG9uIiwiSW5wdXQiLCJTY3JvbGxBcmVhIiwiSWRlbnRpdHlBdmF0YXIiLCJCYWRnZSIsIkFsZXJ0IiwiQWxlcnREZXNjcmlwdGlvbiIsIlNlbmQiLCJXaWZpIiwiV2lmaU9mZiIsIkNsb2NrIiwiQ2hlY2siLCJDaGVja0NoZWNrIiwiQWxlcnRDaXJjbGUiLCJ1c2VGcmllbmRzIiwiQ2hhdERpYWxvZyIsIm9wZW4iLCJvbk9wZW5DaGFuZ2UiLCJmcmllbmRJZCIsImlkZW50aXR5IiwiZnJpZW5kcyIsImdldENoYXRIaXN0b3J5Iiwic2VuZE1lc3NhZ2UiLCJtYXJrTWVzc2FnZXNBc1JlYWQiLCJtZXNzYWdlVGV4dCIsInNldE1lc3NhZ2VUZXh0IiwiaXNTZW5kaW5nIiwic2V0SXNTZW5kaW5nIiwic2Nyb2xsUmVmIiwiaW5wdXRSZWYiLCJmcmllbmQiLCJmaW5kIiwiZiIsImlkIiwiY2hhdEhpc3RvcnkiLCJjdXJyZW50Iiwic2Nyb2xsSW50b1ZpZXciLCJiZWhhdmlvciIsInNldFRpbWVvdXQiLCJmb2N1cyIsImhhbmRsZVNlbmRNZXNzYWdlIiwidHJpbSIsInRleHQiLCJlcnJvciIsImNvbnNvbGUiLCJoYW5kbGVLZXlQcmVzcyIsImUiLCJrZXkiLCJzaGlmdEtleSIsInByZXZlbnREZWZhdWx0IiwiZm9ybWF0VGltZSIsInRpbWVzdGFtcCIsImRhdGUiLCJEYXRlIiwibm93IiwiaXNUb2RheSIsInRvRGF0ZVN0cmluZyIsInRvTG9jYWxlVGltZVN0cmluZyIsImhvdXIiLCJtaW51dGUiLCJ5ZXN0ZXJkYXkiLCJzZXREYXRlIiwiZ2V0RGF0ZSIsImlzWWVzdGVyZGF5IiwidG9Mb2NhbGVEYXRlU3RyaW5nIiwibW9udGgiLCJkYXkiLCJnZXREZWxpdmVyeUljb24iLCJtZXNzYWdlIiwic2VuZGVySWQiLCJhbm9uSWQiLCJzdGF0dXMiLCJjbGFzc05hbWUiLCJkaXYiLCJzZWVkIiwiYXZhdGFyIiwic2l6ZSIsImlzT25saW5lIiwiZGlzcGxheU5hbWUiLCJ2YXJpYW50Iiwic3BhbiIsInBlZXJDb2RlIiwibGVuZ3RoIiwibWFwIiwiaW5kZXgiLCJpc01lIiwic2hvd0F2YXRhciIsInNob3dUaW1lIiwiYXZhdGFyU2VlZCIsInAiLCJhdHRhY2htZW50cyIsInJlZiIsInBsYWNlaG9sZGVyIiwidmFsdWUiLCJvbkNoYW5nZSIsInRhcmdldCIsIm9uS2V5UHJlc3MiLCJkaXNhYmxlZCIsIm9uQ2xpY2siXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLFNBQVNBLFFBQVEsRUFBRUMsU0FBUyxFQUFFQyxNQUFNLFFBQVEsUUFBUTtBQUNwRCxTQUFTQyxNQUFNLEVBQUVDLGFBQWEsRUFBRUMsWUFBWSxFQUFFQyxXQUFXLFFBQVEseUJBQXlCO0FBQzFGLFNBQVNDLE1BQU0sUUFBUSx5QkFBeUI7QUFDaEQsU0FBU0MsS0FBSyxRQUFRLHdCQUF3QjtBQUM5QyxTQUFTQyxVQUFVLFFBQVEsOEJBQThCO0FBRXpELFNBQVNDLGNBQWMsUUFBUSx1Q0FBdUM7QUFDdEUsU0FBU0MsS0FBSyxRQUFRLHdCQUF3QjtBQUM5QyxTQUFTQyxLQUFLLEVBQUVDLGdCQUFnQixRQUFRLHdCQUF3QjtBQUNoRSxTQUNFQyxJQUFJLEVBRUpDLElBQUksRUFDSkMsT0FBTyxFQUNQQyxLQUFLLEVBQ0xDLEtBQUssRUFDTEMsVUFBVSxFQUNWQyxXQUFXLFFBQ04sZUFBZTtBQUN0QixTQUFTQyxVQUFVLFFBQXFCLHFCQUFxQjtBQVU3RCxPQUFPLE1BQU1DLGFBQWEsQ0FBQyxFQUFFQyxJQUFJLEVBQUVDLFlBQVksRUFBRUMsUUFBUSxFQUFFQyxRQUFRLEVBQW1COztJQUNwRixNQUFNLEVBQ0pDLE9BQU8sRUFDUEMsY0FBYyxFQUNkQyxXQUFXLEVBQ1hDLGtCQUFrQixFQUNuQixHQUFHVCxXQUFXSztJQUVmLE1BQU0sQ0FBQ0ssYUFBYUMsZUFBZSxHQUFHaEMsU0FBUztJQUMvQyxNQUFNLENBQUNpQyxXQUFXQyxhQUFhLEdBQUdsQyxTQUFTO0lBQzNDLE1BQU1tQyxZQUFZakMsT0FBdUI7SUFDekMsTUFBTWtDLFdBQVdsQyxPQUF5QjtJQUUxQyxr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

@@ -1,0 +1,15 @@
+{
+  "name": "moodify-music-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node index.mjs",
+    "start": "NODE_ENV=production node index.mjs",
+    "smoke": "node smoke.mjs",
+    "test": "node --test provider/*.test.mjs discovery/*.test.mjs"
+  },
+  "dependencies": {
+    "googlevideo": "^4.1.1",
+    "youtubei.js": "18.0.0"
+  }
+}

@@ -1,0 +1,364 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/DiscoverView.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/DiscoverView.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"];
+import { Card } from "/src/components/ui/card.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { ScrollArea } from "/src/components/ui/scroll-area.tsx";
+import { Sparkles, Play, Heart, Plus } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { getAllTracks } from "/src/data/mockMusic.ts";
+import { DownloadButton } from "/src/components/DownloadButton.tsx";
+export const DiscoverView = ({ recentlyPlayed, favorites, onTrackSelect, onToggleFavorite, onAddToQueue, isFavorite })=>{
+    _s();
+    const [recommendations, setRecommendations] = useState([]);
+    useEffect(()=>{
+        // Simple recommendation engine based on recently played and favorites
+        const allTracks = getAllTracks();
+        const listenedTrackIds = new Set([
+            ...recentlyPlayed.map((t)=>t.id),
+            ...favorites.map((t)=>t.id)
+        ]);
+        // Filter out already listened tracks
+        const unlistened = allTracks.filter((t)=>!listenedTrackIds.has(t.id));
+        // Shuffle and pick random recommendations
+        const shuffled = [
+            ...unlistened
+        ].sort(()=>Math.random() - 0.5);
+        setRecommendations(shuffled.slice(0, 12));
+    }, [
+        recentlyPlayed,
+        favorites
+    ]);
+    const formatDuration = (seconds)=>{
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "w-full max-w-6xl mx-auto space-y-6",
+        children: [
+            recentlyPlayed.length > 0 && /*#__PURE__*/ _jsxDEV(Card, {
+                className: "glass-card p-6",
+                children: [
+                    /*#__PURE__*/ _jsxDEV("h2", {
+                        className: "text-2xl font-bold text-white mb-4 flex items-center gap-2",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Clock, {
+                                className: "h-6 w-6"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                lineNumber: 57,
+                                columnNumber: 13
+                            }, this),
+                            "Recently Played"
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                        lineNumber: 56,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV("div", {
+                        className: "grid grid-cols-2 md:grid-cols-4 gap-4",
+                        children: recentlyPlayed.slice(0, 4).map((track)=>/*#__PURE__*/ _jsxDEV("div", {
+                                className: "glass-card p-3 cursor-pointer transition-all hover:scale-105 group",
+                                onClick: ()=>onTrackSelect(track, [
+                                        track
+                                    ]),
+                                children: [
+                                    track.albumArt && /*#__PURE__*/ _jsxDEV("img", {
+                                        src: track.albumArt,
+                                        alt: track.album,
+                                        className: "w-full aspect-square rounded mb-2 object-cover"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                        lineNumber: 68,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "font-medium text-white text-sm truncate",
+                                        children: track.title
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                        lineNumber: 74,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "text-xs text-white/60 truncate",
+                                        children: track.artist
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                        lineNumber: 75,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, track.id, true, {
+                                fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                lineNumber: 62,
+                                columnNumber: 15
+                            }, this))
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                        lineNumber: 60,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                lineNumber: 55,
+                columnNumber: 9
+            }, this),
+            /*#__PURE__*/ _jsxDEV(Card, {
+                className: "glass-card p-6",
+                children: [
+                    /*#__PURE__*/ _jsxDEV("h2", {
+                        className: "text-2xl font-bold text-white mb-4 flex items-center gap-2",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Sparkles, {
+                                className: "h-6 w-6 text-accent"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                lineNumber: 85,
+                                columnNumber: 11
+                            }, this),
+                            "Discover New Music"
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                        lineNumber: 84,
+                        columnNumber: 9
+                    }, this),
+                    recommendations.length === 0 ? /*#__PURE__*/ _jsxDEV("div", {
+                        className: "flex flex-col items-center justify-center py-12 text-white/60",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Sparkles, {
+                                className: "h-16 w-16 mb-4 opacity-40"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                lineNumber: 91,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("p", {
+                                className: "text-lg",
+                                children: "Start listening to get recommendations"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                lineNumber: 92,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                        lineNumber: 90,
+                        columnNumber: 11
+                    }, this) : /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                        className: "h-[600px]",
+                        children: /*#__PURE__*/ _jsxDEV("div", {
+                            className: "grid grid-cols-1 md:grid-cols-2 gap-4",
+                            children: recommendations.map((track)=>/*#__PURE__*/ _jsxDEV("div", {
+                                    className: "glass-card p-4 flex items-center gap-4 transition-all hover:bg-white/10 group",
+                                    children: [
+                                        track.albumArt && /*#__PURE__*/ _jsxDEV("img", {
+                                            src: track.albumArt,
+                                            alt: track.album,
+                                            className: "w-16 h-16 rounded object-cover"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                            lineNumber: 103,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex-1 min-w-0",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                    className: "font-medium text-white truncate",
+                                                    children: track.title
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                    lineNumber: 111,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                    className: "text-sm text-white/60 truncate",
+                                                    children: track.artist
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                    lineNumber: 112,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                    className: "text-xs text-white/40",
+                                                    children: formatDuration(track.duration || 0)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                    lineNumber: 113,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                            lineNumber: 110,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    variant: "ghost",
+                                                    size: "icon",
+                                                    onClick: ()=>onTrackSelect(track, recommendations),
+                                                    className: "text-white hover:text-accent",
+                                                    children: /*#__PURE__*/ _jsxDEV(Play, {
+                                                        className: "h-4 w-4"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                        lineNumber: 123,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                    lineNumber: 117,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    variant: "ghost",
+                                                    size: "icon",
+                                                    onClick: ()=>onToggleFavorite(track),
+                                                    className: isFavorite(track.id) ? "text-accent" : "text-white hover:text-accent",
+                                                    children: /*#__PURE__*/ _jsxDEV(Heart, {
+                                                        className: `h-4 w-4 ${isFavorite(track.id) ? 'fill-accent' : ''}`
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                        lineNumber: 131,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                    lineNumber: 125,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    variant: "ghost",
+                                                    size: "icon",
+                                                    onClick: ()=>onAddToQueue(track),
+                                                    className: "text-white hover:text-accent",
+                                                    children: /*#__PURE__*/ _jsxDEV(Plus, {
+                                                        className: "h-4 w-4"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                        lineNumber: 139,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                    lineNumber: 133,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(DownloadButton, {
+                                                    track: track,
+                                                    variant: "ghost",
+                                                    size: "icon",
+                                                    className: "text-white hover:text-accent"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                                    lineNumber: 141,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                            lineNumber: 116,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, track.id, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                                    lineNumber: 98,
+                                    columnNumber: 17
+                                }, this))
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                            lineNumber: 96,
+                            columnNumber: 13
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                        lineNumber: 95,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+                lineNumber: 83,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+        lineNumber: 52,
+        columnNumber: 5
+    }, this);
+};
+_s(DiscoverView, "vX7pIfA1dIF1k+vVDNl+O9PINoE=");
+_c = DiscoverView;
+const Clock = ({ className })=>/*#__PURE__*/ _jsxDEV("svg", {
+        className: className,
+        fill: "none",
+        viewBox: "0 0 24 24",
+        stroke: "currentColor",
+        children: /*#__PURE__*/ _jsxDEV("path", {
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            strokeWidth: 2,
+            d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        }, void 0, false, {
+            fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+            lineNumber: 160,
+            columnNumber: 5
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/DiscoverView.tsx",
+        lineNumber: 159,
+        columnNumber: 3
+    }, this);
+_c1 = Clock;
+var _c, _c1;
+$RefreshReg$(_c, "DiscoverView");
+$RefreshReg$(_c1, "Clock");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/DiscoverView.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/DiscoverView.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkRpc2NvdmVyVmlldy50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUsIHVzZUVmZmVjdCB9IGZyb20gXCJyZWFjdFwiO1xuaW1wb3J0IHsgVHJhY2sgfSBmcm9tIFwiQC9kYXRhL21vY2tNdXNpY1wiO1xuaW1wb3J0IHsgQ2FyZCB9IGZyb20gXCJAL2NvbXBvbmVudHMvdWkvY2FyZFwiO1xuaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSBcIkAvY29tcG9uZW50cy91aS9idXR0b25cIjtcbmltcG9ydCB7IFNjcm9sbEFyZWEgfSBmcm9tIFwiQC9jb21wb25lbnRzL3VpL3Njcm9sbC1hcmVhXCI7XG5pbXBvcnQgeyBTcGFya2xlcywgUGxheSwgSGVhcnQsIFBsdXMgfSBmcm9tIFwibHVjaWRlLXJlYWN0XCI7XG5pbXBvcnQgeyBnZXRBbGxUcmFja3MgfSBmcm9tIFwiQC9kYXRhL21vY2tNdXNpY1wiO1xuaW1wb3J0IHsgRG93bmxvYWRCdXR0b24gfSBmcm9tIFwiQC9jb21wb25lbnRzL0Rvd25sb2FkQnV0dG9uXCI7XG5cbmludGVyZmFjZSBEaXNjb3ZlclZpZXdQcm9wcyB7XG4gIHJlY2VudGx5UGxheWVkOiBUcmFja1tdO1xuICBmYXZvcml0ZXM6IFRyYWNrW107XG4gIG9uVHJhY2tTZWxlY3Q6ICh0cmFjazogVHJhY2ssIHRyYWNrczogVHJhY2tbXSkgPT4gdm9pZDtcbiAgb25Ub2dnbGVGYXZvcml0ZTogKHRyYWNrOiBUcmFjaykgPT4gdm9pZDtcbiAgb25BZGRUb1F1ZXVlOiAodHJhY2s6IFRyYWNrKSA9PiB2b2lkO1xuICBpc0Zhdm9yaXRlOiAodHJhY2tJZDogc3RyaW5nKSA9PiBib29sZWFuO1xufVxuXG5leHBvcnQgY29uc3QgRGlzY292ZXJWaWV3ID0gKHtcbiAgcmVjZW50bHlQbGF5ZWQsXG4gIGZhdm9yaXRlcyxcbiAgb25UcmFja1NlbGVjdCxcbiAgb25Ub2dnbGVGYXZvcml0ZSxcbiAgb25BZGRUb1F1ZXVlLFxuICBpc0Zhdm9yaXRlLFxufTogRGlzY292ZXJWaWV3UHJvcHMpID0+IHtcbiAgY29uc3QgW3JlY29tbWVuZGF0aW9ucywgc2V0UmVjb21tZW5kYXRpb25zXSA9IHVzZVN0YXRlPFRyYWNrW10+KFtdKTtcblxuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIC8vIFNpbXBsZSByZWNvbW1lbmRhdGlvbiBlbmdpbmUgYmFzZWQgb24gcmVjZW50bHkgcGxheWVkIGFuZCBmYXZvcml0ZXNcbiAgICBjb25zdCBhbGxUcmFja3MgPSBnZXRBbGxUcmFja3MoKTtcbiAgICBjb25zdCBsaXN0ZW5lZFRyYWNrSWRzID0gbmV3IFNldChbXG4gICAgICAuLi5yZWNlbnRseVBsYXllZC5tYXAodCA9PiB0LmlkKSxcbiAgICAgIC4uLmZhdm9yaXRlcy5tYXAodCA9PiB0LmlkKSxcbiAgICBdKTtcblxuICAgIC8vIEZpbHRlciBvdXQgYWxyZWFkeSBsaXN0ZW5lZCB0cmFja3NcbiAgICBjb25zdCB1bmxpc3RlbmVkID0gYWxsVHJhY2tzLmZpbHRlcih0ID0+ICFsaXN0ZW5lZFRyYWNrSWRzLmhhcyh0LmlkKSk7XG4gICAgXG4gICAgLy8gU2h1ZmZsZSBhbmQgcGljayByYW5kb20gcmVjb21tZW5kYXRpb25zXG4gICAgY29uc3Qgc2h1ZmZsZWQgPSBbLi4udW5saXN0ZW5lZF0uc29ydCgoKSA9PiBNYXRoLnJhbmRvbSgpIC0gMC41KTtcbiAgICBzZXRSZWNvbW1lbmRhdGlvbnMoc2h1ZmZsZWQuc2xpY2UoMCwgMTIpKTtcbiAgfSwgW3JlY2VudGx5UGxheWVkLCBmYXZvcml0ZXNdKTtcblxuICBjb25zdCBmb3JtYXREdXJhdGlvbiA9IChzZWNvbmRzOiBudW1iZXIpID0+IHtcbiAgICBjb25zdCBtaW5zID0gTWF0aC5mbG9vcihzZWNvbmRzIC8gNjApO1xuICAgIGNvbnN0IHNlY3MgPSBNYXRoLmZsb29yKHNlY29uZHMgJSA2MCk7XG4gICAgcmV0dXJuIGAke21pbnN9OiR7c2Vjcy50b1N0cmluZygpLnBhZFN0YXJ0KDIsICcwJyl9YDtcbiAgfTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwidy1mdWxsIG1heC13LTZ4bCBteC1hdXRvIHNwYWNlLXktNlwiPlxuICAgICAgey8qIFJlY2VudGx5IFBsYXllZCAqL31cbiAgICAgIHtyZWNlbnRseVBsYXllZC5sZW5ndGggPiAwICYmIChcbiAgICAgICAgPENhcmQgY2xhc3NOYW1lPVwiZ2xhc3MtY2FyZCBwLTZcIj5cbiAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC0yeGwgZm9udC1ib2xkIHRleHQtd2hpdGUgbWItNCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxuICAgICAgICAgICAgPENsb2NrIGNsYXNzTmFtZT1cImgtNiB3LTZcIiAvPlxuICAgICAgICAgICAgUmVjZW50bHkgUGxheWVkXG4gICAgICAgICAgPC9oMj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImdyaWQgZ3JpZC1jb2xzLTIgbWQ6Z3JpZC1jb2xzLTQgZ2FwLTRcIj5cbiAgICAgICAgICAgIHtyZWNlbnRseVBsYXllZC5zbGljZSgwLCA0KS5tYXAoKHRyYWNrKSA9PiAoXG4gICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICBrZXk9e3RyYWNrLmlkfVxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImdsYXNzLWNhcmQgcC0zIGN1cnNvci1wb2ludGVyIHRyYW5zaXRpb24tYWxsIGhvdmVyOnNjYWxlLTEwNSBncm91cFwiXG4gICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25UcmFja1NlbGVjdCh0cmFjaywgW3RyYWNrXSl9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICB7dHJhY2suYWxidW1BcnQgJiYgKFxuICAgICAgICAgICAgICAgICAgPGltZ1xuICAgICAgICAgICAgICAgICAgICBzcmM9e3RyYWNrLmFsYnVtQXJ0fVxuICAgICAgICAgICAgICAgICAgICBhbHQ9e3RyYWNrLmFsYnVtfVxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgYXNwZWN0LXNxdWFyZSByb3VuZGVkIG1iLTIgb2JqZWN0LWNvdmVyXCJcbiAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJmb250LW1lZGl1bSB0ZXh0LXdoaXRlIHRleHQtc20gdHJ1bmNhdGVcIj57dHJhY2sudGl0bGV9PC9wPlxuICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC13aGl0ZS82MCB0cnVuY2F0ZVwiPnt0cmFjay5hcnRpc3R9PC9wPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICkpfVxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L0NhcmQ+XG4gICAgICApfVxuXG4gICAgICB7LyogUmVjb21tZW5kYXRpb25zICovfVxuICAgICAgPENhcmQgY2xhc3NOYW1lPVwiZ2xhc3MtY2FyZCBwLTZcIj5cbiAgICAgICAgPGgyIGNsYXNzTmFtZT1cInRleHQtMnhsIGZvbnQtYm9sZCB0ZXh0LXdoaXRlIG1iLTQgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cbiAgICAgICAgICA8U3BhcmtsZXMgY2xhc3NOYW1lPVwiaC02IHctNiB0ZXh0LWFjY2VudFwiIC8+XG4gICAgICAgICAgRGlzY292ZXIgTmV3IE11c2ljXG4gICAgICAgIDwvaDI+XG4gICAgICAgIFxuICAgICAgICB7cmVjb21tZW5kYXRpb25zLmxlbmd0aCA9PT0gMCA/IChcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC1jb2wgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHB5LTEyIHRleHQtd2hpdGUvNjBcIj5cbiAgICAgICAgICAgIDxTcGFya2xlcyBjbGFzc05hbWU9XCJoLTE2IHctMTYgbWItNCBvcGFjaXR5LTQwXCIgLz5cbiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtbGdcIj5TdGFydCBsaXN0ZW5pbmcgdG8gZ2V0IHJlY29tbWVuZGF0aW9uczwvcD5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKSA6IChcbiAgICAgICAgICA8U2Nyb2xsQXJlYSBjbGFzc05hbWU9XCJoLVs2MDBweF1cIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBncmlkLWNvbHMtMSBtZDpncmlkLWNvbHMtMiBnYXAtNFwiPlxuICAgICAgICAgICAgICB7cmVjb21tZW5kYXRpb25zLm1hcCgodHJhY2spID0+IChcbiAgICAgICAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICAgICAgICBrZXk9e3RyYWNrLmlkfVxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZ2xhc3MtY2FyZCBwLTQgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTQgdHJhbnNpdGlvbi1hbGwgaG92ZXI6Ymctd2hpdGUvMTAgZ3JvdXBcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIHt0cmFjay5hbGJ1bUFydCAmJiAoXG4gICAgICAgICAgICAgICAgICAgIDxpbWdcbiAgICAgICAgICAgICAgICAgICAgICBzcmM9e3RyYWNrLmFsYnVtQXJ0fVxuICAgICAgICAgICAgICAgICAgICAgIGFsdD17dHJhY2suYWxidW19XG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy0xNiBoLTE2IHJvdW5kZWQgb2JqZWN0LWNvdmVyXCJcbiAgICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgICl9XG5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIG1pbi13LTBcIj5cbiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwiZm9udC1tZWRpdW0gdGV4dC13aGl0ZSB0cnVuY2F0ZVwiPnt0cmFjay50aXRsZX08L3A+XG4gICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC13aGl0ZS82MCB0cnVuY2F0ZVwiPnt0cmFjay5hcnRpc3R9PC9wPlxuICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtd2hpdGUvNDBcIj57Zm9ybWF0RHVyYXRpb24odHJhY2suZHVyYXRpb24gfHwgMCl9PC9wPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMiBvcGFjaXR5LTAgZ3JvdXAtaG92ZXI6b3BhY2l0eS0xMDAgdHJhbnNpdGlvbi1vcGFjaXR5XCI+XG4gICAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZ2hvc3RcIlxuICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJpY29uXCJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBvblRyYWNrU2VsZWN0KHRyYWNrLCByZWNvbW1lbmRhdGlvbnMpfVxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInRleHQtd2hpdGUgaG92ZXI6dGV4dC1hY2NlbnRcIlxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgPFBsYXkgY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cImdob3N0XCJcbiAgICAgICAgICAgICAgICAgICAgICBzaXplPVwiaWNvblwiXG4gICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25Ub2dnbGVGYXZvcml0ZSh0cmFjayl9XG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtpc0Zhdm9yaXRlKHRyYWNrLmlkKSA/IFwidGV4dC1hY2NlbnRcIiA6IFwidGV4dC13aGl0ZSBob3Zlcjp0ZXh0LWFjY2VudFwifVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgPEhlYXJ0IGNsYXNzTmFtZT17YGgtNCB3LTQgJHtpc0Zhdm9yaXRlKHRyYWNrLmlkKSA/ICdmaWxsLWFjY2VudCcgOiAnJ31gfSAvPlxuICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJnaG9zdFwiXG4gICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cImljb25cIlxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uQWRkVG9RdWV1ZSh0cmFjayl9XG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidGV4dC13aGl0ZSBob3Zlcjp0ZXh0LWFjY2VudFwiXG4gICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICA8UGx1cyBjbGFzc05hbWU9XCJoLTQgdy00XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgICAgICAgICAgIDxEb3dubG9hZEJ1dHRvbiBcbiAgICAgICAgICAgICAgICAgICAgICB0cmFjaz17dHJhY2t9IFxuICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJnaG9zdFwiIFxuICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJpY29uXCJcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LXdoaXRlIGhvdmVyOnRleHQtYWNjZW50XCJcbiAgICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvU2Nyb2xsQXJlYT5cbiAgICAgICAgKX1cbiAgICAgIDwvQ2FyZD5cbiAgICA8L2Rpdj5cbiAgKTtcbn07XG5cbmNvbnN0IENsb2NrID0gKHsgY2xhc3NOYW1lIH06IHsgY2xhc3NOYW1lPzogc3RyaW5nIH0pID0+IChcbiAgPHN2ZyBjbGFzc05hbWU9e2NsYXNzTmFtZX0gZmlsbD1cIm5vbmVcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCIgc3Ryb2tlPVwiY3VycmVudENvbG9yXCI+XG4gICAgPHBhdGggc3Ryb2tlTGluZWNhcD1cInJvdW5kXCIgc3Ryb2tlTGluZWpvaW49XCJyb3VuZFwiIHN0cm9rZVdpZHRoPXsyfSBkPVwiTTEyIDh2NGwzIDNtNi0zYTkgOSAwIDExLTE4IDAgOSA5IDAgMDExOCAwelwiIC8+XG4gIDwvc3ZnPlxuKTsiXSwibmFtZXMiOlsidXNlU3RhdGUiLCJ1c2VFZmZlY3QiLCJDYXJkIiwiQnV0dG9uIiwiU2Nyb2xsQXJlYSIsIlNwYXJrbGVzIiwiUGxheSIsIkhlYXJ0IiwiUGx1cyIsImdldEFsbFRyYWNrcyIsIkRvd25sb2FkQnV0dG9uIiwiRGlzY292ZXJWaWV3IiwicmVjZW50bHlQbGF5ZWQiLCJmYXZvcml0ZXMiLCJvblRyYWNrU2VsZWN0Iiwib25Ub2dnbGVGYXZvcml0ZSIsIm9uQWRkVG9RdWV1ZSIsImlzRmF2b3JpdGUiLCJyZWNvbW1lbmRhdGlvbnMiLCJzZXRSZWNvbW1lbmRhdGlvbnMiLCJhbGxUcmFja3MiLCJsaXN0ZW5lZFRyYWNrSWRzIiwiU2V0IiwibWFwIiwidCIsImlkIiwidW5saXN0ZW5lZCIsImZpbHRlciIsImhhcyIsInNodWZmbGVkIiwic29ydCIsIk1hdGgiLCJyYW5kb20iLCJzbGljZSIsImZvcm1hdER1cmF0aW9uIiwic2Vjb25kcyIsIm1pbnMiLCJmbG9vciIsInNlY3MiLCJ0b1N0cmluZyIsInBhZFN0YXJ0IiwiZGl2IiwiY2xhc3NOYW1lIiwibGVuZ3RoIiwiaDIiLCJDbG9jayIsInRyYWNrIiwib25DbGljayIsImFsYnVtQXJ0IiwiaW1nIiwic3JjIiwiYWx0IiwiYWxidW0iLCJwIiwidGl0bGUiLCJhcnRpc3QiLCJkdXJhdGlvbiIsInZhcmlhbnQiLCJzaXplIiwic3ZnIiwiZmlsbCIsInZpZXdCb3giLCJzdHJva2UiLCJwYXRoIiwic3Ryb2tlTGluZWNhcCIsInN0cm9rZUxpbmVqb2luIiwic3Ryb2tlV2lkdGgiLCJkIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSxTQUFTQSxRQUFRLEVBQUVDLFNBQVMsUUFBUSxRQUFRO0FBRTVDLFNBQVNDLElBQUksUUFBUSx1QkFBdUI7QUFDNUMsU0FBU0MsTUFBTSxRQUFRLHlCQUF5QjtBQUNoRCxTQUFTQyxVQUFVLFFBQVEsOEJBQThCO0FBQ3pELFNBQVNDLFFBQVEsRUFBRUMsSUFBSSxFQUFFQyxLQUFLLEVBQUVDLElBQUksUUFBUSxlQUFlO0FBQzNELFNBQVNDLFlBQVksUUFBUSxtQkFBbUI7QUFDaEQsU0FBU0MsY0FBYyxRQUFRLDhCQUE4QjtBQVc3RCxPQUFPLE1BQU1DLGVBQWUsQ0FBQyxFQUMzQkMsY0FBYyxFQUNkQyxTQUFTLEVBQ1RDLGFBQWEsRUFDYkMsZ0JBQWdCLEVBQ2hCQyxZQUFZLEVBQ1pDLFVBQVUsRUFDUTs7SUFDbEIsTUFBTSxDQUFDQyxpQkFBaUJDLG1CQUFtQixHQUFHbkIsU0FBa0IsRUFBRTtJQUVsRUMsVUFBVTtRQUNSLHNFQUFzRTtRQUN0RSxNQUFNbUIsWUFBWVg7UUFDbEIsTUFBTVksbUJBQW1CLElBQUlDLElBQUk7ZUFDNUJWLGVBQWVXLEdBQUcsQ0FBQ0MsQ0FBQUEsSUFBS0EsRUFBRUMsRUFBRTtlQUM1QlosVUFBVVUsR0FBRyxDQUFDQyxDQUFBQSxJQUFLQSxFQUFFQyxFQUFFO1NBQzNCO1FBRUQscUNBQXFDO1FBQ3JDLE1BQU1DLGFBQWFOLFVBQVVPLE1BQU0sQ0FBQ0gsQ0FBQUEsSUFBSyxDQUFDSCxpQkFBaUJPLEdBQUcsQ0FBQ0osRUFBRUMsRUFBRTtRQUVuRSwwQ0FBMEM7UUFDMUMsTUFBTUksV0FBVztlQUFJSDtTQUFXLENBQUNJLElBQUksQ0FBQyxJQUFNQyxLQUFLQyxNQUFNLEtBQUs7UUFDNURiLG1CQUFtQlUsU0FBU0ksS0FBSyxDQUFDLEdBQUc7SUFDdkMsR0FBRztRQUFD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

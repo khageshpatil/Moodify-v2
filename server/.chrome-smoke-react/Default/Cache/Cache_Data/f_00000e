@@ -1,0 +1,309 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/MoodTiles.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/MoodTiles.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"];
+// Soothing Japanese anime series GIF backgrounds for each mood
+const moodChillImg = 'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExaGtsdjFibGptYzB4dmZxdGtvc3BtNGQ1NWJvem5vNjVxdHVvM2lidiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QaDOoqfYUy1lS/giphy.gif'; // Garden of Words - peaceful rain
+const moodMelancholyImg = 'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHh5MHMzZTVxcXZ2YWdtZzFoYmh4aWhreGh1aXdrOG44ZGR2bGV0OCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Id71NFYfSBOKv2IexE/giphy.gif'; // Your Name - nostalgic
+const moodWorkoutImg = 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExY28wbHBsdnc2ZnZwYXlhcHZlc25qdGxreHV0djN4dmUxM2dza2o2bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U8wCBLhkjNknS/giphy.gif'; // One Punch Man - energetic
+const moodFocusImg = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3U1M3Z0cW9pczBsaHJiaHRvcXkyZ3hjMXJhcG9rNzdkbXJ4OGk3YyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/6XX4V0O8a0xdS/giphy.gif'; // Study anime aesthetic
+const moodLoveImg = 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3b3k3eDc5amFmbjB4MmZhNGViNGNjbnd1bGh0cWRhN21qdnZqcTc4aCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/l0HU49MXasr6juD0A/giphy.gif'; // Anime couple romantic
+const moodPartyImg = 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3M2ZzODR6b3lxamNvMnFpcTl0c3RvOGxxdTUyYXJwaTV2OHZrNnNkMCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/4gsjHZMPXdlGo/giphy.gif'; // Anime celebration dance
+const moods = [
+    {
+        id: 'chill',
+        name: 'Chill',
+        emoji: '🌸',
+        bgImage: moodChillImg,
+        color: 'mood-chill',
+        description: 'Peaceful vibes for relaxation'
+    },
+    {
+        id: 'melancholy',
+        name: 'Melancholy',
+        emoji: '☁️',
+        bgImage: moodMelancholyImg,
+        color: 'mood-melancholy',
+        description: 'Reflective and contemplative'
+    },
+    {
+        id: 'workout',
+        name: 'Workout',
+        emoji: '🔥',
+        bgImage: moodWorkoutImg,
+        color: 'mood-workout',
+        description: 'High energy for motivation'
+    },
+    {
+        id: 'focus',
+        name: 'Focus',
+        emoji: '🚀',
+        bgImage: moodFocusImg,
+        color: 'mood-focus',
+        description: 'Deep concentration mode'
+    },
+    {
+        id: 'love',
+        name: 'Love',
+        emoji: '❤️',
+        bgImage: moodLoveImg,
+        color: 'mood-love',
+        description: 'Romantic and heartfelt'
+    },
+    {
+        id: 'party',
+        name: 'Party',
+        emoji: '🎉',
+        bgImage: moodPartyImg,
+        color: 'mood-party',
+        description: 'Celebration and joy'
+    }
+];
+const MoodTiles = ({ onMoodSelect })=>{
+    _s();
+    const [hoveredMood, setHoveredMood] = useState(null);
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "w-full max-w-7xl mx-auto",
+        children: [
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "text-center mb-16 fade-in",
+                children: [
+                    /*#__PURE__*/ _jsxDEV("h2", {
+                        className: "text-3xl md:text-4xl font-medium mb-3",
+                        style: {
+                            color: 'var(--text-primary)',
+                            fontWeight: 400,
+                            letterSpacing: '0.4px'
+                        },
+                        children: "What's your mood today?"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                        lineNumber: 82,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV("p", {
+                        className: "text-base md:text-lg",
+                        style: {
+                            color: 'var(--text-secondary)',
+                            fontWeight: 300
+                        },
+                        children: "Select a vibe and let the music flow through your soul"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                        lineNumber: 92,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                lineNumber: 81,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+                children: moods.map((mood, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                        className: "mood-tile group relative h-64 md:h-72 lg:h-80 cursor-pointer scale-in",
+                        style: {
+                            animationDelay: `${index * 0.08}s`
+                        },
+                        onClick: ()=>onMoodSelect(mood),
+                        onMouseEnter: ()=>setHoveredMood(mood.id),
+                        onMouseLeave: ()=>setHoveredMood(null),
+                        children: [
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "mood-tile-image absolute inset-0 rounded-3xl overflow-hidden",
+                                style: {
+                                    backgroundImage: `url(${mood.bgImage})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center'
+                                },
+                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "absolute inset-0",
+                                    style: {
+                                        background: 'linear-gradient(180deg, rgba(11, 15, 25, 0.1) 0%, rgba(11, 15, 25, 0.5) 100%)'
+                                    }
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                    lineNumber: 126,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                lineNumber: 117,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "absolute inset-0 rounded-3xl",
+                                style: {
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    pointerEvents: 'none'
+                                }
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                lineNumber: 135,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "relative h-full flex flex-col justify-between p-8 z-10",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "self-end",
+                                        children: /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110",
+                                            style: {
+                                                background: 'var(--surface-frost-hover)',
+                                                backdropFilter: 'var(--blur-medium)',
+                                                border: '1px solid var(--stroke-medium)'
+                                            },
+                                            children: /*#__PURE__*/ _jsxDEV("span", {
+                                                className: "text-3xl",
+                                                children: mood.emoji
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                                lineNumber: 155,
+                                                columnNumber: 19
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                            lineNumber: 147,
+                                            columnNumber: 17
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                        lineNumber: 146,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "space-y-3",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("h3", {
+                                                className: "text-3xl md:text-4xl transition-all duration-300",
+                                                style: {
+                                                    color: 'var(--text-primary)',
+                                                    fontWeight: 500,
+                                                    letterSpacing: '0.3px'
+                                                },
+                                                children: mood.name
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                                lineNumber: 161,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "text-sm md:text-base transition-all duration-300",
+                                                style: {
+                                                    color: 'var(--text-secondary)',
+                                                    fontWeight: 300
+                                                },
+                                                children: mood.description
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                                lineNumber: 171,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                        lineNumber: 160,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                lineNumber: 144,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "absolute inset-0 rounded-3xl pointer-events-none transition-opacity duration-500",
+                                style: {
+                                    opacity: hoveredMood === mood.id ? 0.6 : 0,
+                                    background: 'radial-gradient(circle at 50% 80%, var(--accent-glow), transparent 60%)'
+                                }
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                                lineNumber: 184,
+                                columnNumber: 19
+                            }, this)
+                        ]
+                    }, mood.id, true, {
+                        fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                        lineNumber: 106,
+                        columnNumber: 11
+                    }, this))
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                lineNumber: 104,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "text-center mt-16 fade-in",
+                style: {
+                    animationDelay: '0.5s'
+                },
+                children: /*#__PURE__*/ _jsxDEV("p", {
+                    className: "text-sm",
+                    style: {
+                        color: 'var(--text-tertiary)',
+                        fontWeight: 300
+                    },
+                    children: "Each mood brings a unique sonic journey crafted just for you"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                    lineNumber: 197,
+                    columnNumber: 9
+                }, this)
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+                lineNumber: 196,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/MoodTiles.tsx",
+        lineNumber: 79,
+        columnNumber: 5
+    }, this);
+};
+_s(MoodTiles, "j3oMFPf+MKEwTc3dHh3CK6E2q4o=");
+_c = MoodTiles;
+export default MoodTiles;
+var _c;
+$RefreshReg$(_c, "MoodTiles");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/MoodTiles.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/MoodTiles.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIk1vb2RUaWxlcy50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XHJcblxyXG4vLyBTb290aGluZyBKYXBhbmVzZSBhbmltZSBzZXJpZXMgR0lGIGJhY2tncm91bmRzIGZvciBlYWNoIG1vb2RcclxuY29uc3QgbW9vZENoaWxsSW1nID0gJ2h0dHBzOi8vbWVkaWEyLmdpcGh5LmNvbS9tZWRpYS92MS5ZMmxrUFRjNU1HSTNOakV4YUd0c2RqRmliR3B0WXpCNGRtWnhkR3R2YzNCdE5HUTFOV0p2ZW01dk5qVnhkSFZ2TTJsaWRpWmxjRDEyTVY5cGJuUmxjbTVoYkY5bmFXWmZZbmxmYVdRbVkzUTlady9RYURPb3FmWVV5MWxTL2dpcGh5LmdpZic7IC8vIEdhcmRlbiBvZiBXb3JkcyAtIHBlYWNlZnVsIHJhaW5cclxuY29uc3QgbW9vZE1lbGFuY2hvbHlJbWcgPSAnaHR0cHM6Ly9tZWRpYTIuZ2lwaHkuY29tL21lZGlhL3YxLlkybGtQVGM1TUdJM05qRXhjSGg1TUhNelpUVnhjWFoyWVdkdFp6Rm9ZbWg0YVdocmVHaDFhWGRyT0c0NFpHUjJiR1YwT0NabGNEMTJNVjlwYm5SbGNtNWhiRjluYVdaZllubGZhV1FtWTNROVp3L0lkNzFORllmU0JPS3YySWV4RS9naXBoeS5naWYnOyAvLyBZb3VyIE5hbWUgLSBub3N0YWxnaWNcclxuY29uc3QgbW9vZFdvcmtvdXRJbWcgPSAnaHR0cHM6Ly9tZWRpYTMuZ2lwaHkuY29tL21lZGlhL3YxLlkybGtQVGM1TUdJM05qRXhZMjh3YkhCc2RuYzJablp3WVhsaGNIWmxjMjVxZEd4cmVIVjBkak40ZG1VeE0yZHphMm8yYlNabGNEMTJNVjlwYm5SbGNtNWhiRjluYVdaZllubGZhV1FtWTNROVp3L1U4d0NCTGhrak5rblMvZ2lwaHkuZ2lmJzsgLy8gT25lIFB1bmNoIE1hbiAtIGVuZXJnZXRpY1xyXG5jb25zdCBtb29kRm9jdXNJbWcgPSAnaHR0cHM6Ly9tZWRpYS5naXBoeS5jb20vbWVkaWEvdjEuWTJsa1BUYzVNR0kzTmpFeGMzVTFNM1owY1c5cGN6QnNhSEppYUhSdmNYa3laM2hqTVhKaGNHOXJOemRrYlhKNE9HazNZeVpsY0QxMk1WOW5hV1p6WDNObFlYSmphQ1pqZEQxbi82WFg0VjBPOGEweGRTL2dpcGh5LmdpZic7IC8vIFN0dWR5IGFuaW1lIGFlc3RoZXRpY1xyXG5jb25zdCBtb29kTG92ZUltZyA9ICdodHRwczovL21lZGlhLmdpcGh5LmNvbS9tZWRpYS92MS5ZMmxrUFdWalpqQTFaVFEzYjNrM2VEYzVhbUZtYmpCNE1tWmhOR1ZpTkdOamJuZDFiR2gwY1dSaE4yMXFkblpxY1RjNGFDWmxjRDEyTVY5bmFXWnpYM0psYkdGMFpXUW1ZM1E5WncvbDBIVTQ5TVhhc3I2anVEMEEvZ2lwaHkuZ2lmJzsgLy8gQW5pbWUgY291cGxlIHJvbWFudGljXHJcbmNvbnN0IG1vb2RQYXJ0eUltZyA9ICdodHRwczovL21lZGlhLmdpcGh5LmNvbS9tZWRpYS92MS5ZMmxrUFdWalpqQTFaVFEzTTJaek9EUjZiM2x4YW1Odk1uRnBjVGwwYzNSdk9HeHhkVFV5WVhKd2FUVjJPSFpyTm5Oa01DWmxjRDEyTVY5bmFXWnpYM05sWVhKamFDWmpkRDFuLzRnc2pIWk1QWGRsR28vZ2lwaHkuZ2lmJzsgLy8gQW5pbWUgY2VsZWJyYXRpb24gZGFuY2VcclxuXHJcbmludGVyZmFjZSBNb29kIHtcclxuICBpZDogc3RyaW5nO1xyXG4gIG5hbWU6IHN0cmluZztcclxuICBlbW9qaTogc3RyaW5nO1xyXG4gIGJnSW1hZ2U6IHN0cmluZztcclxuICBjb2xvcjogc3RyaW5nO1xyXG4gIGRlc2NyaXB0aW9uOiBzdHJpbmc7XHJcbn1cclxuXHJcbmludGVyZmFjZSBNb29kVGlsZXNQcm9wcyB7XHJcbiAgb25Nb29kU2VsZWN0OiAobW9vZDogTW9vZCkgPT4gdm9pZDtcclxufVxyXG5cclxuY29uc3QgbW9vZHM6IE1vb2RbXSA9IFtcclxuICB7XHJcbiAgICBpZDogJ2NoaWxsJyxcclxuICAgIG5hbWU6ICdDaGlsbCcsXHJcbiAgICBlbW9qaTogJ/CfjLgnLFxyXG4gICAgYmdJbWFnZTogbW9vZENoaWxsSW1nLFxyXG4gICAgY29sb3I6ICdtb29kLWNoaWxsJyxcclxuICAgIGRlc2NyaXB0aW9uOiAnUGVhY2VmdWwgdmliZXMgZm9yIHJlbGF4YXRpb24nXHJcbiAgfSxcclxuICB7XHJcbiAgICBpZDogJ21lbGFuY2hvbHknLFxyXG4gICAgbmFtZTogJ01lbGFuY2hvbHknLFxyXG4gICAgZW1vamk6ICfimIHvuI8nLFxyXG4gICAgYmdJbWFnZTogbW9vZE1lbGFuY2hvbHlJbWcsXHJcbiAgICBjb2xvcjogJ21vb2QtbWVsYW5jaG9seScsXHJcbiAgICBkZXNjcmlwdGlvbjogJ1JlZmxlY3RpdmUgYW5kIGNvbnRlbXBsYXRpdmUnXHJcbiAgfSxcclxuICB7XHJcbiAgICBpZDogJ3dvcmtvdXQnLFxyXG4gICAgbmFtZTogJ1dvcmtvdXQnLFxyXG4gICAgZW1vamk6ICfwn5SlJyxcclxuICAgIGJnSW1hZ2U6IG1vb2RXb3Jrb3V0SW1nLFxyXG4gICAgY29sb3I6ICdtb29kLXdvcmtvdXQnLFxyXG4gICAgZGVzY3JpcHRpb246ICdIaWdoIGVuZXJneSBmb3IgbW90aXZhdGlvbidcclxuICB9LFxyXG4gIHtcclxuICAgIGlkOiAnZm9jdXMnLFxyXG4gICAgbmFtZTogJ0ZvY3VzJyxcclxuICAgIGVtb2ppOiAn8J+agCcsXHJcbiAgICBiZ0ltYWdlOiBtb29kRm9jdXNJbWcsXHJcbiAgICBjb2xvcjogJ21vb2QtZm9jdXMnLFxyXG4gICAgZGVzY3JpcHRpb246ICdEZWVwIGNvbmNlbnRyYXRpb24gbW9kZSdcclxuICB9LFxyXG4gIHtcclxuICAgIGlkOiAnbG92ZScsXHJcbiAgICBuYW1lOiAnTG92ZScsXHJcbiAgICBlbW9qaTogJ+KdpO+4jycsXHJcbiAgICBiZ0ltYWdlOiBtb29kTG92ZUltZyxcclxuICAgIGNvbG9yOiAnbW9vZC1sb3ZlJyxcclxuICAgIGRlc2NyaXB0aW9uOiAnUm9tYW50aWMgYW5kIGhlYXJ0ZmVsdCdcclxuICB9LFxyXG4gIHtcclxuICAgIGlkOiAncGFydHknLFxyXG4gICAgbmFtZTogJ1BhcnR5JyxcclxuICAgIGVtb2ppOiAn8J+OiScsXHJcbiAgICBiZ0ltYWdlOiBtb29kUGFydHlJbWcsXHJcbiAgICBjb2xvcjogJ21vb2QtcGFydHknLFxyXG4gICAgZGVzY3JpcHRpb246ICdDZWxlYnJhdGlvbiBhbmQgam95J1xyXG4gIH0sXHJcbl07XHJcblxyXG5jb25zdCBNb29kVGlsZXMgPSAoeyBvbk1vb2RTZWxlY3QgfTogTW9vZFRpbGVzUHJvcHMpID0+IHtcclxuICBjb25zdCBbaG92ZXJlZE1vb2QsIHNldEhvdmVyZWRNb29kXSA9IHVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpO1xyXG5cclxuICByZXR1cm4gKFxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJ3LWZ1bGwgbWF4LXctN3hsIG14LWF1dG9cIj5cclxuICAgICAgey8qIEhlYWRlciBTZWN0aW9uICovfVxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtY2VudGVyIG1iLTE2IGZhZGUtaW5cIj5cclxuICAgICAgICA8aDIgXHJcbiAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LTN4bCBtZDp0ZXh0LTR4bCBmb250LW1lZGl1bSBtYi0zXCJcclxuICAgICAgICAgIHN0eWxlPXt7XHJcbiAgICAgICAgICAgIGNvbG9yOiAndmFyKC0tdGV4dC1wcmltYXJ5KScsXHJcbiAgICAgICAgICAgIGZvbnRXZWlnaHQ6IDQwMCxcclxuICAgICAgICAgICAgbGV0dGVyU3BhY2luZzogJzAuNHB4J1xyXG4gICAgICAgICAgfX1cclxuICAgICAgICA+XHJcbiAgICAgICAgICBXaGF0J3MgeW91ciBtb29kIHRvZGF5P1xyXG4gICAgICAgIDwvaDI+XHJcbiAgICAgICAgPHAgXHJcbiAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LWJhc2UgbWQ6dGV4dC1sZ1wiXHJcbiAgICAgICAgICBzdHlsZT17e1xyXG4gICAgICAgICAgICBjb2xvcjogJ3ZhcigtLXRleHQtc2Vjb25kYXJ5KScsXHJcbiAgICAgICAgICAgIGZvbnRXZWlnaHQ6IDMwMFxyXG4gICAgICAgICAgfX1cclxuICAgICAgICA+XHJcbiAgICAgICAgICBTZWxlY3QgYSB2aWJlIGFuZCBsZXQgdGhlIG11c2ljIGZsb3cgdGhyb3VnaCB5b3VyIHNvdWxcclxuICAgICAgICA8L3A+XHJcbiAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgey8qIENpbmVtYXRpYyBNb29kIEdyaWQgKi99XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBncmlkLWNvbHMtMSBtZDpncmlkLWNvbHMtMiBsZzpncmlkLWNvbHMtMyBnYXAtOFwiPlxyXG4gICAgICAgIHttb29kcy5tYXAoKG1vb2QsIGluZGV4KSA9PiAoXHJcbiAgICAgICAgICA8ZGl2XHJcbiAgICAgICAgICAgIGtleT17bW9vZC5pZH1cclxuICAgICAgICAgICAgY2xhc3NOYW1lPVwibW9vZC10aWxlIGdyb3VwIHJlbGF0aXZlIGgtNjQgbWQ6aC03MiBsZzpoLTgwIGN1cnNvci1wb2ludGVyIHNjYWxlLWluXCJcclxuICAgICAgICAgICAgc3R5bGU9e3tcclxuICAgICAgICAgICAgICBhbmltYXRpb25EZWxheTogYCR7aW5kZXggKiAwLjA4fXNgXHJcbiAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uTW9vZFNlbGVjdChtb29kKX1cclxuICAgICAgICAgICAgb25Nb3VzZUVudGVyPXsoKSA9PiBzZXRIb3ZlcmVkTW9vZChtb29kLmlkKX1cclxuICAgICAgICAgICAgb25Nb3VzZUxlYXZlPXsoKSA9PiBzZXRIb3ZlcmVkTW9vZChudWxsKX1cclxuICAgICAgICAgID5cclxuICAgICAgICAgICAgey8qIEJhY2tncm91bmQgSW1hZ2UgKi99XHJcbiAgICAgICAgICAgIDxkaXYgXHJcbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwibW9vZC10aWxlLWltYWdlIGFic29sdXRlIGluc2V0LTAgcm91bmRlZC0zeGwgb3ZlcmZsb3ctaGlkZGVuXCJcclxuICAgICAgICAgICAgICBzdHlsZT17e1xyXG4gICAgICAgICAgICAgICAgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7bW9vZC5iZ0ltYWdlfSlgLFxyXG4gICAgICAgICAgICAgICAgYmFja2dyb3VuZFNpemU6ICdjb3ZlcicsXHJcbiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kUG9zaXRpb246ICdjZW50ZXInLFxyXG4gICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICB7LyogU3VidGxlIERhcmsgT3ZlcmxheSBmb3IgVGV4dCBSZWFkYWJpbGl0eSAqL31cclxuICAgICAgICAgICAgPGRpdiBcclxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImFic29sdXRlIGluc2V0LTBcIlxyXG4gICAgICAgICAgICAgICAgc3R5bGU9e3tcclxuICAgICAgICAgICAgICAgICAgYmFja2dyb3VuZDogJ2xpbmVhci1ncmFkaWVudCgxODBkZWcsIHJnYmEoMTEsIDE1LCAyNSwgMC4xKSAwJSwgcmdiYSgxMSwgMTUsIDI1LCAwLjUpIDEwMCUpJ1xyXG4gICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAvPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgIHsvKiBTdWJ0bGUgQm9yZGVyIChObyBCbHVyKSAqL31cclxuICAgICAgICAgICAgPGRpdiBcclxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJhYnNvbHV0ZSBpbnNldC0wIHJvdW5kZWQtM3hsXCJcclxuICAgICAgICAgICAgICBzdHlsZT17e1xyXG4gICAgICAgICAgICAgICAgYm9yZGVyOiAnMXB4IHNvbGlkIHJnYmEoMjU1LCAyNTUsIDI1NSwgMC4xKScsXHJcbiAgICAgICAgICAgICAgICBwb2ludGVyRXZlbnRzOiAnbm9uZScsXHJcbiAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgLz5cclxuXHJcbiAgICAgICAgICAgIHsvKiBDb250ZW50IExheWVyICovfVxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInJlbGF0aXZlIGgtZnVsbCBmbGV4IGZsZXgtY29sIGp1c3RpZnktYmV0d2VlbiBwLTggei0xMFwiPlxyXG4gICAgICAgICAgICAgIHsvKiBFbW9qaSBCYWRnZSAqL31cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNlbGYtZW5kXCI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IFxyXG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LTE0IGgtMTQgcm91bmRlZC0yeGwgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgdHJhbnNpdGlvbi1hbGwgZHVyYXRpb24tNTAwIGdyb3VwLWhvdmVyOnNjYWxlLTExMFwiXHJcbiAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XHJcbiAgICAgICAgICAgICAgICAgICAgYmFja2dyb3VuZDogJ3ZhcigtLXN1cmZhY2UtZnJvc3QtaG92ZXIpJyxcclxuICAgICAgICAgICAgICAgICAgICBiYWNrZHJvcEZpbHRlcjogJ3ZhcigtLWJsdXItbWVkaXVtKScsXHJcbiAgICAgICAgICAgICAgICAgICAgYm9yZGVyOiAnMXB4IHNvbGlkIHZhcigtLXN0cm9rZS1tZWRpdW0pJyxcclxuICAgICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC0zeGxcIj57bW9vZC5lbW9qaX08L3NwYW4+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgICAgey8qIE1vb2QgSW5mbyAqL31cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktM1wiPlxyXG4gICAgICAgICAgICAgICAgPGgzIFxyXG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LTN4bCBtZDp0ZXh0LTR4bCB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0zMDBcIlxyXG4gICAgICAgICAgICAgICAgICBzdHlsZT17e1xyXG4gICAgICAgICAgICAgICAgICAgIGNvbG9yOiAndmFyKC0tdGV4dC1wcmltYXJ5KScsXHJcbiAgICAgICAgICAgICAgICAgICAgZm9udFdlaWdodDogNTAwLFxyXG4gICAgICAgICAgICAgICAgICAgIGxldHRlclNwYWNpbmc6ICcwLjNweCdcclxuICAgICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAge21vb2QubmFtZX1cclxuICAgICAgICAgICAgICAgIDwvaDM+XHJcbiAgICAgICAgICAgICAgICA8cCBcclxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidGV4dC1zbSBtZDp0ZXh0LWJhc2UgdHJhbnNpdGlvbi1hbGwgZHVyYXRpb24tMzAwXCJcclxuICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcclxuICAgICAgICAgICAgICAgICAgICBjb2xvcjogJ3ZhcigtLXRleHQtc2Vjb25kYXJ5KScsXHJcbiAgICAgICAgICAgICAgICAgICAgZm9udFdlaWdodDogMzAwXHJcbiAgICAgICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgIHttb29kLmRlc2NyaXB0aW9ufVxyXG4gICAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgIHsvKiBBbWJpZW50IEdsb3cgb24gSG92ZXIgKi99XHJcbiAgICAgICAgICAgICAgICAgIDxkaXZcclxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJhYnNvbHV0ZSBpbnNldC0wIHJvdW5kZWQtM3hsIHBvaW50ZXItZXZlbnRzLW5vbmUgdHJhbnNpdGlvbi1vcGFjaXR5IGR1cmF0aW9uLTUwMFwiXHJcbiAgICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcclxuICAgICAgICAgICAgICAgIG9wYWNpdHk6IGhvdmVyZWRNb29kID09PSBtb29kLmlkID8gMC42IDogMCxcclxuICAgICAgICAgICAgICAgIGJhY2tncm91bmQ6ICdyYWRpYWwtZ3JhZGllbnQoY2lyY2xlIGF0IDUwJSA4MCUsIHZhcigtLWFjY2VudC1nbG93KSwgdHJhbnNwYXJlbnQgNjAlKScsXHJcbiAgICAgICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICkpfVxyXG4gICAgICA8L2Rpdj5cclxuXHJcbiAgICAgIHsvKiBGb290ZXIgSGludCAqL31cclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBtdC0xNiBmYWRlLWluXCIgc3R5bGU9e3sgYW5pbWF0aW9uRGVsYXk6ICcwLjVzJyB9fT5cclxuICAgICAgICA8cCBcclxuICAgICAgICAgIGNsYXNzTmFtZT1cInRleHQtc21cIlxyXG4gICAgICAgICAgc3R5bGU9e3tcclxuICAgICAgICAgICAgY29sb3I6ICd2YXIoLS10ZXh0LXRlcnRpYXJ5KScsXHJcbiAgICAgICAgICAgIGZvbnRXZWlnaHQ6IDMwMFxyXG4gICAgICAgICAgfX1cclxuICAgICAgICA+XHJcbiAgICAgICAgICBFYWNoIG1vb2QgYnJpbmdzIGEgdW5pcXVlIHNvbmljIGpvdXJuZXkgY3JhZnRlZCBqdXN0IGZvciB5b3VcclxuICAgICAgICA8L3A+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC9kaXY+XHJcbiAgKTtcclxufTtcclxuXHJcbmV4cG9ydCBkZWZhdWx0IE1vb2RUaWxlczsiXSwibmFtZXMiOlsidXNlU3RhdGUiLCJtb29kQ2hpbGxJbWciLCJtb29kTWVsYW5jaG9seUltZyIsIm1vb2RXb3Jrb3V0SW1nIiwibW9vZEZvY3VzSW1nIiwibW9vZExvdmVJbWciLCJtb29kUGFydHlJbWciLCJtb29kcyIsImlkIiwibmFtZSIsImVtb2ppIiwiYmdJbWFnZSIsImNvbG9yIiwiZGVzY3JpcHRpb24iLCJNb29kVGlsZXMiLCJvbk1vb2RTZWxlY3QiLCJob3ZlcmVkTW9vZCIsInNldEhvdmVyZWRNb29kIiwiZGl2IiwiY2xhc3NOYW1lIiwiaDIiLCJzdHlsZSIsImZvbnRXZWlnaHQiLCJsZXR0ZXJTcGFjaW5nIiwicCIsIm1hcCIsIm1vb2QiLCJpbmRleCIsImFuaW1hdGlvbkRlbGF5Iiwib25DbGljayIsIm9uTW91c2VFbnRlciIsIm9uTW91c2VMZWF2ZSIsImJhY2tncm91bmRJbWFnZSIsImJhY2tncm91bmRTaXplIiwiYmFja2dyb3VuZFBvc2l0aW9uIiwiYmFja2dyb3VuZCIsImJvcmRlciIsInBvaW50ZXJFdmVudHMiLCJiYWNrZHJvcEZpbHRlciIsInNwYW4iLCJoMyIsIm9wYWNpdHkiXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLFNBQVNBLFFBQVEsUUFBUSxRQUFRO0FBRWpDLCtEQUErRDtBQUMvRCxNQUFNQyxlQUFlLDRLQUE0SyxrQ0FBa0M7QUFDbk8sTUFBTUMsb0JBQW9CLGlMQUFpTCx3QkFBd0I7QUFDbk8sTUFBTUMsaUJBQWlCLDRLQUE0Syw0QkFBNEI7QUFDL04sTUFBTUMsZUFBZSxpS0FBaUssd0JBQXdCO0FBQzlNLE1BQU1DLGNBQWMsdUtBQXVLLHdCQUF3QjtBQUNuTixNQUFNQyxlQUFlLGlLQUFpSywwQkFBMEI7QUFlaE4sTUFBTUMsUUFBZ0I7SUFDcEI7UUFDRUMsSUFBSTtRQUNKQyxNQUFNO1FBQ05DLE9BQU87UUFDUEMsU0FBU1Y7UUFDVFcsT0FBTztRQUNQQyxhQUFhO0lBQ2Y7SUFDQTtRQUNFTCxJQUFJO1FBQ0pDLE1BQU07UUFDTkMsT0FBTztRQUNQQyxTQUFTVDtRQUNUVSxPQUFPO1FBQ1BDLGFBQWE7SUFDZjtJQUNBO1FBQ0VMLElBQUk7UUFDSkMsTUFBTTtRQUNOQyxPQUFPO1FBQ1BDLFNBQVNSO1FBQ1RTLE9BQU87UUFDUEMsYUFBYTtJQUNmO0lBQ0E7UUFDRUwsSUFBSTtR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

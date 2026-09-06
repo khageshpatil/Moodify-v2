@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: moodify-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MOODIFY_SERVER_PORT
+        value: 8787
+    healthCheckPath: /
+    autoDeploy: true

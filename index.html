@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoodiFy KP - Your Personal Music Sanctuary</title>
+    <meta name="description" content="Experience music through your emotions with MoodiFy KP - a beautiful anime-inspired music streaming app that curates playlists based on your current mood." />
+    <meta name="author" content="KP" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#8b5cf6" />
+    <meta name="msapplication-TileColor" content="#8b5cf6" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="MoodiFy KP - Your Personal Music Sanctuary" />
+    <meta property="og:description" content="Experience music through your emotions with MoodiFy KP - a beautiful anime-inspired music streaming app that curates playlists based on your current mood." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/apple-touch-icon.svg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MoodiFy KP - Your Personal Music Sanctuary" />
+    <meta name="twitter:description" content="Experience music through your emotions" />
+    <meta name="twitter:image" content="/apple-touch-icon.svg" />
+    
+    <!-- GitHub Pages SPA redirect script -->
+    <script>
+      // Single Page Apps for GitHub Pages
+      // MIT License
+      // https://github.com/rafgraph/spa-github-pages
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

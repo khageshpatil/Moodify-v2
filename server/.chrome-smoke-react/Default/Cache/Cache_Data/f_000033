@@ -1,0 +1,678 @@
+/**
+ * 🎵 Curated Mood Playlists for Moodify
+ * Each playlist contains carefully selected tracks that match the mood's vibe
+ * These are fetched from JioSaavn API with proper metadata
+ */ export const moodPlaylists = {
+    // 🌸 CHILL - Peaceful, evening, soft breezy vibes
+    chill: [
+        {
+            id: 'chill-1',
+            title: 'After Hours',
+            artist: 'The Weeknd',
+            album: 'After Hours',
+            albumArt: 'https://c.saavncdn.com/191/After-Hours-English-2020-20200320040402-500x500.jpg',
+            duration: 361,
+            url: ''
+        },
+        {
+            id: 'chill-2',
+            title: 'Blinding Lights',
+            artist: 'The Weeknd',
+            album: 'After Hours',
+            albumArt: 'https://c.saavncdn.com/191/After-Hours-English-2020-20200320040402-500x500.jpg',
+            duration: 200,
+            url: ''
+        },
+        {
+            id: 'chill-3',
+            title: 'Stay',
+            artist: 'The Kid LAROI, Justin Bieber',
+            album: 'Stay',
+            albumArt: 'https://c.saavncdn.com/604/Stay-English-2021-20210709194401-500x500.jpg',
+            duration: 141,
+            url: ''
+        },
+        {
+            id: 'chill-4',
+            title: 'Someone You Loved',
+            artist: 'Lewis Capaldi',
+            album: 'Divinely Uninspired',
+            albumArt: 'https://c.saavncdn.com/191/Divinely-Uninspired-To-A-Hellish-Extent-English-2019-20190517040402-500x500.jpg',
+            duration: 182,
+            url: ''
+        },
+        {
+            id: 'chill-5',
+            title: 'Perfect',
+            artist: 'Ed Sheeran',
+            album: 'Divide',
+            albumArt: 'https://c.saavncdn.com/191/Divide-English-2017-20170303040402-500x500.jpg',
+            duration: 263,
+            url: ''
+        },
+        {
+            id: 'chill-6',
+            title: 'Kasoor',
+            artist: 'Prateek Kuhad',
+            album: 'Kasoor',
+            albumArt: 'https://c.saavncdn.com/191/Kasoor-Hindi-2022-20221107104149-500x500.jpg',
+            duration: 240,
+            url: ''
+        },
+        {
+            id: 'chill-7',
+            title: 'Alag Aasmaan',
+            artist: 'Anuv Jain',
+            album: 'Alag Aasmaan',
+            albumArt: 'https://c.saavncdn.com/604/Alag-Aasmaan-Hindi-2020-20200820181749-500x500.jpg',
+            duration: 223,
+            url: ''
+        },
+        {
+            id: 'chill-8',
+            title: 'Mehrama',
+            artist: 'Darshan Raval',
+            album: 'Love Aaj Kal',
+            albumArt: 'https://c.saavncdn.com/398/Mehrama-Hindi-2020-20200213151431-500x500.jpg',
+            duration: 245,
+            url: ''
+        },
+        {
+            id: 'chill-9',
+            title: 'Raatan Lambiyan',
+            artist: 'Jubin Nautiyal, Asees Kaur',
+            album: 'Shershaah',
+            albumArt: 'https://c.saavncdn.com/478/Shershaah-Hindi-2021-20210815181610-500x500.jpg',
+            duration: 237,
+            url: ''
+        },
+        {
+            id: 'chill-10',
+            title: 'Dil Mere',
+            artist: 'The Local Train',
+            album: 'Aalas Ka Pedh',
+            albumArt: 'https://c.saavncdn.com/048/Aalas-Ka-Pedh-Hindi-2015-500x500.jpg',
+            duration: 255,
+            url: ''
+        },
+        {
+            id: 'chill-11',
+            title: 'Gul',
+            artist: 'Anuv Jain',
+            album: 'Gul',
+            albumArt: 'https://c.saavncdn.com/716/Gul-Hindi-2022-20220919181742-500x500.jpg',
+            duration: 198,
+            url: ''
+        },
+        {
+            id: 'chill-12',
+            title: 'Raabta',
+            artist: 'Arijit Singh',
+            album: 'Agent Vinod',
+            albumArt: 'https://c.saavncdn.com/497/Agent-Vinod-Hindi-2012-500x500.jpg',
+            duration: 242,
+            url: ''
+        }
+    ],
+    // ☁️ MELANCHOLY - Sad, emotional, deep, rainy vibes
+    melancholy: [
+        {
+            id: 'melancholy-1',
+            title: 'Jiyein Kyun',
+            artist: 'Papon',
+            album: 'Dum Maaro Dum',
+            albumArt: 'https://c.saavncdn.com/497/Dum-Maaro-Dum-Hindi-2011-500x500.jpg',
+            duration: 298,
+            url: ''
+        },
+        {
+            id: 'melancholy-2',
+            title: 'Phir Le Aaya Dil',
+            artist: 'Arijit Singh',
+            album: 'Barfi!',
+            albumArt: 'https://c.saavncdn.com/497/Barfi--Hindi-2012-500x500.jpg',
+            duration: 312,
+            url: ''
+        },
+        {
+            id: 'melancholy-3',
+            title: 'Agar Tum Saath Ho',
+            artist: 'Arijit Singh, Alka Yagnik',
+            album: 'Tamasha',
+            albumArt: 'https://c.saavncdn.com/191/Tamasha-Hindi-2015-500x500.jpg',
+            duration: 345,
+            url: ''
+        },
+        {
+            id: 'melancholy-4',
+            title: 'Kasoor',
+            artist: 'Prateek Kuhad',
+            album: 'Kasoor',
+            albumArt: 'https://c.saavncdn.com/191/Kasoor-Hindi-2022-20221107104149-500x500.jpg',
+            duration: 240,
+            url: ''
+        },
+        {
+            id: 'melancholy-5',
+            title: 'Tujhe Kitna Chahne Lage',
+            artist: 'Arijit Singh',
+            album: 'Kabir Singh',
+            albumArt: 'https://c.saavncdn.com/191/Kabir-Singh-Hindi-2019-20190621150701-500x500.jpg',
+            duration: 287,
+            url: ''
+        },
+        {
+            id: 'melancholy-6',
+            title: 'Channa Mereya',
+            artist: 'Arijit Singh',
+            album: 'Ae Dil Hai Mushkil',
+            albumArt: 'https://c.saavncdn.com/497/Ae-Dil-Hai-Mushkil-Hindi-2016-500x500.jpg',
+            duration: 298,
+            url: ''
+        },
+        {
+            id: 'melancholy-7',
+            title: 'Tune Jo Na Kaha',
+            artist: 'Mohit Chauhan',
+            album: 'New York',
+            albumArt: 'https://c.saavncdn.com/497/New-York-Hindi-2009-500x500.jpg',
+            duration: 315,
+            url: ''
+        },
+        {
+            id: 'melancholy-8',
+            title: 'Zara Zara',
+            artist: 'Bombay Jayashri',
+            album: 'Rehnaa Hai Terre Dil Mein',
+            albumArt: 'https://c.saavncdn.com/497/Rehnaa-Hai-Terre-Dil-Mein-Hindi-2001-500x500.jpg',
+            duration: 305,
+            url: ''
+        },
+        {
+            id: 'melancholy-9',
+            title: 'Hamari Adhuri Kahani',
+            artist: 'Arijit Singh',
+            album: 'Hamari Adhuri Kahani',
+            albumArt: 'https://c.saavncdn.com/497/Hamari-Adhuri-Kahani-Hindi-2015-500x500.jpg',
+            duration: 342,
+            url: ''
+        },
+        {
+            id: 'melancholy-10',
+            title: 'Naina',
+            artist: 'Asees Kaur',
+            album: 'Dangal',
+            albumArt: 'https://c.saavncdn.com/497/Dangal-Hindi-2016-500x500.jpg',
+            duration: 271,
+            url: ''
+        },
+        {
+            id: 'melancholy-11',
+            title: 'Yeh Dooriyan',
+            artist: 'Mohit Chauhan',
+            album: 'Love Aaj Kal',
+            albumArt: 'https://c.saavncdn.com/497/Love-Aaj-Kal-Hindi-2009-500x500.jpg',
+            duration: 289,
+            url: ''
+        },
+        {
+            id: 'melancholy-12',
+            title: 'Bekhayali',
+            artist: 'Sachet Tandon',
+            album: 'Kabir Singh',
+            albumArt: 'https://c.saavncdn.com/191/Kabir-Singh-Hindi-2019-20190621150701-500x500.jpg',
+            duration: 378,
+            url: ''
+        }
+    ],
+    // 🔥 WORKOUT - High energy, Punjabi bangers, motivation
+    workout: [
+        {
+            id: 'workout-1',
+            title: 'Brown Munde',
+            artist: 'AP Dhillon, Gurinder Gill',
+            album: 'Brown Munde',
+            albumArt: 'https://c.saavncdn.com/604/Brown-Munde-Punjabi-2020-20201118091227-500x500.jpg',
+            duration: 195,
+            url: ''
+        },
+        {
+            id: 'workout-2',
+            title: 'Insane',
+            artist: 'AP Dhillon',
+            album: 'Insane',
+            albumArt: 'https://c.saavncdn.com/191/Insane-Punjabi-2021-20210708184601-500x500.jpg',
+            duration: 178,
+            url: ''
+        },
+        {
+            id: 'workout-3',
+            title: 'Bijlee Bijlee',
+            artist: 'Harrdy Sandhu',
+            album: 'Bijlee Bijlee',
+            albumArt: 'https://c.saavncdn.com/604/Bijlee-Bijlee-Punjabi-2021-20211030151037-500x500.jpg',
+            duration: 167,
+            url: ''
+        },
+        {
+            id: 'workout-4',
+            title: 'Excuses',
+            artist: 'AP Dhillon',
+            album: 'Excuses',
+            albumArt: 'https://c.saavncdn.com/191/Excuses-Punjabi-2020-20201118084831-500x500.jpg',
+            duration: 187,
+            url: ''
+        },
+        {
+            id: 'workout-5',
+            title: 'Nacho Nacho',
+            artist: 'Vishal Mishra, Rahul Sipligunj',
+            album: 'RRR',
+            albumArt: 'https://c.saavncdn.com/191/RRR-Hindi-2022-20220324181117-500x500.jpg',
+            duration: 242,
+            url: ''
+        },
+        {
+            id: 'workout-6',
+            title: 'She Move It Like',
+            artist: 'Badshah',
+            album: 'ONE Album',
+            albumArt: 'https://c.saavncdn.com/604/ONE-Album-Hindi-2022-20221104154103-500x500.jpg',
+            duration: 198,
+            url: ''
+        },
+        {
+            id: 'workout-7',
+            title: 'Maan Meri Jaan',
+            artist: 'King',
+            album: 'Champagne Talk',
+            albumArt: 'https://c.saavncdn.com/604/Champagne-Talk-Hindi-2022-20221008011951-500x500.jpg',
+            duration: 175,
+            url: ''
+        },
+        {
+            id: 'workout-8',
+            title: 'Udd Gaye',
+            artist: 'Ritviz',
+            album: 'Ved',
+            albumArt: 'https://c.saavncdn.com/604/Ved-Hindi-2018-20181115-500x500.jpg',
+            duration: 212,
+            url: ''
+        },
+        {
+            id: 'workout-9',
+            title: 'Sultan Title Track',
+            artist: 'Vishal Dadlani',
+            album: 'Sultan',
+            albumArt: 'https://c.saavncdn.com/497/Sultan-Hindi-2016-500x500.jpg',
+            duration: 287,
+            url: ''
+        },
+        {
+            id: 'workout-10',
+            title: 'Zinda',
+            artist: 'Shankar Mahadevan',
+            album: 'Bhaag Milkha Bhaag',
+            albumArt: 'https://c.saavncdn.com/497/Bhaag-Milkha-Bhaag-Hindi-2013-500x500.jpg',
+            duration: 298,
+            url: ''
+        },
+        {
+            id: 'workout-11',
+            title: 'Sher Aaya Sher',
+            artist: 'DIVINE',
+            album: 'Gully Boy',
+            albumArt: 'https://c.saavncdn.com/497/Gully-Boy-Hindi-2019-20190213150025-500x500.jpg',
+            duration: 165,
+            url: ''
+        },
+        {
+            id: 'workout-12',
+            title: 'Jhoome Jo Pathaan',
+            artist: 'Arijit Singh, Sukriti Kakar',
+            album: 'Pathaan',
+            albumArt: 'https://c.saavncdn.com/191/Pathaan-Hindi-2023-20230112102017-500x500.jpg',
+            duration: 234,
+            url: ''
+        }
+    ],
+    // 🚀 FOCUS - Study, BGM, calm instrumentals
+    focus: [
+        {
+            id: 'focus-1',
+            title: 'Tum Mile (Instrumental)',
+            artist: 'Pritam',
+            album: 'Tum Mile',
+            albumArt: 'https://c.saavncdn.com/497/Tum-Mile-Hindi-2009-500x500.jpg',
+            duration: 285,
+            url: ''
+        },
+        {
+            id: 'focus-2',
+            title: 'Rasiya (Instrumental)',
+            artist: 'Pritam',
+            album: 'Brahmāstra',
+            albumArt: 'https://c.saavncdn.com/191/Brahmastra-Hindi-2022-20220908121002-500x500.jpg',
+            duration: 267,
+            url: ''
+        },
+        {
+            id: 'focus-3',
+            title: 'Kun Faya Kun',
+            artist: 'AR Rahman',
+            album: 'Rockstar',
+            albumArt: 'https://c.saavncdn.com/497/Rockstar-Hindi-2011-500x500.jpg',
+            duration: 458,
+            url: ''
+        },
+        {
+            id: 'focus-4',
+            title: 'Moh Moh Ke Dhaage',
+            artist: 'Monali Thakur',
+            album: 'Dum Laga Ke Haisha',
+            albumArt: 'https://c.saavncdn.com/497/Dum-Laga-Ke-Haisha-Hindi-2015-500x500.jpg',
+            duration: 273,
+            url: ''
+        },
+        {
+            id: 'focus-5',
+            title: 'Ilahi',
+            artist: 'Arijit Singh',
+            album: 'Yeh Jawaani Hai Deewani',
+            albumArt: 'https://c.saavncdn.com/497/Yeh-Jawaani-Hai-Deewani-Hindi-2013-500x500.jpg',
+            duration: 292,
+            url: ''
+        },
+        {
+            id: 'focus-6',
+            title: 'Samjhawan',
+            artist: 'Arijit Singh',
+            album: 'Humpty Sharma Ki Dulhania',
+            albumArt: 'https://c.saavncdn.com/497/Humpty-Sharma-Ki-Dulhania-Hindi-2014-500x500.jpg',
+            duration: 315,
+            url: ''
+        },
+        {
+            id: 'focus-7',
+            title: 'Agar Tum Saath Ho (Instrumental)',
+            artist: 'AR Rahman',
+            album: 'Tamasha',
+            albumArt: 'https://c.saavncdn.com/191/Tamasha-Hindi-2015-500x500.jpg',
+            duration: 328,
+            url: ''
+        },
+        {
+            id: 'focus-8',
+            title: 'Shayad',
+            artist: 'Arijit Singh',
+            album: 'Love Aaj Kal',
+            albumArt: 'https://c.saavncdn.com/191/Love-Aaj-Kal-Hindi-2020-20200213151438-500x500.jpg',
+            duration: 303,
+            url: ''
+        },
+        {
+            id: 'focus-9',
+            title: 'Sooraj Ki Baahon Mein',
+            artist: 'Lata Mangeshkar, Dominique Cerejo',
+            album: 'Zindagi Na Milegi Dobara',
+            albumArt: 'https://c.saavncdn.com/497/Zindagi-Na-Milegi-Dobara-Hindi-2011-500x500.jpg',
+            duration: 287,
+            url: ''
+        },
+        {
+            id: 'focus-10',
+            title: 'Kabira',
+            artist: 'Tochi Raina',
+            album: 'Yeh Jawaani Hai Deewani',
+            albumArt: 'https://c.saavncdn.com/497/Yeh-Jawaani-Hai-Deewani-Hindi-2013-500x500.jpg',
+            duration: 312,
+            url: ''
+        },
+        {
+            id: 'focus-11',
+            title: 'Kaun Tujhe',
+            artist: 'Palak Muchhal',
+            album: 'M.S. Dhoni',
+            albumArt: 'https://c.saavncdn.com/497/M-S-Dhoni-Hindi-2016-500x500.jpg',
+            duration: 278,
+            url: ''
+        },
+        {
+            id: 'focus-12',
+            title: 'Ae Watan',
+            artist: 'Arijit Singh',
+            album: 'Raazi',
+            albumArt: 'https://c.saavncdn.com/191/Raazi-Hindi-2018-20180425-500x500.jpg',
+            duration: 292,
+            url: ''
+        }
+    ],
+    // ❤️ LOVE - Romantic, warm, modern Bollywood
+    love: [
+        {
+            id: 'love-1',
+            title: 'Hawayein',
+            artist: 'Arijit Singh',
+            album: 'Jab Harry Met Sejal',
+            albumArt: 'https://c.saavncdn.com/497/Jab-Harry-Met-Sejal-Hindi-2017-500x500.jpg',
+            duration: 298,
+            url: ''
+        },
+        {
+            id: 'love-2',
+            title: 'Raatan Lambiyan',
+            artist: 'Jubin Nautiyal, Asees Kaur',
+            album: 'Shershaah',
+            albumArt: 'https://c.saavncdn.com/478/Shershaah-Hindi-2021-20210815181610-500x500.jpg',
+            duration: 237,
+            url: ''
+        },
+        {
+            id: 'love-3',
+            title: 'Shayad',
+            artist: 'Arijit Singh',
+            album: 'Love Aaj Kal',
+            albumArt: 'https://c.saavncdn.com/191/Love-Aaj-Kal-Hindi-2020-20200213151438-500x500.jpg',
+            duration: 303,
+            url: ''
+        },
+        {
+            id: 'love-4',
+            title: 'Tum Hi Ho',
+            artist: 'Arijit Singh',
+            album: 'Aashiqui 2',
+            albumArt: 'https://c.saavncdn.com/497/Aashiqui-2-Hindi-2013-500x500.jpg',
+            duration: 262,
+            url: ''
+        },
+        {
+            id: 'love-5',
+            title: 'Pal',
+            artist: 'Arijit Singh',
+            album: 'Jalebi',
+            albumArt: 'https://c.saavncdn.com/191/Jalebi-Hindi-2018-20181010-500x500.jpg',
+            duration: 289,
+            url: ''
+        },
+        {
+            id: 'love-6',
+            title: 'Khairiyat',
+            artist: 'Arijit Singh',
+            album: 'Chhichhore',
+            albumArt: 'https://c.saavncdn.com/497/Chhichhore-Hindi-2019-20190906125329-500x500.jpg',
+            duration: 352,
+            url: ''
+        },
+        {
+            id: 'love-7',
+            title: 'Raabta',
+            artist: 'Arijit Singh',
+            album: 'Agent Vinod',
+            albumArt: 'https://c.saavncdn.com/497/Agent-Vinod-Hindi-2012-500x500.jpg',
+            duration: 242,
+            url: ''
+        },
+        {
+            id: 'love-8',
+            title: 'Sunn Raha Hai',
+            artist: 'Shreya Ghoshal',
+            album: 'Aashiqui 2',
+            albumArt: 'https://c.saavncdn.com/497/Aashiqui-2-Hindi-2013-500x500.jpg',
+            duration: 392,
+            url: ''
+        },
+        {
+            id: 'love-9',
+            title: 'Kabira',
+            artist: 'Arijit Singh',
+            album: 'Yeh Jawaani Hai Deewani',
+            albumArt: 'https://c.saavncdn.com/497/Yeh-Jawaani-Hai-Deewani-Hindi-2013-500x500.jpg',
+            duration: 245,
+            url: ''
+        },
+        {
+            id: 'love-10',
+            title: 'O Re Piya',
+            artist: 'Rahat Fateh Ali Khan',
+            album: 'Aaja Nachle',
+            albumArt: 'https://c.saavncdn.com/497/Aaja-Nachle-Hindi-2007-500x500.jpg',
+            duration: 312,
+            url: ''
+        },
+        {
+            id: 'love-11',
+            title: 'Iktara',
+            artist: 'Amit Trivedi',
+            album: 'Wake Up Sid',
+            albumArt: 'https://c.saavncdn.com/497/Wake-Up-Sid-Hindi-2009-500x500.jpg',
+            duration: 288,
+            url: ''
+        },
+        {
+            id: 'love-12',
+            title: 'Bol Do Na Zara',
+            artist: 'Armaan Malik',
+            album: 'Azhar',
+            albumArt: 'https://c.saavncdn.com/497/Azhar-Hindi-2016-500x500.jpg',
+            duration: 267,
+            url: ''
+        }
+    ],
+    // 🎉 PARTY - Dance, Bollywood hits, Punjabi bangers
+    party: [
+        {
+            id: 'party-1',
+            title: 'Kala Chashma',
+            artist: 'Amar Arshi, Badshah, Neha Kakkar',
+            album: 'Baar Baar Dekho',
+            albumArt: 'https://c.saavncdn.com/497/Baar-Baar-Dekho-Hindi-2016-500x500.jpg',
+            duration: 198,
+            url: ''
+        },
+        {
+            id: 'party-2',
+            title: 'Gallan Goodiyaan',
+            artist: 'Yashita Sharma',
+            album: 'Dil Dhadakne Do',
+            albumArt: 'https://c.saavncdn.com/497/Dil-Dhadakne-Do-Hindi-2015-500x500.jpg',
+            duration: 267,
+            url: ''
+        },
+        {
+            id: 'party-3',
+            title: 'Naagin',
+            artist: 'Aastha Gill, Akasa',
+            album: 'Naagin',
+            albumArt: 'https://c.saavncdn.com/191/Naagin-Hindi-2019-20191018031730-500x500.jpg',
+            duration: 178,
+            url: ''
+        },
+        {
+            id: 'party-4',
+            title: 'Jumme Ki Raat',
+            artist: 'Mika Singh',
+            album: 'Kick',
+            albumArt: 'https://c.saavncdn.com/497/Kick-Hindi-2014-500x500.jpg',
+            duration: 245,
+            url: ''
+        },
+        {
+            id: 'party-5',
+            title: 'Kar Gayi Chull',
+            artist: 'Badshah, Neha Kakkar',
+            album: 'Kapoor & Sons',
+            albumArt: 'https://c.saavncdn.com/497/Kapoor-Sons-Hindi-2016-500x500.jpg',
+            duration: 212,
+            url: ''
+        },
+        {
+            id: 'party-6',
+            title: 'Morni Banke',
+            artist: 'Guru Randhawa, Neha Kakkar',
+            album: 'Badhaai Ho',
+            albumArt: 'https://c.saavncdn.com/191/Badhaai-Ho-Hindi-2018-20181017-500x500.jpg',
+            duration: 187,
+            url: ''
+        },
+        {
+            id: 'party-7',
+            title: 'Veere',
+            artist: 'Badshah, Manj Musik',
+            album: 'Veere Di Wedding',
+            albumArt: 'https://c.saavncdn.com/191/Veere-Di-Wedding-Hindi-2018-20180531-500x500.jpg',
+            duration: 223,
+            url: ''
+        },
+        {
+            id: 'party-8',
+            title: 'Sauda Khara Khara',
+            artist: 'Diljit Dosanjh, Sukhbir',
+            album: 'Good Newwz',
+            albumArt: 'https://c.saavncdn.com/497/Good-Newwz-Hindi-2019-20191220155401-500x500.jpg',
+            duration: 198,
+            url: ''
+        },
+        {
+            id: 'party-9',
+            title: 'Dilbar',
+            artist: 'Neha Kakkar, Dhvani Bhanushali',
+            album: 'Satyameva Jayate',
+            albumArt: 'https://c.saavncdn.com/497/Satyameva-Jayate-Hindi-2018-20180810-500x500.jpg',
+            duration: 187,
+            url: ''
+        },
+        {
+            id: 'party-10',
+            title: 'Nachne De Saare',
+            artist: 'Jasleen Royal, Harrdy Sandhu',
+            album: 'Baar Baar Dekho',
+            albumArt: 'https://c.saavncdn.com/497/Baar-Baar-Dekho-Hindi-2016-500x500.jpg',
+            duration: 205,
+            url: ''
+        },
+        {
+            id: 'party-11',
+            title: 'Baby Marvake Maanegi',
+            artist: 'Raftaar, Nora Fatehi',
+            album: 'Besharam',
+            albumArt: 'https://c.saavncdn.com/497/Besharam-Hindi-2013-500x500.jpg',
+            duration: 178,
+            url: ''
+        },
+        {
+            id: 'party-12',
+            title: 'Muqabla',
+            artist: 'A.R. Rahman, Prabhudeva',
+            album: 'Street Dancer 3D',
+            albumArt: 'https://c.saavncdn.com/191/Street-Dancer-3D-Hindi-2019-20191227132554-500x500.jpg',
+            duration: 223,
+            url: ''
+        }
+    ]
+};
+// Helper function to get mood playlist
+export const getMoodPlaylist = (moodId)=>{
+    return moodPlaylists[moodId] || moodPlaylists.chill;
+};
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIm1vb2RQbGF5bGlzdHMudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgVHJhY2sgfSBmcm9tICcuL21vY2tNdXNpYyc7XHJcblxyXG4vKipcclxuICog8J+OtSBDdXJhdGVkIE1vb2QgUGxheWxpc3RzIGZvciBNb29kaWZ5XHJcbiAqIEVhY2ggcGxheWxpc3QgY29udGFpbnMgY2FyZWZ1bGx5IHNlbGVjdGVkIHRyYWNrcyB0aGF0IG1hdGNoIHRoZSBtb29kJ3MgdmliZVxyXG4gKiBUaGVzZSBhcmUgZmV0Y2hlZCBmcm9tIEppb1NhYXZuIEFQSSB3aXRoIHByb3BlciBtZXRhZGF0YVxyXG4gKi9cclxuXHJcbmV4cG9ydCBjb25zdCBtb29kUGxheWxpc3RzOiBSZWNvcmQ8c3RyaW5nLCBUcmFja1tdPiA9IHtcclxuICAvLyDwn4y4IENISUxMIC0gUGVhY2VmdWwsIGV2ZW5pbmcsIHNvZnQgYnJlZXp5IHZpYmVzXHJcbiAgY2hpbGw6IFtcclxuICAgIHtcclxuICAgICAgaWQ6ICdjaGlsbC0xJyxcclxuICAgICAgdGl0bGU6ICdBZnRlciBIb3VycycsXHJcbiAgICAgIGFydGlzdDogJ1RoZSBXZWVrbmQnLFxyXG4gICAgICBhbGJ1bTogJ0FmdGVyIEhvdXJzJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzE5MS9BZnRlci1Ib3Vycy1FbmdsaXNoLTIwMjAtMjAyMDAzMjAwNDA0MDItNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMzYxLFxyXG4gICAgICB1cmw6ICcnLCAvLyBXaWxsIGJlIHBvcHVsYXRlZCBieSBKaW9TYWF2biBzZWFyY2hcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnY2hpbGwtMicsXHJcbiAgICAgIHRpdGxlOiAnQmxpbmRpbmcgTGlnaHRzJyxcclxuICAgICAgYXJ0aXN0OiAnVGhlIFdlZWtuZCcsXHJcbiAgICAgIGFsYnVtOiAnQWZ0ZXIgSG91cnMnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL0FmdGVyLUhvdXJzLUVuZ2xpc2gtMjAyMC0yMDIwMDMyMDA0MDQwMi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyMDAsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2NoaWxsLTMnLFxyXG4gICAgICB0aXRsZTogJ1N0YXknLFxyXG4gICAgICBhcnRpc3Q6ICdUaGUgS2lkIExBUk9JLCBKdXN0aW4gQmllYmVyJyxcclxuICAgICAgYWxidW06ICdTdGF5JyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzYwNC9TdGF5LUVuZ2xpc2gtMjAyMS0yMDIxMDcwOTE5NDQwMS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAxNDEsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2NoaWxsLTQnLFxyXG4gICAgICB0aXRsZTogJ1NvbWVvbmUgWW91IExvdmVkJyxcclxuICAgICAgYXJ0aXN0OiAnTGV3aXMgQ2FwYWxkaScsXHJcbiAgICAgIGFsYnVtOiAnRGl2aW5lbHkgVW5pbnNwaXJlZCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8xOTEvRGl2aW5lbHktVW5pbnNwaXJlZC1Uby1BLUhlbGxpc2gtRXh0ZW50LUVuZ2xpc2gtMjAxOS0yMDE5MDUxNzA0MDQwMi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAxODIsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2NoaWxsLTUnLFxyXG4gICAgICB0aXRsZTogJ1BlcmZlY3QnLFxyXG4gICAgICBhcnRpc3Q6ICdFZCBTaGVlcmFuJyxcclxuICAgICAgYWxidW06ICdEaXZpZGUnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL0RpdmlkZS1FbmdsaXNoLTIwMTctMjAxNzAzMDMwNDA0MDItNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjYzLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdjaGlsbC02JyxcclxuICAgICAgdGl0bGU6ICdLYXNvb3InLFxyXG4gICAgICBhcnRpc3Q6ICdQcmF0ZWVrIEt1aGFkJyxcclxuICAgICAgYWxidW06ICdLYXNvb3InLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL0thc29vci1IaW5kaS0yMDIyLTIwMjIxMTA3MTA0MTQ5LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI0MCxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnY2hpbGwtNycsXHJcbiAgICAgIHRpdGxlOiAnQWxhZyBBYXNtYWFuJyxcclxuICAgICAgYXJ0aXN0OiAnQW51diBKYWluJyxcclxuICAgICAgYWxidW06ICdBbGFnIEFhc21hYW4nLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNjA0L0FsYWctQWFzbWFhbi1IaW5kaS0yMDIwLTIwMjAwODIwMTgxNzQ5LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDIyMyxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnY2hpbGwtOCcsXHJcbiAgICAgIHRpdGxlOiAnTWVocmFtYScsXHJcbiAgICAgIGFydGlzdDogJ0RhcnNoYW4gUmF2YWwnLFxyXG4gICAgICBhbGJ1bTogJ0xvdmUgQWFqIEthbCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8zOTgvTWVocmFtYS1IaW5kaS0yMDIwLTIwMjAwMjEzMTUxNDMxLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI0NSxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnY2hpbGwtOScsXHJcbiAgICAgIHRpdGxlOiAnUmFhdGFuIExhbWJpeWFuJyxcclxuICAgICAgYXJ0aXN0OiAnSnViaW4gTmF1dGl5YWwsIEFzZWVzIEthdXInLFxyXG4gICAgICBhbGJ1bTogJ1NoZXJzaGFhaCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80NzgvU2hlcnNoYWFoLUhpbmRpLTIwMjEtMjAyMTA4MTUxODE2MTAtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjM3LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdjaGlsbC0xMCcsXHJcbiAgICAgIHRpdGxlOiAnRGlsIE1lcmUnLFxyXG4gICAgICBhcnRpc3Q6ICdUaGUgTG9jYWwgVHJhaW4nLFxyXG4gICAgICBhbGJ1bTogJ0FhbGFzIEthIFBlZGgnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMDQ4L0FhbGFzLUthLVBlZGgtSGluZGktMjAxNS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyNTUsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2NoaWxsLTExJyxcclxuICAgICAgdGl0bGU6ICdHdWwnLFxyXG4gICAgICBhcnRpc3Q6ICdBbnV2IEphaW4nLFxyXG4gICAgICBhbGJ1bTogJ0d1bCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS83MTYvR3VsLUhpbmRpLTIwMjItMjAyMjA5MTkxODE3NDItNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMTk4LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdjaGlsbC0xMicsXHJcbiAgICAgIHRpdGxlOiAnUmFhYnRhJyxcclxuICAgICAgYXJ0aXN0OiAnQXJpaml0IFNpbmdoJyxcclxuICAgICAgYWxidW06ICdBZ2VudCBWaW5vZCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvQWdlbnQtVmlub2QtSGluZGktMjAxMi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyNDIsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gIF0sXHJcblxyXG4gIC8vIOKYge+4jyBNRUxBTkNIT0xZIC0gU2FkLCBlbW90aW9uYWwsIGRlZXAsIHJhaW55IHZpYmVzXHJcbiAgbWVsYW5jaG9seTogW1xyXG4gICAge1xyXG4gICAgICBpZDogJ21lbGFuY2hvbHktMScsXHJcbiAgICAgIHRpdGxlOiAnSml5ZWluIEt5dW4nLFxyXG4gICAgICBhcnRpc3Q6ICdQYXBvbicsXHJcbiAgICAgIGFsYnVtOiAnRHVtIE1hYXJvIER1bScsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvRHVtLU1hYXJvLUR1bS1IaW5kaS0yMDExLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI5OCxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnbWVsYW5jaG9seS0yJyxcclxuICAgICAgdGl0bGU6ICdQaGlyIExlIEFheWEgRGlsJyxcclxuICAgICAgYXJ0aXN0OiAnQXJpaml0IFNpbmdoJyxcclxuICAgICAgYWxidW06ICdCYXJmaSEnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L0JhcmZpLS1IaW5kaS0yMDEyLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDMxMixcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnbWVsYW5jaG9seS0zJyxcclxuICAgICAgdGl0bGU6ICdBZ2FyIFR1bSBTYWF0aCBIbycsXHJcbiAgICAgIGFydGlzdDogJ0FyaWppdCBTaW5naCwgQWxrYSBZYWduaWsnLFxyXG4gICAgICBhbGJ1bTogJ1RhbWFzaGEnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL1RhbWFzaGEtSGluZGktMjAxNS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAzNDUsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ21lbGFuY2hvbHktNCcsXHJcbiAgICAgIHRpdGxlOiAnS2Fzb29yJyxcclxuICAgICAgYXJ0aXN0OiAnUHJhdGVlayBLdWhhZCcsXHJcbiAgICAgIGFsYnVtOiAnS2Fzb29yJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzE5MS9LYXNvb3ItSGluZGktMjAyMi0yMDIyMTEwNzEwNDE0OS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyNDAsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ21lbGFuY2hvbHktNScsXHJcbiAgICAgIHRpdGxlOiAnVHVqaGUgS2l0bmEgQ2hhaG5lIExhZ2UnLFxyXG4gICAgICBhcnRpc3Q6ICdBcmlqaXQgU2luZ2gnLFxyXG4gICAgICBhbGJ1bTogJ0thYmlyIFNpbmdoJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzE5MS9LYWJpci1TaW5naC1IaW5kaS0yMDE5LTIwMTkwNjIxMTUwNzAxLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI4NyxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnbWVsYW5jaG9seS02JyxcclxuICAgICAgdGl0bGU6ICdDaGFubmEgTWVyZXlhJyxcclxuICAgICAgYXJ0aXN0OiAnQXJpaml0IFNpbmdoJyxcclxuICAgICAgYWxidW06ICdBZSBEaWwgSGFpIE11c2hraWwnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L0FlLURpbC1IYWktTXVzaGtpbC1IaW5kaS0yMDE2LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI5OCxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnbWVsYW5jaG9seS03JyxcclxuICAgICAgdGl0bGU6ICdUdW5lIEpvIE5hIEthaGEnLFxyXG4gICAgICBhcnRpc3Q6ICdNb2hpdCBDaGF1aGFuJyxcclxuICAgICAgYWxidW06ICdOZXcgWW9yaycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvTmV3LVlvcmstSGluZGktMjAwOS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAzMTUsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ21lbGFuY2hvbHktOCcsXHJcbiAgICAgIHRpdGxlOiAnWmFyYSBaYXJhJyxcclxuICAgICAgYXJ0aXN0OiAnQm9tYmF5IEpheWFzaHJpJyxcclxuICAgICAgYWxidW06ICdSZWhuYWEgSGFpIFRlcnJlIERpbCBNZWluJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9SZWhuYWEtSGFpLVRlcnJlLURpbC1NZWluLUhpbmRpLTIwMDEtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMzA1LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdtZWxhbmNob2x5LTknLFxyXG4gICAgICB0aXRsZTogJ0hhbWFyaSBBZGh1cmkgS2FoYW5pJyxcclxuICAgICAgYXJ0aXN0OiAnQXJpaml0IFNpbmdoJyxcclxuICAgICAgYWxidW06ICdIYW1hcmkgQWRodXJpIEthaGFuaScsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvSGFtYXJpLUFkaHVyaS1LYWhhbmktSGluZGktMjAxNS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAzNDIsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ21lbGFuY2hvbHktMTAnLFxyXG4gICAgICB0aXRsZTogJ05haW5hJyxcclxuICAgICAgYXJ0aXN0OiAnQXNlZXMgS2F1cicsXHJcbiAgICAgIGFsYnVtOiAnRGFuZ2FsJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9EYW5nYWwtSGluZGktMjAxNi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyNzEsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ21lbGFuY2hvbHktMTEnLFxyXG4gICAgICB0aXRsZTogJ1llaCBEb29yaXlhbicsXHJcbiAgICAgIGFydGlzdDogJ01vaGl0IENoYXVoYW4nLFxyXG4gICAgICBhbGJ1bTogJ0xvdmUgQWFqIEthbCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvTG92ZS1BYWotS2FsLUhpbmRpLTIwMDktNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjg5LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdtZWxhbmNob2x5LTEyJyxcclxuICAgICAgdGl0bGU6ICdCZWtoYXlhbGknLFxyXG4gICAgICBhcnRpc3Q6ICdTYWNoZXQgVGFuZG9uJyxcclxuICAgICAgYWxidW06ICdLYWJpciBTaW5naCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8xOTEvS2FiaXItU2luZ2gtSGluZGktMjAxOS0yMDE5MDYyMTE1MDcwMS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAzNzgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gIF0sXHJcblxyXG4gIC8vIPCflKUgV09SS09VVCAtIEhpZ2ggZW5lcmd5LCBQdW5qYWJpIGJhbmdlcnMsIG1vdGl2YXRpb25cclxuICB3b3Jrb3V0OiBbXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnd29ya291dC0xJyxcclxuICAgICAgdGl0bGU6ICdCcm93biBNdW5kZScsXHJcbiAgICAgIGFydGlzdDogJ0FQIERoaWxsb24sIEd1cmluZGVyIEdpbGwnLFxyXG4gICAgICBhbGJ1bTogJ0Jyb3duIE11bmRlJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzYwNC9Ccm93bi1NdW5kZS1QdW5qYWJpLTIwMjAtMjAyMDExMTgwOTEyMjctNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMTk1LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICd3b3Jrb3V0LTInLFxyXG4gICAgICB0aXRsZTogJ0luc2FuZScsXHJcbiAgICAgIGFydGlzdDogJ0FQIERoaWxsb24nLFxyXG4gICAgICBhbGJ1bTogJ0luc2FuZScsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8xOTEvSW5zYW5lLVB1bmphYmktMjAyMS0yMDIxMDcwODE4NDYwMS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAxNzgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3dvcmtvdXQtMycsXHJcbiAgICAgIHRpdGxlOiAnQmlqbGVlIEJpamxlZScsXHJcbiAgICAgIGFydGlzdDogJ0hhcnJkeSBTYW5kaHUnLFxyXG4gICAgICBhbGJ1bTogJ0JpamxlZSBCaWpsZWUnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNjA0L0JpamxlZS1CaWpsZWUtUHVuamFiaS0yMDIxLTIwMjExMDMwMTUxMDM3LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDE2NyxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnd29ya291dC00JyxcclxuICAgICAgdGl0bGU6ICdFeGN1c2VzJyxcclxuICAgICAgYXJ0aXN0OiAnQVAgRGhpbGxvbicsXHJcbiAgICAgIGFsYnVtOiAnRXhjdXNlcycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8xOTEvRXhjdXNlcy1QdW5qYWJpLTIwMjAtMjAyMDExMTgwODQ4MzEtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMTg3LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICd3b3Jrb3V0LTUnLFxyXG4gICAgICB0aXRsZTogJ05hY2hvIE5hY2hvJyxcclxuICAgICAgYXJ0aXN0OiAnVmlzaGFsIE1pc2hyYSwgUmFodWwgU2lwbGlndW5qJyxcclxuICAgICAgYWxidW06ICdSUlInLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL1JSUi1IaW5kaS0yMDIyLTIwMjIwMzI0MTgxMTE3LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI0MixcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnd29ya291dC02JyxcclxuICAgICAgdGl0bGU6ICdTaGUgTW92ZSBJdCBMaWtlJyxcclxuICAgICAgYXJ0aXN0OiAnQmFkc2hhaCcsXHJcbiAgICAgIGFsYnVtOiAnT05FIEFsYnVtJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzYwNC9PTkUtQWxidW0tSGluZGktMjAyMi0yMDIyMTEwNDE1NDEwMy01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAxOTgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3dvcmtvdXQtNycsXHJcbiAgICAgIHRpdGxlOiAnTWFhbiBNZXJpIEphYW4nLFxyXG4gICAgICBhcnRpc3Q6ICdLaW5nJyxcclxuICAgICAgYWxidW06ICdDaGFtcGFnbmUgVGFsaycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS82MDQvQ2hhbXBhZ25lLVRhbGstSGluZGktMjAyMi0yMDIyMTAwODAxMTk1MS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAxNzUsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3dvcmtvdXQtOCcsXHJcbiAgICAgIHRpdGxlOiAnVWRkIEdheWUnLFxyXG4gICAgICBhcnRpc3Q6ICdSaXR2aXonLFxyXG4gICAgICBhbGJ1bTogJ1ZlZCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS82MDQvVmVkLUhpbmRpLTIwMTgtMjAxODExMTUtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjEyLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICd3b3Jrb3V0LTknLFxyXG4gICAgICB0aXRsZTogJ1N1bHRhbiBUaXRsZSBUcmFjaycsXHJcbiAgICAgIGFydGlzdDogJ1Zpc2hhbCBEYWRsYW5pJyxcclxuICAgICAgYWxidW06ICdTdWx0YW4nLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L1N1bHRhbi1IaW5kaS0yMDE2LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI4NyxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnd29ya291dC0xMCcsXHJcbiAgICAgIHRpdGxlOiAnWmluZGEnLFxyXG4gICAgICBhcnRpc3Q6ICdTaGFua2FyIE1haGFkZXZhbicsXHJcbiAgICAgIGFsYnVtOiAnQmhhYWcgTWlsa2hhIEJoYWFnJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9CaGFhZy1NaWxraGEtQmhhYWctSGluZGktMjAxMy01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyOTgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3dvcmtvdXQtMTEnLFxyXG4gICAgICB0aXRsZTogJ1NoZXIgQWF5YSBTaGVyJyxcclxuICAgICAgYXJ0aXN0OiAnRElWSU5FJyxcclxuICAgICAgYWxidW06ICdHdWxseSBCb3knLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L0d1bGx5LUJveS1IaW5kaS0yMDE5LTIwMTkwMjEzMTUwMDI1LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDE2NSxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnd29ya291dC0xMicsXHJcbiAgICAgIHRpdGxlOiAnSmhvb21lIEpvIFBhdGhhYW4nLFxyXG4gICAgICBhcnRpc3Q6ICdBcmlqaXQgU2luZ2gsIFN1a3JpdGkgS2FrYXInLFxyXG4gICAgICBhbGJ1bTogJ1BhdGhhYW4nLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL1BhdGhhYW4tSGluZGktMjAyMy0yMDIzMDExMjEwMjAxNy01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyMzQsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gIF0sXHJcblxyXG4gIC8vIPCfmoAgRk9DVVMgLSBTdHVkeSwgQkdNLCBjYWxtIGluc3RydW1lbnRhbHNcclxuICBmb2N1czogW1xyXG4gICAge1xyXG4gICAgICBpZDogJ2ZvY3VzLTEnLFxyXG4gICAgICB0aXRsZTogJ1R1bSBNaWxlIChJbnN0cnVtZW50YWwpJyxcclxuICAgICAgYXJ0aXN0OiAnUHJpdGFtJyxcclxuICAgICAgYWxidW06ICdUdW0gTWlsZScsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvVHVtLU1pbGUtSGluZGktMjAwOS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyODUsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2ZvY3VzLTInLFxyXG4gICAgICB0aXRsZTogJ1Jhc2l5YSAoSW5zdHJ1bWVudGFsKScsXHJcbiAgICAgIGFydGlzdDogJ1ByaXRhbScsXHJcbiAgICAgIGFsYnVtOiAnQnJhaG3EgXN0cmEnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL0JyYWhtYXN0cmEtSGluZGktMjAyMi0yMDIyMDkwODEyMTAwMi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyNjcsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2ZvY3VzLTMnLFxyXG4gICAgICB0aXRsZTogJ0t1biBGYXlhIEt1bicsXHJcbiAgICAgIGFydGlzdDogJ0FSIFJhaG1hbicsXHJcbiAgICAgIGFsYnVtOiAnUm9ja3N0YXInLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L1JvY2tzdGFyLUhpbmRpLTIwMTEtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogNDU4LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdmb2N1cy00JyxcclxuICAgICAgdGl0bGU6ICdNb2ggTW9oIEtlIERoYWFnZScsXHJcbiAgICAgIGFydGlzdDogJ01vbmFsaSBUaGFrdXInLFxyXG4gICAgICBhbGJ1bTogJ0R1bSBMYWdhIEtlIEhhaXNoYScsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvRHVtLUxhZ2EtS2UtSGFpc2hhLUhpbmRpLTIwMTUtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjczLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdmb2N1cy01JyxcclxuICAgICAgdGl0bGU6ICdJbGFoaScsXHJcbiAgICAgIGFydGlzdDogJ0FyaWppdCBTaW5naCcsXHJcbiAgICAgIGFsYnVtOiAnWWVoIEphd2FhbmkgSGFpIERlZXdhbmknLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L1llaC1KYXdhYW5pLUhhaS1EZWV3YW5pLUhpbmRpLTIwMTMtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjkyLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdmb2N1cy02JyxcclxuICAgICAgdGl0bGU6ICdTYW1qaGF3YW4nLFxyXG4gICAgICBhcnRpc3Q6ICdBcmlqaXQgU2luZ2gnLFxyXG4gICAgICBhbGJ1bTogJ0h1bXB0eSBTaGFybWEgS2kgRHVsaGFuaWEnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L0h1bXB0eS1TaGFybWEtS2ktRHVsaGFuaWEtSGluZGktMjAxNC01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAzMTUsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2ZvY3VzLTcnLFxyXG4gICAgICB0aXRsZTogJ0FnYXIgVHVtIFNhYXRoIEhvIChJbnN0cnVtZW50YWwpJyxcclxuICAgICAgYXJ0aXN0OiAnQVIgUmFobWFuJyxcclxuICAgICAgYWxidW06ICdUYW1hc2hhJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzE5MS9UYW1hc2hhLUhpbmRpLTIwMTUtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMzI4LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdmb2N1cy04JyxcclxuICAgICAgdGl0bGU6ICdTaGF5YWQnLFxyXG4gICAgICBhcnRpc3Q6ICdBcmlqaXQgU2luZ2gnLFxyXG4gICAgICBhbGJ1bTogJ0xvdmUgQWFqIEthbCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8xOTEvTG92ZS1BYWotS2FsLUhpbmRpLTIwMjAtMjAyMDAyMTMxNTE0MzgtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMzAzLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdmb2N1cy05JyxcclxuICAgICAgdGl0bGU6ICdTb29yYWogS2kgQmFhaG9uIE1laW4nLFxyXG4gICAgICBhcnRpc3Q6ICdMYXRhIE1hbmdlc2hrYXIsIERvbWluaXF1ZSBDZXJlam8nLFxyXG4gICAgICBhbGJ1bTogJ1ppbmRhZ2kgTmEgTWlsZWdpIERvYmFyYScsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvWmluZGFnaS1OYS1NaWxlZ2ktRG9iYXJhLUhpbmRpLTIwMTEtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjg3LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdmb2N1cy0xMCcsXHJcbiAgICAgIHRpdGxlOiAnS2FiaXJhJyxcclxuICAgICAgYXJ0aXN0OiAnVG9jaGkgUmFpbmEnLFxyXG4gICAgICBhbGJ1bTogJ1llaCBKYXdhYW5pIEhhaSBEZWV3YW5pJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9ZZWgtSmF3YWFuaS1IYWktRGVld2FuaS1IaW5kaS0yMDEzLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDMxMixcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnZm9jdXMtMTEnLFxyXG4gICAgICB0aXRsZTogJ0thdW4gVHVqaGUnLFxyXG4gICAgICBhcnRpc3Q6ICdQYWxhayBNdWNoaGFsJyxcclxuICAgICAgYWxidW06ICdNLlMuIERob25pJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9NLVMtRGhvbmktSGluZGktMjAxNi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyNzgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2ZvY3VzLTEyJyxcclxuICAgICAgdGl0bGU6ICdBZSBXYXRhbicsXHJcbiAgICAgIGFydGlzdDogJ0FyaWppdCBTaW5naCcsXHJcbiAgICAgIGFsYnVtOiAnUmFhemknLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL1JhYXppLUhpbmRpLTIwMTgtMjAxODA0MjUtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjkyLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICBdLFxyXG5cclxuICAvLyDinaTvuI8gTE9WRSAtIFJvbWFudGljLCB3YXJtLCBtb2Rlcm4gQm9sbHl3b29kXHJcbiAgbG92ZTogW1xyXG4gICAge1xyXG4gICAgICBpZDogJ2xvdmUtMScsXHJcbiAgICAgIHRpdGxlOiAnSGF3YXllaW4nLFxyXG4gICAgICBhcnRpc3Q6ICdBcmlqaXQgU2luZ2gnLFxyXG4gICAgICBhbGJ1bTogJ0phYiBIYXJyeSBNZXQgU2VqYWwnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L0phYi1IYXJyeS1NZXQtU2VqYWwtSGluZGktMjAxNy01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyOTgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2xvdmUtMicsXHJcbiAgICAgIHRpdGxlOiAnUmFhdGFuIExhbWJpeWFuJyxcclxuICAgICAgYXJ0aXN0OiAnSnViaW4gTmF1dGl5YWwsIEFzZWVzIEthdXInLFxyXG4gICAgICBhbGJ1bTogJ1NoZXJzaGFhaCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80NzgvU2hlcnNoYWFoLUhpbmRpLTIwMjEtMjAyMTA4MTUxODE2MTAtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjM3LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdsb3ZlLTMnLFxyXG4gICAgICB0aXRsZTogJ1NoYXlhZCcsXHJcbiAgICAgIGFydGlzdDogJ0FyaWppdCBTaW5naCcsXHJcbiAgICAgIGFsYnVtOiAnTG92ZSBBYWogS2FsJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzE5MS9Mb3ZlLUFhai1LYWwtSGluZGktMjAyMC0yMDIwMDIxMzE1MTQzOC01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAzMDMsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2xvdmUtNCcsXHJcbiAgICAgIHRpdGxlOiAnVHVtIEhpIEhvJyxcclxuICAgICAgYXJ0aXN0OiAnQXJpaml0IFNpbmdoJyxcclxuICAgICAgYWxidW06ICdBYXNoaXF1aSAyJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9BYXNoaXF1aS0yLUhpbmRpLTIwMTMtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjYyLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdsb3ZlLTUnLFxyXG4gICAgICB0aXRsZTogJ1BhbCcsXHJcbiAgICAgIGFydGlzdDogJ0FyaWppdCBTaW5naCcsXHJcbiAgICAgIGFsYnVtOiAnSmFsZWJpJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzE5MS9KYWxlYmktSGluZGktMjAxOC0yMDE4MTAxMC01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyODksXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2xvdmUtNicsXHJcbiAgICAgIHRpdGxlOiAnS2hhaXJpeWF0JyxcclxuICAgICAgYXJ0aXN0OiAnQXJpaml0IFNpbmdoJyxcclxuICAgICAgYWxidW06ICdDaGhpY2hob3JlJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9DaGhpY2hob3JlLUhpbmRpLTIwMTktMjAxOTA5MDYxMjUzMjktNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMzUyLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdsb3ZlLTcnLFxyXG4gICAgICB0aXRsZTogJ1JhYWJ0YScsXHJcbiAgICAgIGFydGlzdDogJ0FyaWppdCBTaW5naCcsXHJcbiAgICAgIGFsYnVtOiAnQWdlbnQgVmlub2QnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vNDk3L0FnZW50LVZpbm9kLUhpbmRpLTIwMTItNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjQyLFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdsb3ZlLTgnLFxyXG4gICAgICB0aXRsZTogJ1N1bm4gUmFoYSBIYWknLFxyXG4gICAgICBhcnRpc3Q6ICdTaHJleWEgR2hvc2hhbCcsXHJcbiAgICAgIGFsYnVtOiAnQWFzaGlxdWkgMicsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvQWFzaGlxdWktMi1IaW5kaS0yMDEzLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDM5MixcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnbG92ZS05JyxcclxuICAgICAgdGl0bGU6ICdLYWJpcmEnLFxyXG4gICAgICBhcnRpc3Q6ICdBcmlqaXQgU2luZ2gnLFxyXG4gICAgICBhbGJ1bTogJ1llaCBKYXdhYW5pIEhhaSBEZWV3YW5pJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9ZZWgtSmF3YWFuaS1IYWktRGVld2FuaS1IaW5kaS0yMDEzLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI0NSxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnbG92ZS0xMCcsXHJcbiAgICAgIHRpdGxlOiAnTyBSZSBQaXlhJyxcclxuICAgICAgYXJ0aXN0OiAnUmFoYXQgRmF0ZWggQWxpIEtoYW4nLFxyXG4gICAgICBhbGJ1bTogJ0FhamEgTmFjaGxlJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9BYWphLU5hY2hsZS1IaW5kaS0yMDA3LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDMxMixcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAnbG92ZS0xMScsXHJcbiAgICAgIHRpdGxlOiAnSWt0YXJhJyxcclxuICAgICAgYXJ0aXN0OiAnQW1pdCBUcml2ZWRpJyxcclxuICAgICAgYWxidW06ICdXYWtlIFVwIFNpZCcsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvV2FrZS1VcC1TaWQtSGluZGktMjAwOS01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyODgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ2xvdmUtMTInLFxyXG4gICAgICB0aXRsZTogJ0JvbCBEbyBOYSBaYXJhJyxcclxuICAgICAgYXJ0aXN0OiAnQXJtYWFuIE1hbGlrJyxcclxuICAgICAgYWxidW06ICdBemhhcicsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvQXpoYXItSGluZGktMjAxNi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyNjcsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gIF0sXHJcblxyXG4gIC8vIPCfjokgUEFSVFkgLSBEYW5jZSwgQm9sbHl3b29kIGhpdHMsIFB1bmphYmkgYmFuZ2Vyc1xyXG4gIHBhcnR5OiBbXHJcbiAgICB7XHJcbiAgICAgIGlkOiAncGFydHktMScsXHJcbiAgICAgIHRpdGxlOiAnS2FsYSBDaGFzaG1hJyxcclxuICAgICAgYXJ0aXN0OiAnQW1hciBBcnNoaSwgQmFkc2hhaCwgTmVoYSBLYWtrYXInLFxyXG4gICAgICBhbGJ1bTogJ0JhYXIgQmFhciBEZWtobycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvQmFhci1CYWFyLURla2hvLUhpbmRpLTIwMTYtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMTk4LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdwYXJ0eS0yJyxcclxuICAgICAgdGl0bGU6ICdHYWxsYW4gR29vZGl5YWFuJyxcclxuICAgICAgYXJ0aXN0OiAnWWFzaGl0YSBTaGFybWEnLFxyXG4gICAgICBhbGJ1bTogJ0RpbCBEaGFkYWtuZSBEbycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvRGlsLURoYWRha25lLURvLUhpbmRpLTIwMTUtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMjY3LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdwYXJ0eS0zJyxcclxuICAgICAgdGl0bGU6ICdOYWFnaW4nLFxyXG4gICAgICBhcnRpc3Q6ICdBYXN0aGEgR2lsbCwgQWthc2EnLFxyXG4gICAgICBhbGJ1bTogJ05hYWdpbicsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8xOTEvTmFhZ2luLUhpbmRpLTIwMTktMjAxOTEwMTgwMzE3MzAtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMTc4LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdwYXJ0eS00JyxcclxuICAgICAgdGl0bGU6ICdKdW1tZSBLaSBSYWF0JyxcclxuICAgICAgYXJ0aXN0OiAnTWlrYSBTaW5naCcsXHJcbiAgICAgIGFsYnVtOiAnS2ljaycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvS2ljay1IaW5kaS0yMDE0LTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDI0NSxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAncGFydHktNScsXHJcbiAgICAgIHRpdGxlOiAnS2FyIEdheWkgQ2h1bGwnLFxyXG4gICAgICBhcnRpc3Q6ICdCYWRzaGFoLCBOZWhhIEtha2thcicsXHJcbiAgICAgIGFsYnVtOiAnS2Fwb29yICYgU29ucycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvS2Fwb29yLVNvbnMtSGluZGktMjAxNi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyMTIsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3BhcnR5LTYnLFxyXG4gICAgICB0aXRsZTogJ01vcm5pIEJhbmtlJyxcclxuICAgICAgYXJ0aXN0OiAnR3VydSBSYW5kaGF3YSwgTmVoYSBLYWtrYXInLFxyXG4gICAgICBhbGJ1bTogJ0JhZGhhYWkgSG8nLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL0JhZGhhYWktSG8tSGluZGktMjAxOC0yMDE4MTAxNy01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAxODcsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3BhcnR5LTcnLFxyXG4gICAgICB0aXRsZTogJ1ZlZXJlJyxcclxuICAgICAgYXJ0aXN0OiAnQmFkc2hhaCwgTWFuaiBNdXNpaycsXHJcbiAgICAgIGFsYnVtOiAnVmVlcmUgRGkgV2VkZGluZycsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS8xOTEvVmVlcmUtRGktV2VkZGluZy1IaW5kaS0yMDE4LTIwMTgwNTMxLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDIyMyxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAncGFydHktOCcsXHJcbiAgICAgIHRpdGxlOiAnU2F1ZGEgS2hhcmEgS2hhcmEnLFxyXG4gICAgICBhcnRpc3Q6ICdEaWxqaXQgRG9zYW5qaCwgU3VraGJpcicsXHJcbiAgICAgIGFsYnVtOiAnR29vZCBOZXd3eicsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvR29vZC1OZXd3ei1IaW5kaS0yMDE5LTIwMTkxMjIwMTU1NDAxLTUwMHg1MDAuanBnJyxcclxuICAgICAgZHVyYXRpb246IDE5OCxcclxuICAgICAgdXJsOiAnJyxcclxuICAgIH0sXHJcbiAgICB7XHJcbiAgICAgIGlkOiAncGFydHktOScsXHJcbiAgICAgIHRpdGxlOiAnRGlsYmFyJyxcclxuICAgICAgYXJ0aXN0OiAnTmVoYSBLYWtrYXIsIERodmFuaSBCaGFudXNoYWxpJyxcclxuICAgICAgYWxidW06ICdTYXR5YW1ldmEgSmF5YXRlJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9TYXR5YW1ldmEtSmF5YXRlLUhpbmRpLTIwMTgtMjAxODA4MTAtNTAweDUwMC5qcGcnLFxyXG4gICAgICBkdXJhdGlvbjogMTg3LFxyXG4gICAgICB1cmw6ICcnLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgaWQ6ICdwYXJ0eS0xMCcsXHJcbiAgICAgIHRpdGxlOiAnTmFjaG5lIERlIFNhYXJlJyxcclxuICAgICAgYXJ0aXN0OiAnSmFzbGVlbiBSb3lhbCwgSGFycmR5IFNhbmRodScsXHJcbiAgICAgIGFsYnVtOiAnQmFhciBCYWFyIERla2hvJyxcclxuICAgICAgYWxidW1BcnQ6ICdodHRwczovL2Muc2Fhdm5jZG4uY29tLzQ5Ny9CYWFyLUJhYXItRGVraG8tSGluZGktMjAxNi01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyMDUsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3BhcnR5LTExJyxcclxuICAgICAgdGl0bGU6ICdCYWJ5IE1hcnZha2UgTWFhbmVnaScsXHJcbiAgICAgIGFydGlzdDogJ1JhZnRhYXIsIE5vcmEgRmF0ZWhpJyxcclxuICAgICAgYWxidW06ICdCZXNoYXJhbScsXHJcbiAgICAgIGFsYnVtQXJ0OiAnaHR0cHM6Ly9jLnNhYXZuY2RuLmNvbS80OTcvQmVzaGFyYW0tSGluZGktMjAxMy01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAxNzgsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBpZDogJ3BhcnR5LTEyJyxcclxuICAgICAgdGl0bGU6ICdNdXFhYmxhJyxcclxuICAgICAgYXJ0aXN0OiAnQS5SLiBSYWhtYW4sIFByYWJodWRldmEnLFxyXG4gICAgICBhbGJ1bTogJ1N0cmVldCBEYW5jZXIgM0QnLFxyXG4gICAgICBhbGJ1bUFydDogJ2h0dHBzOi8vYy5zYWF2bmNkbi5jb20vMTkxL1N0cmVldC1EYW5jZXItM0QtSGluZGktMjAxOS0yMDE5MTIyNzEzMjU1NC01MDB4NTAwLmpwZycsXHJcbiAgICAgIGR1cmF0aW9uOiAyMjMsXHJcbiAgICAgIHVybDogJycsXHJcbiAgICB9LFxyXG4gIF0sXHJcbn07XHJcblxyXG4vLyBIZWxwZXIgZnVuY3Rpb24gdG8gZ2V0IG1vb2QgcGxheWxpc3RcclxuZXhwb3J0IGNvbnN0IGdldE1vb2RQbGF5bGlzdCA9IChtb29kSWQ6IHN0cmluZyk6IFRyYWNrW10gPT4ge1xyXG4gIHJldHVybiBtb29kUGxheWxpc3RzW21vb2RJZF0gfHwgbW9vZFBsYXlsaXN0cy5jaGlsbDtcclxufTtcclxuXHJcblxyXG4iXSwibmFtZXMiOlsibW9vZFBsYXlsaXN0cyIsImNoaWxsIiwiaWQiLCJ0aXRsZSIsImFydGlzdCIsImFsYnVtIiwiYWxidW1BcnQiLCJkdXJhdGlvbiIsInVybCIsIm1lbGFuY2hvbHkiLCJ3b3Jrb3V0IiwiZm9jdXMiLCJsb3ZlIiwicGFydHkiLCJnZXRNb29kUGxheWxpc3QiLCJtb29kSWQiXSwibWFwcGluZ3MiOiJBQUVBOzs7O0NBSUMsR0FFRCxPQUFPLE1BQU1BLGdCQUF5QztJQUNwRCxrREFBa0Q7SUFDbERDLE9BQU87UUFDTDtZQUNFQyxJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7S0FDRDtJQUVELG9EQUFvRDtJQUNwREMsWUFBWTtRQUNWO1lBQ0VQLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtLQUNEO0lBRUQsd0RBQXdEO0lBQ3hERSxTQUFTO1FBQ1A7WUFDRVIsSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO0tBQ0Q7SUFFRCw0Q0FBNEM7SUFDNUNHLE9BQU87UUFDTDtZQUNFVCxJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7UUFDQTtZQUNFTixJQUFJO1lBQ0pDLE9BQU87WUFDUEMsUUFBUTtZQUNSQyxPQUFPO1lBQ1BDLFVBQVU7WUFDVkMsVUFBVTtZQUNWQyxLQUFLO1FBQ1A7S0FDRDtJQUVELDZDQUE2QztJQUM3Q0ksTUFBTTtRQUNKO1lBQ0VWLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtRQUNBO1lBQ0VOLElBQUk7WUFDSkMsT0FBTztZQUNQQyxRQUFRO1lBQ1JDLE9BQU87WUFDUEMsVUFBVTtZQUNWQyxVQUFVO1lBQ1ZDLEtBQUs7UUFDUDtLQUNEO0lBRUQsb0RBQW9EO0lBQ3BESyxPQUFPO1FBQ0w7WUFDRVgsSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO1FBQ0E7WUFDRU4sSUFBSTtZQUNKQyxPQUFPO1lBQ1BDLFFBQVE7WUFDUkMsT0FBTztZQUNQQyxVQUFVO1lBQ1ZDLFVBQVU7WUFDVkMsS0FBSztRQUNQO0tBQ0Q7QUFDSCxFQUFFO0FBRUYsdUNBQXVDO0FBQ3ZDLE9BQU8sTUFBTU0sa0JBQWtCLENBQUNDO0lBQzlCLE9BQU9mLGFBQWEsQ0FBQ2UsT0FBTyxJQUFJZixjQUFjQyxLQUFLO0FBQ3JELEVBQUUifQ==

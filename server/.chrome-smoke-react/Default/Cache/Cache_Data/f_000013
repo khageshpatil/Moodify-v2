@@ -1,0 +1,300 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/QueueManager.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/QueueManager.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+import { Button } from "/src/components/ui/button.tsx";
+import { Card } from "/src/components/ui/card.tsx";
+import { ScrollArea } from "/src/components/ui/scroll-area.tsx";
+import { X, Music, Trash2 } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+export const QueueManager = ({ queue, currentTrackIndex, onTrackSelect, onRemoveFromQueue, onClearQueue })=>{
+    const formatDuration = (seconds)=>{
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+    const totalDuration = queue.reduce((acc, track)=>acc + (track.duration || 0), 0);
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "w-full max-w-4xl mx-auto",
+        children: /*#__PURE__*/ _jsxDEV(Card, {
+            className: "glass-card p-6",
+            children: [
+                /*#__PURE__*/ _jsxDEV("div", {
+                    className: "flex items-center justify-between mb-6",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("h2", {
+                                    className: "text-2xl font-bold text-white mb-2",
+                                    children: "Up Next"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                    lineNumber: 35,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("p", {
+                                    className: "text-white/60",
+                                    children: [
+                                        queue.length,
+                                        " ",
+                                        queue.length === 1 ? 'song' : 'songs',
+                                        " • ",
+                                        formatDuration(totalDuration)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                    lineNumber: 36,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                            lineNumber: 34,
+                            columnNumber: 11
+                        }, this),
+                        queue.length > 1 && /*#__PURE__*/ _jsxDEV(Button, {
+                            variant: "outline",
+                            size: "sm",
+                            onClick: onClearQueue,
+                            className: "glass-button",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(Trash2, {
+                                    className: "h-4 w-4 mr-2"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                    lineNumber: 47,
+                                    columnNumber: 15
+                                }, this),
+                                "Clear Queue"
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                            lineNumber: 41,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                    lineNumber: 33,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                    className: "h-[500px]",
+                    children: queue.length === 0 ? /*#__PURE__*/ _jsxDEV("div", {
+                        className: "flex flex-col items-center justify-center py-12 text-white/60",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Music, {
+                                className: "h-16 w-16 mb-4 opacity-40"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                lineNumber: 56,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("p", {
+                                className: "text-lg",
+                                children: "Queue is empty"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                lineNumber: 57,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("p", {
+                                className: "text-sm mt-2",
+                                children: "Add songs to start playing"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                lineNumber: 58,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                        lineNumber: 55,
+                        columnNumber: 13
+                    }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                        className: "space-y-2",
+                        children: queue.map((track, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                                className: `glass-card p-4 flex items-center gap-4 transition-all hover:bg-white/10 group cursor-pointer ${index === currentTrackIndex ? 'ring-2 ring-accent' : ''}`,
+                                onClick: ()=>onTrackSelect(track, index),
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex-shrink-0 w-8 text-center",
+                                        children: index === currentTrackIndex ? /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex items-center justify-center",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "w-1 h-1 bg-accent rounded-full animate-pulse mx-0.5"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                    lineNumber: 73,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "w-1 h-2 bg-accent rounded-full animate-pulse mx-0.5"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                    lineNumber: 74,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "w-1 h-1 bg-accent rounded-full animate-pulse mx-0.5"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                    lineNumber: 75,
+                                                    columnNumber: 25
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                            lineNumber: 72,
+                                            columnNumber: 23
+                                        }, this) : /*#__PURE__*/ _jsxDEV("span", {
+                                            className: "text-white/60 text-sm",
+                                            children: index + 1
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                            lineNumber: 78,
+                                            columnNumber: 23
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                        lineNumber: 70,
+                                        columnNumber: 19
+                                    }, this),
+                                    track.albumArt && /*#__PURE__*/ _jsxDEV("img", {
+                                        src: track.albumArt,
+                                        alt: track.album,
+                                        className: "w-12 h-12 rounded object-cover"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                        lineNumber: 83,
+                                        columnNumber: 21
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex-1 min-w-0",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "font-medium text-white truncate",
+                                                children: track.title
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                lineNumber: 91,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "text-sm text-white/60 truncate",
+                                                children: track.artist
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                lineNumber: 94,
+                                                columnNumber: 21
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                        lineNumber: 90,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center gap-3",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                className: "text-sm text-white/60",
+                                                children: formatDuration(track.duration || 0)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                lineNumber: 100,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                variant: "ghost",
+                                                size: "icon",
+                                                onClick: (e)=>{
+                                                    e.stopPropagation();
+                                                    onRemoveFromQueue(index);
+                                                },
+                                                className: "opacity-0 group-hover:opacity-100 transition-opacity text-white/60 hover:text-white",
+                                                children: /*#__PURE__*/ _jsxDEV(X, {
+                                                    className: "h-4 w-4"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                    lineNumber: 112,
+                                                    columnNumber: 23
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                                lineNumber: 103,
+                                                columnNumber: 21
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                        lineNumber: 99,
+                                        columnNumber: 19
+                                    }, this)
+                                ]
+                            }, `${track.id}-${index}`, true, {
+                                fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                                lineNumber: 63,
+                                columnNumber: 17
+                            }, this))
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                        lineNumber: 61,
+                        columnNumber: 13
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+                    lineNumber: 53,
+                    columnNumber: 9
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+            lineNumber: 32,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/QueueManager.tsx",
+        lineNumber: 31,
+        columnNumber: 5
+    }, this);
+};
+_c = QueueManager;
+var _c;
+$RefreshReg$(_c, "QueueManager");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/QueueManager.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/QueueManager.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlF1ZXVlTWFuYWdlci50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgVHJhY2sgfSBmcm9tIFwiQC9kYXRhL21vY2tNdXNpY1wiO1xuaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSBcIkAvY29tcG9uZW50cy91aS9idXR0b25cIjtcbmltcG9ydCB7IENhcmQgfSBmcm9tIFwiQC9jb21wb25lbnRzL3VpL2NhcmRcIjtcbmltcG9ydCB7IFNjcm9sbEFyZWEgfSBmcm9tIFwiQC9jb21wb25lbnRzL3VpL3Njcm9sbC1hcmVhXCI7XG5pbXBvcnQgeyBYLCBNdXNpYywgVHJhc2gyIH0gZnJvbSBcImx1Y2lkZS1yZWFjdFwiO1xuXG5pbnRlcmZhY2UgUXVldWVNYW5hZ2VyUHJvcHMge1xuICBxdWV1ZTogVHJhY2tbXTtcbiAgY3VycmVudFRyYWNrSW5kZXg6IG51bWJlcjtcbiAgb25UcmFja1NlbGVjdDogKHRyYWNrOiBUcmFjaywgaW5kZXg6IG51bWJlcikgPT4gdm9pZDtcbiAgb25SZW1vdmVGcm9tUXVldWU6IChpbmRleDogbnVtYmVyKSA9PiB2b2lkO1xuICBvbkNsZWFyUXVldWU6ICgpID0+IHZvaWQ7XG59XG5cbmV4cG9ydCBjb25zdCBRdWV1ZU1hbmFnZXIgPSAoe1xuICBxdWV1ZSxcbiAgY3VycmVudFRyYWNrSW5kZXgsXG4gIG9uVHJhY2tTZWxlY3QsXG4gIG9uUmVtb3ZlRnJvbVF1ZXVlLFxuICBvbkNsZWFyUXVldWUsXG59OiBRdWV1ZU1hbmFnZXJQcm9wcykgPT4ge1xuICBjb25zdCBmb3JtYXREdXJhdGlvbiA9IChzZWNvbmRzOiBudW1iZXIpID0+IHtcbiAgICBjb25zdCBtaW5zID0gTWF0aC5mbG9vcihzZWNvbmRzIC8gNjApO1xuICAgIGNvbnN0IHNlY3MgPSBNYXRoLmZsb29yKHNlY29uZHMgJSA2MCk7XG4gICAgcmV0dXJuIGAke21pbnN9OiR7c2Vjcy50b1N0cmluZygpLnBhZFN0YXJ0KDIsICcwJyl9YDtcbiAgfTtcblxuICBjb25zdCB0b3RhbER1cmF0aW9uID0gcXVldWUucmVkdWNlKChhY2MsIHRyYWNrKSA9PiBhY2MgKyAodHJhY2suZHVyYXRpb24gfHwgMCksIDApO1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJ3LWZ1bGwgbWF4LXctNHhsIG14LWF1dG9cIj5cbiAgICAgIDxDYXJkIGNsYXNzTmFtZT1cImdsYXNzLWNhcmQgcC02XCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIG1iLTZcIj5cbiAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgPGgyIGNsYXNzTmFtZT1cInRleHQtMnhsIGZvbnQtYm9sZCB0ZXh0LXdoaXRlIG1iLTJcIj5VcCBOZXh0PC9oMj5cbiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtd2hpdGUvNjBcIj5cbiAgICAgICAgICAgICAge3F1ZXVlLmxlbmd0aH0ge3F1ZXVlLmxlbmd0aCA9PT0gMSA/ICdzb25nJyA6ICdzb25ncyd9IOKAoiB7Zm9ybWF0RHVyYXRpb24odG90YWxEdXJhdGlvbil9XG4gICAgICAgICAgICA8L3A+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAge3F1ZXVlLmxlbmd0aCA+IDEgJiYgKFxuICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICB2YXJpYW50PVwib3V0bGluZVwiXG4gICAgICAgICAgICAgIHNpemU9XCJzbVwiXG4gICAgICAgICAgICAgIG9uQ2xpY2s9e29uQ2xlYXJRdWV1ZX1cbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZ2xhc3MtYnV0dG9uXCJcbiAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgPFRyYXNoMiBjbGFzc05hbWU9XCJoLTQgdy00IG1yLTJcIiAvPlxuICAgICAgICAgICAgICBDbGVhciBRdWV1ZVxuICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgKX1cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgPFNjcm9sbEFyZWEgY2xhc3NOYW1lPVwiaC1bNTAwcHhdXCI+XG4gICAgICAgICAge3F1ZXVlLmxlbmd0aCA9PT0gMCA/IChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcHktMTIgdGV4dC13aGl0ZS82MFwiPlxuICAgICAgICAgICAgICA8TXVzaWMgY2xhc3NOYW1lPVwiaC0xNiB3LTE2IG1iLTQgb3BhY2l0eS00MFwiIC8+XG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtbGdcIj5RdWV1ZSBpcyBlbXB0eTwvcD5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSBtdC0yXCI+QWRkIHNvbmdzIHRvIHN0YXJ0IHBsYXlpbmc8L3A+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApIDogKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cbiAgICAgICAgICAgICAge3F1ZXVlLm1hcCgodHJhY2ssIGluZGV4KSA9PiAoXG4gICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAga2V5PXtgJHt0cmFjay5pZH0tJHtpbmRleH1gfVxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgZ2xhc3MtY2FyZCBwLTQgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTQgdHJhbnNpdGlvbi1hbGwgaG92ZXI6Ymctd2hpdGUvMTAgZ3JvdXAgY3Vyc29yLXBvaW50ZXIgJHtcbiAgICAgICAgICAgICAgICAgICAgaW5kZXggPT09IGN1cnJlbnRUcmFja0luZGV4ID8gJ3JpbmctMiByaW5nLWFjY2VudCcgOiAnJ1xuICAgICAgICAgICAgICAgICAgfWB9XG4gICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBvblRyYWNrU2VsZWN0KHRyYWNrLCBpbmRleCl9XG4gICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4LXNocmluay0wIHctOCB0ZXh0LWNlbnRlclwiPlxuICAgICAgICAgICAgICAgICAgICB7aW5kZXggPT09IGN1cnJlbnRUcmFja0luZGV4ID8gKFxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXJcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy0xIGgtMSBiZy1hY2NlbnQgcm91bmRlZC1mdWxsIGFuaW1hdGUtcHVsc2UgbXgtMC41XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy0xIGgtMiBiZy1hY2NlbnQgcm91bmRlZC1mdWxsIGFuaW1hdGUtcHVsc2UgbXgtMC41XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy0xIGgtMSBiZy1hY2NlbnQgcm91bmRlZC1mdWxsIGFuaW1hdGUtcHVsc2UgbXgtMC41XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgKSA6IChcbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXdoaXRlLzYwIHRleHQtc21cIj57aW5kZXggKyAxfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgICAgICB7dHJhY2suYWxidW1BcnQgJiYgKFxuICAgICAgICAgICAgICAgICAgICA8aW1nXG4gICAgICAgICAgICAgICAgICAgICAgc3JjPXt0cmFjay5hbGJ1bUFydH1cbiAgICAgICAgICAgICAgICAgICAgICBhbHQ9e3RyYWNrLmFsYnVtfVxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctMTIgaC0xMiByb3VuZGVkIG9iamVjdC1jb3ZlclwiXG4gICAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgICApfVxuXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMSBtaW4tdy0wXCI+XG4gICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtIHRleHQtd2hpdGUgdHJ1bmNhdGVcIj5cbiAgICAgICAgICAgICAgICAgICAgICB7dHJhY2sudGl0bGV9XG4gICAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXdoaXRlLzYwIHRydW5jYXRlXCI+XG4gICAgICAgICAgICAgICAgICAgICAge3RyYWNrLmFydGlzdH1cbiAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTNcIj5cbiAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXdoaXRlLzYwXCI+XG4gICAgICAgICAgICAgICAgICAgICAge2Zvcm1hdER1cmF0aW9uKHRyYWNrLmR1cmF0aW9uIHx8IDApfVxuICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZ2hvc3RcIlxuICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJpY29uXCJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoZSkgPT4ge1xuICAgICAgICAgICAgICAgICAgICAgICAgZS5zdG9wUHJvcGFnYXRpb24oKTtcbiAgICAgICAgICAgICAgICAgICAgICAgIG9uUmVtb3ZlRnJvbVF1ZXVlKGluZGV4KTtcbiAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cIm9wYWNpdHktMCBncm91cC1ob3ZlcjpvcGFjaXR5LTEwMCB0cmFuc2l0aW9uLW9wYWNpdHkgdGV4dC13aGl0ZS82MCBob3Zlcjp0ZXh0LXdoaXRlXCJcbiAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgIDxYIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICl9XG4gICAgICAgIDwvU2Nyb2xsQXJlYT5cbiAgICAgIDwvQ2FyZD5cbiAgICA8L2Rpdj5cbiAgKTtcbn07Il0sIm5hbWVzIjpbIkJ1dHRvbiIsIkNhcmQiLCJTY3JvbGxBcmVhIiwiWCIsIk11c2ljIiwiVHJhc2gyIiwiUXVldWVNYW5hZ2VyIiwicXVldWUiLCJjdXJyZW50VHJhY2tJbmRleCIsIm9uVHJhY2tTZWxlY3QiLCJvblJlbW92ZUZyb21RdWV1ZSIsIm9uQ2xlYXJRdWV1ZSIsImZvcm1hdER1cmF0aW9uIiwic2Vjb25kcyIsIm1pbnMiLCJNYXRoIiwiZmxvb3IiLCJzZWNzIiwidG9TdHJpbmciLCJwYWRTdGFydCIsInRvdGFsRHVyYXRpb24iLCJyZWR1Y2UiLCJhY2MiLCJ0cmFjayIsImR1cmF0aW9uIiwiZGl2IiwiY2xhc3NOYW1lIiwiaDIiLCJwIiwibGVuZ3RoIiwidmFyaWFudCIsInNpemUiLCJvbkNsaWNrIiwibWFwIiwiaW5kZXgiLCJzcGFuIiwiYWxidW1BcnQiLCJpbWciLCJzcmMiLCJhbHQiLCJhbGJ1bSIsInRpdGxlIiwiYXJ0aXN0IiwiZSIsInN0b3BQcm9wYWdhdGlvbiIsImlkIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUNBLFNBQVNBLE1BQU0sUUFBUSx5QkFBeUI7QUFDaEQsU0FBU0MsSUFBSSxRQUFRLHVCQUF1QjtBQUM1QyxTQUFTQyxV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

@@ -1,0 +1,1014 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/FriendsManager.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/FriendsManager.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"]; const useMemo = __vite__cjsImport3_react["useMemo"];
+import { Card, CardContent, CardHeader, CardTitle } from "/src/components/ui/card.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Input } from "/src/components/ui/input.tsx";
+import { Badge } from "/src/components/ui/badge.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "/src/components/ui/tabs.tsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "/src/components/ui/dialog.tsx";
+import { Label } from "/src/components/ui/label.tsx";
+import { ScrollArea } from "/src/components/ui/scroll-area.tsx";
+import { Alert, AlertDescription } from "/src/components/ui/alert.tsx";
+import { Users, UserPlus, Copy, Check, MessageCircle, Wifi, Clock, CheckCircle2, XCircle, Share2, AlertCircle } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { useToast } from "/src/hooks/use-toast.ts";
+import { useFriends } from "/src/hooks/useFriends.ts";
+import { IdentityAvatar } from "/src/components/identity/IdentityAvatar.tsx";
+export const FriendsManager = ({ identity, onOpenChat })=>{
+    _s();
+    const { toast } = useToast();
+    const { myPeerCode, friends, friendRequests, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend, getUnreadCount } = useFriends(identity);
+    const [showAddDialog, setShowAddDialog] = useState(false);
+    const [friendCode, setFriendCode] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
+    // Calculate stats
+    const stats = useMemo(()=>{
+        const onlineFriends = friends.filter((f)=>f.isOnline).length;
+        const totalUnread = friends.reduce((sum, f)=>sum + getUnreadCount(f.id), 0);
+        const pendingRequests = friendRequests.length;
+        return {
+            onlineFriends,
+            totalUnread,
+            pendingRequests
+        };
+    }, [
+        friends,
+        friendRequests,
+        getUnreadCount
+    ]);
+    const handleCopyCode = async ()=>{
+        try {
+            await navigator.clipboard.writeText(myPeerCode);
+            setCopied(true);
+            setTimeout(()=>setCopied(false), 2000);
+            toast({
+                title: '✅ Copied!',
+                description: 'Your friend code is copied to clipboard'
+            });
+        } catch (error) {
+            toast({
+                title: 'Copy Failed',
+                description: 'Please copy the code manually',
+                variant: 'destructive'
+            });
+        }
+    };
+    const handleAddFriend = async ()=>{
+        const code = friendCode.trim().toUpperCase();
+        if (!code) {
+            toast({
+                title: 'Invalid Code',
+                description: 'Please enter a friend code',
+                variant: 'destructive'
+            });
+            return;
+        }
+        if (code === myPeerCode) {
+            toast({
+                title: 'Invalid Code',
+                description: 'You cannot add yourself as a friend',
+                variant: 'destructive'
+            });
+            return;
+        }
+        // Check if already friends
+        if (friends.some((f)=>f.peerCode === code)) {
+            toast({
+                title: 'Already Friends',
+                description: 'This user is already in your friends list',
+                variant: 'destructive'
+            });
+            return;
+        }
+        setIsAdding(true);
+        try {
+            await sendFriendRequest(code);
+            setFriendCode('');
+            setShowAddDialog(false);
+            toast({
+                title: '✅ Friend Request Sent!',
+                description: 'Waiting for them to accept...'
+            });
+        } catch (error) {
+            toast({
+                title: 'Request Failed',
+                description: error instanceof Error ? error.message : 'Could not send friend request',
+                variant: 'destructive'
+            });
+        } finally{
+            setIsAdding(false);
+        }
+    };
+    const handleAcceptRequest = async (request)=>{
+        try {
+            await acceptFriendRequest(request.id);
+            toast({
+                title: '✅ Friend Added!',
+                description: `${request.displayName} is now your friend`
+            });
+        } catch (error) {
+            toast({
+                title: 'Accept Failed',
+                description: 'Could not accept friend request',
+                variant: 'destructive'
+            });
+        }
+    };
+    const handleRejectRequest = async (requestId)=>{
+        try {
+            await rejectFriendRequest(requestId);
+            toast({
+                title: 'Request Rejected',
+                description: 'Friend request declined'
+            });
+        } catch (error) {
+            toast({
+                title: 'Reject Failed',
+                description: 'Could not reject friend request',
+                variant: 'destructive'
+            });
+        }
+    };
+    const handleRemoveFriend = async (friend)=>{
+        if (!window.confirm(`Remove ${friend.displayName} from friends?`)) {
+            return;
+        }
+        try {
+            await removeFriend(friend.id);
+            toast({
+                title: 'Friend Removed',
+                description: `${friend.displayName} removed from friends`
+            });
+        } catch (error) {
+            toast({
+                title: 'Remove Failed',
+                description: 'Could not remove friend',
+                variant: 'destructive'
+            });
+        }
+    };
+    const handleOpenChat = (friendId)=>{
+        if (onOpenChat) {
+            onOpenChat(friendId);
+        }
+    };
+    const formatLastSeen = (timestamp)=>{
+        const now = Date.now();
+        const diff = now - timestamp;
+        if (diff < 60000) return 'Just now';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+        return `${Math.floor(diff / 86400000)}d ago`;
+    };
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "space-y-6",
+        children: [
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "grid grid-cols-3 gap-4",
+                children: [
+                    /*#__PURE__*/ _jsxDEV(Card, {
+                        children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                            className: "pt-6",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "text-center",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Users, {
+                                        className: "w-8 h-8 mx-auto mb-2 text-primary"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 210,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "text-2xl font-bold",
+                                        children: friends.length
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 211,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "text-xs text-muted-foreground",
+                                        children: "Friends"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 212,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 209,
+                                columnNumber: 13
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 208,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 207,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(Card, {
+                        children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                            className: "pt-6",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "text-center",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Wifi, {
+                                        className: "w-8 h-8 mx-auto mb-2 text-green-500"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 219,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "text-2xl font-bold",
+                                        children: stats.onlineFriends
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 220,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "text-xs text-muted-foreground",
+                                        children: "Online"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 221,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 218,
+                                columnNumber: 13
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 217,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 216,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(Card, {
+                        children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                            className: "pt-6",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "text-center",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(MessageCircle, {
+                                        className: "w-8 h-8 mx-auto mb-2 text-blue-500"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 228,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "text-2xl font-bold",
+                                        children: stats.totalUnread
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 229,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "text-xs text-muted-foreground",
+                                        children: "Unread"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 230,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 227,
+                                columnNumber: 13
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 226,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 225,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                lineNumber: 206,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV(Card, {
+                children: [
+                    /*#__PURE__*/ _jsxDEV(CardHeader, {
+                        children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                            className: "flex items-center gap-2 text-lg",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(Share2, {
+                                    className: "w-5 h-5"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 240,
+                                    columnNumber: 13
+                                }, this),
+                                "My Friend Code"
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 239,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 238,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(CardContent, {
+                        className: "space-y-4",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "flex gap-2",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Input, {
+                                        value: myPeerCode,
+                                        readOnly: true,
+                                        className: "font-mono text-lg font-bold text-center"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 246,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                        size: "icon",
+                                        variant: "outline",
+                                        onClick: handleCopyCode,
+                                        children: copied ? /*#__PURE__*/ _jsxDEV(Check, {
+                                            className: "w-4 h-4 text-green-500"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 257,
+                                            columnNumber: 17
+                                        }, this) : /*#__PURE__*/ _jsxDEV(Copy, {
+                                            className: "w-4 h-4"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 259,
+                                            columnNumber: 17
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 251,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 245,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("p", {
+                                className: "text-sm text-muted-foreground text-center",
+                                children: "Share this code with friends so they can add you"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 263,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 244,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                lineNumber: 237,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV(Button, {
+                onClick: ()=>setShowAddDialog(true),
+                className: "w-full",
+                size: "lg",
+                children: [
+                    /*#__PURE__*/ _jsxDEV(UserPlus, {
+                        className: "w-5 h-5 mr-2"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 275,
+                        columnNumber: 9
+                    }, this),
+                    "Add Friend"
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                lineNumber: 270,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV(Tabs, {
+                defaultValue: "friends",
+                className: "w-full",
+                children: [
+                    /*#__PURE__*/ _jsxDEV(TabsList, {
+                        className: "grid w-full grid-cols-2",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                value: "friends",
+                                children: [
+                                    "Friends (",
+                                    friends.length,
+                                    ")"
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 282,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                value: "requests",
+                                children: [
+                                    "Requests (",
+                                    stats.pendingRequests,
+                                    ")",
+                                    stats.pendingRequests > 0 && /*#__PURE__*/ _jsxDEV(Badge, {
+                                        variant: "destructive",
+                                        className: "ml-2",
+                                        children: stats.pendingRequests
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 288,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 285,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 281,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(TabsContent, {
+                        value: "friends",
+                        className: "space-y-4",
+                        children: friends.length === 0 ? /*#__PURE__*/ _jsxDEV(Alert, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(AlertCircle, {
+                                    className: "h-4 w-4"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 299,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(AlertDescription, {
+                                    children: "No friends yet. Add friends using their friend code!"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 300,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 298,
+                            columnNumber: 13
+                        }, this) : /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                            className: "h-[400px]",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "space-y-2",
+                                children: friends.map((friend)=>{
+                                    const unreadCount = getUnreadCount(friend.id);
+                                    return /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                                            className: "p-4",
+                                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex items-center gap-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "relative",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(IdentityAvatar, {
+                                                                seed: friend.avatar,
+                                                                size: 48,
+                                                                className: "w-12 h-12"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 316,
+                                                                columnNumber: 29
+                                                            }, this),
+                                                            friend.isOnline && /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 323,
+                                                                columnNumber: 31
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                        lineNumber: 315,
+                                                        columnNumber: 27
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex-1 min-w-0",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "flex items-center gap-2",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV("h3", {
+                                                                        className: "font-medium truncate",
+                                                                        children: friend.displayName
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                        lineNumber: 330,
+                                                                        columnNumber: 31
+                                                                    }, this),
+                                                                    friend.isOnline ? /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                        variant: "default",
+                                                                        className: "bg-green-500",
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(Wifi, {
+                                                                                className: "w-3 h-3 mr-1"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                                lineNumber: 335,
+                                                                                columnNumber: 35
+                                                                            }, this),
+                                                                            "Online"
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                        lineNumber: 334,
+                                                                        columnNumber: 33
+                                                                    }, this) : /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                        variant: "secondary",
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(Clock, {
+                                                                                className: "w-3 h-3 mr-1"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                                lineNumber: 340,
+                                                                                columnNumber: 35
+                                                                            }, this),
+                                                                            formatLastSeen(friend.lastSeen)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                        lineNumber: 339,
+                                                                        columnNumber: 33
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 329,
+                                                                columnNumber: 29
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-xs text-muted-foreground font-mono",
+                                                                children: friend.peerCode
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 345,
+                                                                columnNumber: 29
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                        lineNumber: 328,
+                                                        columnNumber: 27
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex gap-2",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                size: "sm",
+                                                                variant: unreadCount > 0 ? "default" : "outline",
+                                                                onClick: ()=>handleOpenChat(friend.id),
+                                                                className: "relative",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(MessageCircle, {
+                                                                        className: "w-4 h-4 mr-1"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                        lineNumber: 358,
+                                                                        columnNumber: 31
+                                                                    }, this),
+                                                                    "Chat",
+                                                                    unreadCount > 0 && /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                        variant: "destructive",
+                                                                        className: "absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs",
+                                                                        children: unreadCount > 9 ? '9+' : unreadCount
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                        lineNumber: 361,
+                                                                        columnNumber: 33
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 352,
+                                                                columnNumber: 29
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                size: "sm",
+                                                                variant: "ghost",
+                                                                onClick: ()=>handleRemoveFriend(friend),
+                                                                children: /*#__PURE__*/ _jsxDEV(XCircle, {
+                                                                    className: "w-4 h-4"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                    lineNumber: 374,
+                                                                    columnNumber: 31
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 369,
+                                                                columnNumber: 29
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                        lineNumber: 351,
+                                                        columnNumber: 27
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                lineNumber: 313,
+                                                columnNumber: 25
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 312,
+                                            columnNumber: 23
+                                        }, this)
+                                    }, friend.id, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 311,
+                                        columnNumber: 21
+                                    }, this);
+                                })
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 306,
+                                columnNumber: 15
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 305,
+                            columnNumber: 13
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 296,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(TabsContent, {
+                        value: "requests",
+                        className: "space-y-4",
+                        children: friendRequests.length === 0 ? /*#__PURE__*/ _jsxDEV(Alert, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(AlertCircle, {
+                                    className: "h-4 w-4"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 391,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(AlertDescription, {
+                                    children: "No pending friend requests"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 392,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 390,
+                            columnNumber: 13
+                        }, this) : /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                            className: "h-[400px]",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "space-y-2",
+                                children: friendRequests.map((request)=>/*#__PURE__*/ _jsxDEV(Card, {
+                                        children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                                            className: "p-4",
+                                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex items-center gap-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(IdentityAvatar, {
+                                                        seed: request.avatar,
+                                                        size: 48,
+                                                        className: "w-12 h-12"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                        lineNumber: 404,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex-1 min-w-0",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("h3", {
+                                                                className: "font-medium truncate",
+                                                                children: request.displayName
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 412,
+                                                                columnNumber: 27
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-xs text-muted-foreground",
+                                                                children: "Wants to be friends"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 415,
+                                                                columnNumber: 27
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-xs text-muted-foreground font-mono",
+                                                                children: request.peerCode
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 418,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                        lineNumber: 411,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex gap-2",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                size: "sm",
+                                                                onClick: ()=>handleAcceptRequest(request),
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(CheckCircle2, {
+                                                                        className: "w-4 h-4 mr-1"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                        lineNumber: 429,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    "Accept"
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 425,
+                                                                columnNumber: 27
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                size: "sm",
+                                                                variant: "ghost",
+                                                                onClick: ()=>handleRejectRequest(request.id),
+                                                                children: /*#__PURE__*/ _jsxDEV(XCircle, {
+                                                                    className: "w-4 h-4"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                    lineNumber: 437,
+                                                                    columnNumber: 29
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                                lineNumber: 432,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                        lineNumber: 424,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                                lineNumber: 402,
+                                                columnNumber: 23
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 401,
+                                            columnNumber: 21
+                                        }, this)
+                                    }, request.id, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                        lineNumber: 400,
+                                        columnNumber: 19
+                                    }, this))
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                lineNumber: 398,
+                                columnNumber: 15
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 397,
+                            columnNumber: 13
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                        lineNumber: 388,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                lineNumber: 280,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV(Dialog, {
+                open: showAddDialog,
+                onOpenChange: setShowAddDialog,
+                children: /*#__PURE__*/ _jsxDEV(DialogContent, {
+                    children: [
+                        /*#__PURE__*/ _jsxDEV(DialogHeader, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(DialogTitle, {
+                                    className: "flex items-center gap-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(UserPlus, {
+                                            className: "w-5 h-5"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 455,
+                                            columnNumber: 15
+                                        }, this),
+                                        "Add Friend"
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 454,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(DialogDescription, {
+                                    children: "Enter your friend's code to send them a friend request"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 458,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 453,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "space-y-4",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "space-y-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(Label, {
+                                            htmlFor: "friend-code",
+                                            children: "Friend Code"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 465,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV(Input, {
+                                            id: "friend-code",
+                                            placeholder: "Enter friend code (e.g., ABC-XYZ-123)",
+                                            value: friendCode,
+                                            onChange: (e)=>setFriendCode(e.target.value.toUpperCase()),
+                                            className: "font-mono",
+                                            maxLength: 15
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 466,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("p", {
+                                            className: "text-xs text-muted-foreground",
+                                            children: "Ask your friend to share their friend code with you"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 474,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 464,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex gap-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                            onClick: handleAddFriend,
+                                            disabled: isAdding || !friendCode.trim(),
+                                            className: "flex-1",
+                                            children: isAdding ? 'Sending Request...' : 'Send Friend Request'
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 480,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                            variant: "outline",
+                                            onClick: ()=>{
+                                                setShowAddDialog(false);
+                                                setFriendCode('');
+                                            },
+                                            children: "Cancel"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                            lineNumber: 487,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                                    lineNumber: 479,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                            lineNumber: 463,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                    lineNumber: 452,
+                    columnNumber: 9
+                }, this)
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+                lineNumber: 451,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/FriendsManager.tsx",
+        lineNumber: 204,
+        columnNumber: 5
+    }, this);
+};
+_s(FriendsManager, "P/0aGGg1sdT7lLnLY1lgKNeL16o=", false, function() {
+    return [
+        useToast,
+        useFriends
+    ];
+});
+_c = FriendsManager;
+var _c;
+$RefreshReg$(_c, "FriendsManager");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/FriendsManager.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/FriendsManager.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZyaWVuZHNNYW5hZ2VyLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VTdGF0ZSwgdXNlTWVtbyB9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IENhcmQsIENhcmRDb250ZW50LCBDYXJkSGVhZGVyLCBDYXJkVGl0bGUgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvY2FyZCc7XG5pbXBvcnQgeyBCdXR0b24gfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYnV0dG9uJztcbmltcG9ydCB7IElucHV0IH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2lucHV0JztcbmltcG9ydCB7IEJhZGdlIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2JhZGdlJztcbmltcG9ydCB7IEF2YXRhciwgQXZhdGFyRmFsbGJhY2ssIEF2YXRhckltYWdlIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2F2YXRhcic7XG5pbXBvcnQgeyBUYWJzLCBUYWJzQ29udGVudCwgVGFic0xpc3QsIFRhYnNUcmlnZ2VyIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL3RhYnMnO1xuaW1wb3J0IHsgRGlhbG9nLCBEaWFsb2dDb250ZW50LCBEaWFsb2dIZWFkZXIsIERpYWxvZ1RpdGxlLCBEaWFsb2dEZXNjcmlwdGlvbiB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9kaWFsb2cnO1xuaW1wb3J0IHsgTGFiZWwgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvbGFiZWwnO1xuaW1wb3J0IHsgU2Nyb2xsQXJlYSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9zY3JvbGwtYXJlYSc7XG5pbXBvcnQgeyBTZXBhcmF0b3IgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvc2VwYXJhdG9yJztcbmltcG9ydCB7IEFsZXJ0LCBBbGVydERlc2NyaXB0aW9uIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2FsZXJ0JztcbmltcG9ydCB7XG4gIFVzZXJzLFxuICBVc2VyUGx1cyxcbiAgQ29weSxcbiAgQ2hlY2ssXG4gIE1lc3NhZ2VDaXJjbGUsXG4gIFdpZmksXG4gIFdpZmlPZmYsXG4gIENsb2NrLFxuICBDaGVja0NpcmNsZTIsXG4gIFhDaXJjbGUsXG4gIFVzZXIsXG4gIFFyQ29kZSxcbiAgU2hhcmUyLFxuICBBbGVydENpcmNsZVxufSBmcm9tICdsdWNpZGUtcmVhY3QnO1xuaW1wb3J0IHsgdXNlVG9hc3QgfSBmcm9tICdAL2hvb2tzL3VzZS10b2FzdCc7XG5pbXBvcnQgeyB1c2VGcmllbmRzLCBGcmllbmQsIEZyaWVuZFJlcXVlc3QgfSBmcm9tICdAL2hvb2tzL3VzZUZyaWVuZHMnO1xuaW1wb3J0IHsgTW9vZGlmeUlkZW50aXR5IH0gZnJvbSAnQC9ob29rcy91c2VBbm9ueW1vdXNJZGVudGl0eSc7XG5pbXBvcnQgeyBJZGVudGl0eUF2YXRhciB9IGZyb20gJ0AvY29tcG9uZW50cy9pZGVudGl0eS9JZGVudGl0eUF2YXRhcic7XG5cbmludGVyZmFjZSBGcmllbmRzTWFuYWdlclByb3BzIHtcbiAgaWRlbnRpdHk6IE1vb2RpZnlJZGVudGl0eTtcbiAgb25PcGVuQ2hhdD86IChmcmllbmRJZDogc3RyaW5nKSA9PiB2b2lkO1xufVxuXG5leHBvcnQgY29uc3QgRnJpZW5kc01hbmFnZXIgPSAoeyBpZGVudGl0eSwgb25PcGVuQ2hhdCB9OiBGcmllbmRzTWFuYWdlclByb3BzKSA9PiB7XG4gIGNvbnN0IHsgdG9hc3QgfSA9IHVzZVRvYXN0KCk7XG4gIGNvbnN0IHtcbiAgICBteVBlZXJDb2RlLFxuICAgIGZyaWVuZHMsXG4gICAgZnJpZW5kUmVxdWVzdHMsXG4gICAgc2VuZEZyaWVuZFJlcXVlc3QsXG4gICAgYWNjZXB0RnJpZW5kUmVxdWVzdCxcbiAgICByZWplY3RGcmllbmRSZXF1ZXN0LFxuICAgIHJlbW92ZUZyaWVuZCxcbiAgICBnZXRVbnJlYWRDb3VudFxuICB9ID0gdXNlRnJpZW5kcyhpZGVudGl0eSk7XG5cbiAgY29uc3QgW3Nob3dBZGREaWFsb2csIHNldFNob3dBZGREaWFsb2ddID0gdXNlU3RhdGUoZmFsc2UpO1xuICBjb25zdCBbZnJpZW5kQ29kZSwgc2V0RnJpZW5kQ29kZV0gPSB1c2VTdGF0ZSgnJyk7XG4gIGNvbnN0IFtjb3BpZWQsIHNldENvcGllZF0gPSB1c2VTdGF0ZShmYWxzZSk7XG4gIGNvbnN0IFtpc0FkZGluZywgc2V0SXNBZGRpbmddID0gdXNlU3RhdGUoZmFsc2UpO1xuXG4gIC8vIENhbGN1bGF0ZSBzdGF0c1xuICBjb25zdCBzdGF0cyA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIGNvbnN0IG9ubGluZUZyaWVuZHMgPSBmcmllbmRzLmZpbHRlcihmID0+IGYuaXNPbmxpbmUpLmxlbmd0aDtcbiAgICBjb25zdCB0b3RhbFVucmVhZCA9IGZyaWVuZHMucmVkdWNlKChzdW0sIGYpID0+IHN1bSArIGdldFVucmVhZENvdW50KGYuaWQpLCAwKTtcbiAgICBjb25zdCBwZW5kaW5nUmVxdWVzdHMgPSBmcmllbmRSZXF1ZXN0cy5sZW5ndGg7XG5cbiAgICByZXR1cm4geyBvbmxpbmVGcmllbmRzLCB0b3RhbFVucmVhZCwgcGVuZGluZ1JlcXVlc3RzIH07XG4gIH0sIFtmcmllbmRzLCBmcmllbmRSZXF1ZXN0cywgZ2V0VW5yZWFkQ291bnRdKTtcblxuICBjb25zdCBoYW5kbGVDb3B5Q29kZSA9IGFzeW5jICgpID0+IHtcbiAgICB0cnkge1xuICAgICAgYXdhaXQgbmF2aWdhdG9yLmNsaXBib2FyZC53cml0ZVRleHQobXlQZWVyQ29kZSk7XG4gICAgICBzZXRDb3BpZWQodHJ1ZSk7XG4gICAgICBzZXRUaW1lb3V0KCgpID0+IHNldENvcGllZChmYWxzZSksIDIwMDApO1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogJ+KchSBDb3BpZWQhJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICdZb3VyIGZyaWVuZCBjb2RlIGlzIGNvcGllZCB0byBjbGlwYm9hcmQnLFxuICAgICAgfSk7XG4gICAgfSBjYXRjaCAoZXJyb3IpIHtcbiAgICAgIHRvYXN0KHtcbiAgICAgICAgdGl0bGU6ICdDb3B5IEZhaWxlZCcsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAnUGxlYXNlIGNvcHkgdGhlIGNvZGUgbWFudWFsbHknLFxuICAgICAgICB2YXJpYW50OiAnZGVzdHJ1Y3RpdmUnLFxuICAgICAgfSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGhhbmRsZUFkZEZyaWVuZCA9IGFzeW5jICgpID0+IHtcbiAgICBjb25zdCBjb2RlID0gZnJpZW5kQ29kZS50cmltKCkudG9VcHBlckNhc2UoKTtcbiAgICBcbiAgICBpZiAoIWNvZGUpIHtcbiAgICAgIHRvYXN0KHtcbiAgICAgICAgdGl0bGU6ICdJbnZhbGlkIENvZGUnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ1BsZWFzZSBlbnRlciBhIGZyaWVuZCBjb2RlJyxcbiAgICAgICAgdmFyaWFudDogJ2Rlc3RydWN0aXZlJyxcbiAgICAgIH0pO1xuICAgICAgcmV0dXJuO1xuICAgIH1cblxuICAgIGlmIChjb2RlID09PSBteVBlZXJDb2RlKSB7XG4gICAgICB0b2FzdCh7XG4gICAgICAgIHRpdGxlOiAnSW52YWxpZCBDb2RlJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICdZb3UgY2Fubm90IGFkZCB5b3Vyc2VsZiBhcyBhIGZyaWVuZCcsXG4gICAgICAgIHZhcmlhbnQ6ICdkZXN0cnVjdGl2ZScsXG4gICAgICB9KTtcbiAgICAgIHJldHVybjtcbiAgICB9XG5cbiAgICAvLyBDaGVjayBpZiBhbHJlYWR5IGZyaWVuZHNcbiAgICBpZiAoZnJpZW5kcy5zb21lKGYgPT4gZi5wZWVyQ29kZSA9PT0gY29kZSkpIHtcbiAgICAgIHRvYXN0KHtcbiAgICAgICAgdGl0bGU6ICdBbHJlYWR5IEZyaWVuZHMnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ1RoaXMgdXNlciBpcyBhbHJlYWR5IGluIHlvdXIgZnJpZW5kcyBsaXN0JyxcbiAgICAgICAgdmFyaWFudDogJ2Rlc3RydWN0aXZlJyxcbiAgICAgIH0pO1xuICAgICAgcmV0dXJuO1xuICAgIH1cblxuICAgIHNldElzQWRkaW5nKHRydWUpO1xuICAgIHRyeSB7XG4gICAgICBhd2FpdCBzZW5kRnJpZW5kUmVxdWVzdChjb2RlKTtcbiAgICAgIHNldEZyaWVuZENvZGUoJycpO1xuICAgICAgc2V0U2hvd0FkZERpYWxvZyhmYWxzZSk7XG4gICAgICB0b2FzdCh7XG4gICAgICAgIHRpdGxlOiAn4pyFIEZyaWVuZCBSZXF1ZXN0IFNlbnQhJyxcbiAgICAgICAgZGVzY3JpcHRpb246ICdXYWl0aW5nIGZvciB0aGVtIHRvIGFjY2VwdC4uLicsXG4gICAgICB9KTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogJ1JlcXVlc3QgRmFpbGVkJyxcbiAgICAgICAgZGVzY3JpcHRpb246IGVycm9yIGluc3RhbmNlb2YgRXJyb3IgPyBlcnJvci5tZXNzYWdlIDogJ0NvdWxkIG5vdCBzZW5kIGZyaWVuZCByZXF1ZXN0JyxcbiAgICAgICAgdmFyaWFudDogJ2Rlc3RydWN0aXZlJyxcbiAgICAgIH0pO1xuICAgIH0gZmluYWxseSB7XG4gICAgICBzZXRJc0FkZGluZyhmYWxzZSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGhhbmRsZUFjY2VwdFJlcXVlc3QgPSBhc3luYyAocmVxdWVzdDogRnJpZW5kUmVxdWVzdCkgPT4ge1xuICAgIHRyeSB7XG4gICAgICBhd2FpdCBhY2NlcHRGcmllbmRSZXF1ZXN0KHJlcXVlc3QuaWQpO1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogJ+KchSBGcmllbmQgQWRkZWQhJyxcbiAgICAgICAgZGVzY3JpcHRpb246IGAke3JlcXVlc3QuZGlzcGxheU5hbWV9IGlzIG5vdyB5b3VyIGZyaWVuZGAsXG4gICAgICB9KTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogJ0FjY2VwdCBGYWlsZWQnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ0NvdWxkIG5vdCBhY2NlcHQgZnJpZW5kIHJlcXVlc3QnLFxuICAgICAgICB2YXJpYW50OiAnZGVzdHJ1Y3RpdmUnLFxuICAgICAgfSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGhhbmRsZVJlamVjdFJlcXVlc3QgPSBhc3luYyAocmVxdWVzdElkOiBzdHJpbmcpID0+IHtcbiAgICB0cnkge1xuICAgICAgYXdhaXQgcmVqZWN0RnJpZW5kUmVxdWVzdChyZXF1ZXN0SWQpO1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogJ1JlcXVlc3QgUmVqZWN0ZWQnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ0ZyaWVuZCByZXF1ZXN0IGRlY2xpbmVkJyxcbiAgICAgIH0pO1xuICAgIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgICB0b2FzdCh7XG4gICAgICAgIHRpdGxlOiAnUmVqZWN0IEZhaWxlZCcsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAnQ291bGQgbm90IHJlamVjdCBmcmllbmQgcmVxdWVzdCcsXG4gICAgICAgIHZhcmlhbnQ6ICdkZXN0cnVjdGl2ZScsXG4gICAgICB9KTtcbiAgICB9XG4gIH07XG5cbiAgY29uc3QgaGFuZGxlUmVtb3ZlRnJpZW5kID0gYXN5bmMgKGZyaWVuZDogRnJpZW5kKSA9PiB7XG4gICAgaWYgKCF3aW5kb3cuY29uZmlybShgUmVtb3ZlICR7ZnJpZW5kLmRpc3BsYXlOYW1lfSBmcm9tIGZyaWVuZHM/YCkpIHtcbiAgICAgIHJldHVybjtcbiAgICB9XG5cbiAgICB0cnkge1xuICAgICAgYXdhaXQgcmVtb3ZlRnJpZW5kKGZyaWVuZC5pZCk7XG4gICAgICB0b2FzdCh7XG4gICAgICAgIHRpdGxlOiAnRnJpZW5kIFJlbW92ZWQnLFxuICAgICAgICBkZXNjcmlwdGlvbjogYCR7ZnJpZW5kLmRpc3BsYXlOYW1lfSByZW1vdmVkIGZyb20gZnJpZW5kc2AsXG4gICAgICB9KTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgdG9hc3Qoe1xuICAgICAgICB0aXRsZTogJ1JlbW92ZSBGYWlsZWQnLFxuICAgICAgICBkZXNjcmlwdGlvbjogJ0NvdWxkIG5vdCByZW1vdmUgZnJpZW5kJyxcbiAgICAgICAgdmFyaWFudDogJ2Rlc3RydWN0aXZlJyxcbiAgICAgIH0pO1xuICAgIH1cbiAgfTtcblxuICBjb25zdCBoYW5kbGVPcGVuQ2hhdCA9IChmcmllbmRJZDogc3RyaW5nKSA9PiB7XG4gICAgaWYgKG9uT3BlbkNoYXQpIHtcbiAgICAgIG9uT3BlbkNoYXQoZnJpZW5kSWQpO1xuICAgIH1cbiAgfTtcblxuICBjb25zdCBmb3JtYXRMYXN0U2VlbiA9ICh0aW1lc3RhbXA6IG51bWJlcikgPT4ge1xuICAgIGNvbnN0IG5vdyA9IERhdGUubm93KCk7XG4gICAgY29uc3QgZGlmZiA9IG5vdyAtIHRpbWVzdGFtcDtcbiAgICBcbiAgICBpZiAoZGlmZiA8IDYwMDAwKSByZXR1cm4gJ0p1c3Qgbm93JztcbiAgICBpZiAoZGlmZiA8IDM2MDAwMDApIHJldHVybiBgJHtNYXRoLmZsb29yKGRpZmYgLyA2MDAwMCl9bSBhZ29gO1xuICAgIGlmIChkaWZmIDwgODY0MDAwMDApIHJldHVybiBgJHtNYXRoLmZsb29yKGRpZmYgLyAzNjAwMDAwKX1oIGFnb2A7XG4gICAgcmV0dXJuIGAke01hdGguZmxvb3IoZGlmZiAvIDg2NDAwMDAwKX1kIGFnb2A7XG4gIH07XG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNlwiPlxuICAgICAgey8qIEhlYWRlciBTdGF0cyAqL31cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBncmlkLWNvbHMtMyBnYXAtNFwiPlxuICAgICAgICA8Q2FyZD5cbiAgICAgICAgICA8Q2FyZENvbnRlbnQgY2xhc3NOYW1lPVwicHQtNlwiPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlclwiPlxuICAgICAgICAgICAgICA8VXNlcnMgY2xhc3NOYW1lPVwidy04IGgtOCBteC1hdXRvIG1iLTIgdGV4dC1wcmltYXJ5XCIgLz5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LTJ4bCBmb250LWJvbGRcIj57ZnJpZW5kcy5sZW5ndGh9PC9kaXY+XG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+RnJpZW5kczwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XG4gICAgICAgIDwvQ2FyZD5cbiAgICAgICAgPENhcmQ+XG4gICAgICAgICAgPENhcmRDb250ZW50IGNsYXNzTmFtZT1cInB0LTZcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXJcIj5cbiAgICAgICAgICAgICAgPFdpZmkgY2xhc3NOYW1lPVwidy04IGgtOCBteC1hdXRvIG1iLTIgdGV4dC1ncmVlbi01MDBcIiAvPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtMnhsIGZvbnQtYm9sZFwiPntzdGF0cy5vbmxpbmVGcmllbmRzfTwvZGl2PlxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPk9ubGluZTwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XG4gICAgICAgIDwvQ2FyZD5cbiAgICAgICAgPENhcmQ+XG4gICAgICAgICAgPENhcmRDb250ZW50IGNsYXNzTmFtZT1cInB0LTZcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXJcIj5cbiAgICAgICAgICAgICAgPE1lc3NhZ2VDaXJjbGUgY2xhc3NOYW1lPVwidy04IGgtOCBteC1hdXRvIG1iLTIgdGV4dC1ibHVlLTUwMFwiIC8+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC0yeGwgZm9udC1ib2xkXCI+e3N0YXRzLnRvdGFsVW5yZWFkfTwvZGl2PlxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlVucmVhZDwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XG4gICAgICAgIDwvQ2FyZD5cbiAgICAgIDwvZGl2PlxuXG4gICAgICB7LyogTXkgRnJpZW5kIENvZGUgKi99XG4gICAgICA8Q2FyZD5cbiAgICAgICAgPENhcmRIZWFkZXI+XG4gICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiB0ZXh0LWxnXCI+XG4gICAgICAgICAgICA8U2hhcmUyIGNsYXNzTmFtZT1cInctNSBoLTVcIiAvPlxuICAgICAgICAgICAgTXkgRnJpZW5kIENvZGVcbiAgICAgICAgICA8L0NhcmRUaXRsZT5cbiAgICAgICAgPC9DYXJkSGVhZGVyPlxuICAgICAgICA8Q2FyZENvbnRlbnQgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yXCI+XG4gICAgICAgICAgICA8SW5wdXRcbiAgICAgICAgICAgICAgdmFsdWU9e215UGVlckNvZGV9XG4gICAgICAgICAgICAgIHJlYWRPbmx5XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZvbnQtbW9ubyB0ZXh0LWxnIGZvbnQtYm9sZCB0ZXh0LWNlbnRlclwiXG4gICAgICAgICAgICAvPlxuICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICBzaXplPVwiaWNvblwiXG4gICAgICAgICAgICAgIHZhcmlhbnQ9XCJvdXRsaW5lXCJcbiAgICAgICAgICAgICAgb25DbGljaz17aGFuZGxlQ29weUNvZGV9XG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIHtjb3BpZWQgPyAoXG4gICAgICAgICAgICAgICAgPENoZWNrIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1ncmVlbi01MDBcIiAvPlxuICAgICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICAgIDxDb3B5IGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxuICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQgdGV4dC1jZW50ZXJcIj5cbiAgICAgICAgICAgIFNoYXJlIHRoaXMgY29kZSB3aXRoIGZyaWVuZHMgc28gdGhleSBjYW4gYWRkIHlvdVxuICAgICAgICAgIDwvcD5cbiAgICAgICAgPC9DYXJkQ29udGVudD5cbiAgICAgIDwvQ2FyZD5cblxuICAgICAgey8qIEFkZCBGcmllbmQgQnV0dG9uICovfVxuICAgICAgPEJ1dHRvblxuICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRTaG93QWRkRGlhbG9nKHRydWUpfVxuICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGxcIlxuICAgICAgICBzaXplPVwibGdcIlxuICAgICAgPlxuICAgICAgICA8VXNlclBsdXMgY2xhc3NOYW1lPVwidy01IGgtNSBtci0yXCIgLz5cbiAgICAgICAgQWRkIEZyaWVuZFxuICAgICAgPC9CdXR0b24+XG5cbiAgICAgIHsvKiBUYWJzIGZvciBGcmllbmRzIGFuZCBSZXF1ZXN0cyAqL31cbiAgICAgIDxUYWJzIGRlZmF1bHRWYWx1ZT1cImZyaWVuZHNcIiBjbGFzc05hbWU9XCJ3LWZ1bGxcIj5cbiAgICAgICAgPFRhYnNMaXN0IGNsYXNzTmFtZT1cImdyaWQgdy1mdWxsIGdyaWQtY29scy0yXCI+XG4gICAgICAgICAgPFRhYnNUcmlnZ2VyIHZhbHVlPVwiZnJpZW5kc1wiPlxuICAgICAgICAgICAgRnJpZW5kcyAoe2ZyaWVuZHMubGVuZ3RofSlcbiAgICAgICAgICA8L1RhYnNUcmlnZ2VyPlxuICAgICAgICAgIDxUYWJzVHJpZ2dlciB2YWx1ZT1cInJlcXVlc3RzXCI+XG4gICAgICAgICAgICBSZXF1ZXN0cyAoe3N0YXRzLnBlbmRpbmdSZXF1ZXN0c30pXG4gICAgICAgICAgICB7c3RhdHMucGVuZGluZ1JlcXVlc3RzID4gMCAmJiAoXG4gICAgICAgICAgICAgIDxCYWRnZSB2YXJpYW50PVwiZGVzdHJ1Y3RpdmVcIiBjbGFzc05hbWU9XCJtbC0yXCI+XG4gICAgICAgICAgICAgICAge3N0YXRzLnBlbmRpbmdSZXF1ZXN0c31cbiAgICAgICAgICAgICAgPC9CYWRnZT5cbiAgICAgICAgICAgICl9XG4gICAgICAgICAgPC9UYWJzVHJpZ2dlcj5cbiAgICAgICAgPC9UYWJzTGlzdD5cblxuICAgICAgICB7LyogRnJpZW5kcyBMaXN0ICovfVxuICAgICAgICA8VGFic0NvbnRlbnQgdmFsdWU9XCJmcmllbmRzXCIgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XG4gICAgICAgICAge2ZyaWVuZHMubGVuZ3RoID09PSAwID8gKFxuICAgICAgICAgICAgPEFsZXJ0PlxuICAgICAgICAgICAgICA8QWxlcnRDaXJjbGUgY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgIDxBbGVydERlc2NyaXB0aW9uPlxuICAgICAgICAgICAgICAgIE5vIGZyaWVuZHMgeWV0LiBBZGQgZnJpZW5kcyB1c2luZyB0aGVpciBmcmllbmQgY29kZSFcbiAgICAgICAgICAgICAgPC9BbGVydERlc2NyaXB0aW9uPlxuICAgICAgICAgICAgPC9BbGVydD5cbiAgICAgICAgICApIDogKFxuICAgICAgICAgICAgPFNjcm9sbEFyZWEgY2xhc3NOYW1lPVwiaC1bNDAwcHhdXCI+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XG4gICAgICAgICAgICAgICAge2ZyaWVuZHMubWFwKChmcmllbmQpID0+IHtcbiAgICAgICAgICAgICAgICAgIGNvbnN0IHVucmVhZENvdW50ID0gZ2V0VW5yZWFkQ291bnQoZnJpZW5kLmlkKTtcbiAgICAgICAgICAgICAgICAgIFxuICAgICAgICAgICAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgICAgICAgICAgPENhcmQga2V5PXtmcmllbmQuaWR9PlxuICAgICAgICAgICAgICAgICAgICAgIDxDYXJkQ29udGVudCBjbGFzc05hbWU9XCJwLTRcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTRcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgey8qIEF2YXRhciAqL31cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZVwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxJZGVudGl0eUF2YXRhciBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNlZWQ9e2ZyaWVuZC5hdmF0YXJ9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplPXs0OH1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctMTIgaC0xMlwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7LyogT25saW5lIGluZGljYXRvciAqL31cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7ZnJpZW5kLmlzT25saW5lICYmIChcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgLWJvdHRvbS0xIC1yaWdodC0xIHctNCBoLTQgYmctZ3JlZW4tNTAwIHJvdW5kZWQtZnVsbCBib3JkZXItMiBib3JkZXItYmFja2dyb3VuZFwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgey8qIEZyaWVuZCBJbmZvICovfVxuICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMSBtaW4tdy0wXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPGgzIGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtIHRydW5jYXRlXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHtmcmllbmQuZGlzcGxheU5hbWV9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2gzPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge2ZyaWVuZC5pc09ubGluZSA/IChcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9XCJkZWZhdWx0XCIgY2xhc3NOYW1lPVwiYmctZ3JlZW4tNTAwXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPFdpZmkgY2xhc3NOYW1lPVwidy0zIGgtMyBtci0xXCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBPbmxpbmVcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxCYWRnZSB2YXJpYW50PVwic2Vjb25kYXJ5XCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPENsb2NrIGNsYXNzTmFtZT1cInctMyBoLTMgbXItMVwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge2Zvcm1hdExhc3RTZWVuKGZyaWVuZC5sYXN0U2Vlbil9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvQmFkZ2U+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIGZvbnQtbW9ub1wiPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge2ZyaWVuZC5wZWVyQ29kZX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHsvKiBBY3Rpb25zICovfVxuICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTJcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplPVwic21cIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD17dW5yZWFkQ291bnQgPiAwID8gXCJkZWZhdWx0XCIgOiBcIm91dGxpbmVcIn1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGhhbmRsZU9wZW5DaGF0KGZyaWVuZC5pZCl9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJyZWxhdGl2ZVwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPE1lc3NhZ2VDaXJjbGUgY2xhc3NOYW1lPVwidy00IGgtNCBtci0xXCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIENoYXRcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHt1bnJlYWRDb3VudCA+IDAgJiYgKFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8QmFkZ2VcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZGVzdHJ1Y3RpdmVcIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImFic29sdXRlIC10b3AtMiAtcmlnaHQtMiBoLTUgdy01IHAtMCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciB0ZXh0LXhzXCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHt1bnJlYWRDb3VudCA+IDkgPyAnOSsnIDogdW5yZWFkQ291bnR9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvQmFkZ2U+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZ2hvc3RcIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gaGFuZGxlUmVtb3ZlRnJpZW5kKGZyaWVuZCl9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPFhDaXJjbGUgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cbiAgICAgICAgICAgICAgICAgICAgPC9DYXJkPlxuICAgICAgICAgICAgICAgICAgKTtcbiAgICAgICAgICAgICAgICB9KX1cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L1Njcm9sbEFyZWE+XG4gICAgICAgICAgKX1cbiAgICAgICAgPC9UYWJzQ29udGVudD5cblxuICAgICAgICB7LyogRnJpZW5kIFJlcXVlc3RzICovfVxuICAgICAgICA8VGFic0NvbnRlbnQgdmFsdWU9XCJyZXF1ZXN0c1wiIGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxuICAgICAgICAgIHtmcmllbmRSZXF1ZXN0cy5sZW5ndGggPT09IDAgPyAoXG4gICAgICAgICAgICA8QWxlcnQ+XG4gICAgICAgICAgICAgIDxBbGVydENpcmNsZSBjbGFzc05hbWU9XCJoLTQgdy00XCIgLz5cbiAgICAgICAgICAgICAgPEFsZXJ0RGVzY3JpcHRpb24+XG4gICAgICAgICAgICAgICAgTm8gcGVuZGluZyBmcmllbmQgcmVxdWVzdHNcbiAgICAgICAgICAgICAgPC9BbGVydERlc2NyaXB0aW9uPlxuICAgICAgICAgICAgPC9BbGVydD5cbiAgICAgICAgICApIDogKFxuICAgICAgICAgICAgPFNjcm9sbEFyZWEgY2xhc3NOYW1lPVwiaC1bNDAwcHhdXCI+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XG4gICAgICAgICAgICAgICAge2ZyaWVuZFJlcXVlc3RzLm1hcCgocmVxdWVzdCkgPT4gKFxuICAgICAgICAgICAgICAgICAgPENhcmQga2V5PXtyZXF1ZXN0LmlkfT5cbiAgICAgICAgICAgICAgICAgICAgPENhcmRDb250ZW50IGNsYXNzTmFtZT1cInAtNFwiPlxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTRcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIHsvKiBBdmF0YXIgKi99XG4gICAgICAgICAgICAgICAgICAgICAgICA8SWRlbnRpdHlBdmF0YXIgXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHNlZWQ9e3JlcXVlc3QuYXZhdGFyfVxuICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplPXs0OH1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy0xMiBoLTEyXCJcbiAgICAgICAgICAgICAgICAgICAgICAgIC8+XG5cbiAgICAgICAgICAgICAgICAgICAgICAgIHsvKiBSZXF1ZXN0IEluZm8gKi99XG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMSBtaW4tdy0wXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJmb250LW1lZGl1bSB0cnVuY2F0ZVwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIHtyZXF1ZXN0LmRpc3BsYXlOYW1lfVxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L2gzPlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIFdhbnRzIHRvIGJlIGZyaWVuZHNcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCBmb250LW1vbm9cIj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7cmVxdWVzdC5wZWVyQ29kZX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgICAgICAgIHsvKiBBY3Rpb25zICovfVxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplPVwic21cIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGhhbmRsZUFjY2VwdFJlcXVlc3QocmVxdWVzdCl9XG4gICAgICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8Q2hlY2tDaXJjbGUyIGNsYXNzTmFtZT1cInctNCBoLTQgbXItMVwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgQWNjZXB0XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZ2hvc3RcIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGhhbmRsZVJlamVjdFJlcXVlc3QocmVxdWVzdC5pZCl9XG4gICAgICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8WENpcmNsZSBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cbiAgICAgICAgICAgICAgICAgIDwvQ2FyZD5cbiAgICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L1Njcm9sbEFyZWE+XG4gICAgICAgICAgKX1cbiAgICAgICAgPC9UYWJzQ29udGVudD5cbiAgICAgIDwvVGFicz5cblxuICAgICAgey8qIEFkZCBGcmllbmQgRGlhbG9nICovfVxuICAgICAgPERpYWxvZyBvcGVuPXtzaG93QWRkRGlhbG9nfSBvbk9wZW5DaGFuZ2U9e3NldFNob3dBZGREaWFsb2d9PlxuICAgICAgICA8RGlhbG9nQ29udGVudD5cbiAgICAgICAgICA8RGlhbG9nSGVhZGVyPlxuICAgICAgICAgICAgPERpYWxvZ1RpdGxlIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XG4gICAgICAgICAgICAgIDxVc2VyUGx1cyBjbGFzc05hbWU9XCJ3LTUgaC01XCIgLz5cbiAgICAgICAgICAgICAgQWRkIEZyaWVuZFxuICAgICAgICAgICAgPC9EaWFsb2dUaXRsZT5cbiAgICAgICAgICAgIDxEaWFsb2dEZXNjcmlwdGlvbj5cbiAgICAgICAgICAgICAgRW50ZXIgeW91ciBmcmllbmQncyBjb2RlIHRvIHNlbmQgdGhlbSBhIGZyaWVuZCByZXF1ZXN0XG4gICAgICAgICAgICA8L0RpYWxvZ0Rlc2NyaXB0aW9uPlxuICAgICAgICAgIDwvRGlhbG9nSGVhZGVyPlxuICAgICAgICAgIFxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxuICAgICAgICAgICAgICA8TGFiZWwgaHRtbEZvcj1cImZyaWVuZC1jb2RlXCI+RnJpZW5kIENvZGU8L0xhYmVsPlxuICAgICAgICAgICAgICA8SW5wdXRcbiAgICAgICAgICAgICAgICBpZD1cImZyaWVuZC1jb2RlXCJcbiAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cIkVudGVyIGZyaWVuZCBjb2RlIChlLmcuLCBBQkMtWFlaLTEyMylcIlxuICAgICAgICAgICAgICAgIHZhbHVlPXtmcmllbmRDb2RlfVxuICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0RnJpZW5kQ29kZShlLnRhcmdldC52YWx1ZS50b1VwcGVyQ2FzZSgpKX1cbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmb250LW1vbm9cIlxuICAgICAgICAgICAgICAgIG1heExlbmd0aD17MTV9XG4gICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+XG4gICAgICAgICAgICAgICAgQXNrIHlvdXIgZnJpZW5kIHRvIHNoYXJlIHRoZWlyIGZyaWVuZCBjb2RlIHdpdGggeW91XG4gICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTJcIj5cbiAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgIG9uQ2xpY2s9e2hhbmRsZUFkZEZyaWVuZH1cbiAgICAgICAgICAgICAgICBkaXNhYmxlZD17aXNBZGRpbmcgfHwgIWZyaWVuZENvZGUudHJpbSgpfVxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXgtMVwiXG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICB7aXNBZGRpbmcgPyAnU2VuZGluZyBSZXF1ZXN0Li4uJyA6ICdTZW5kIEZyaWVuZCBSZXF1ZXN0J31cbiAgICAgICAgICAgICAgPC9CdXR0b24+XG4gICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICB2YXJpYW50PVwib3V0bGluZVwiXG4gICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4ge1xuICAgICAgICAgICAgICAgICAgc2V0U2hvd0FkZERpYWxvZyhmYWxzZSk7XG4gICAgICAgICAgICAgICAgICBzZXRGcmllbmRDb2RlKCcnKTtcbiAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgQ2FuY2VsXG4gICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvRGlhbG9nQ29udGVudD5cbiAgICAgIDwvRGlhbG9nPlxuICAgIDwvZGl2PlxuICApO1xufTtcbiJdLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsInVzZU1lbW8iLCJDYXJkIiwiQ2FyZENvbnRlbnQiLCJDYXJkSGVhZGVyIiwiQ2FyZFRpdGxlIiwiQnV0dG9uIiwiSW5wdXQiLCJCYWRnZSIsIlRhYnMiLCJUYWJzQ29udGVudCIsIlRhYnNMaXN0IiwiVGFic1RyaWdnZXIiLCJEaWFsb2ciLCJEaWFsb2dDb250ZW50IiwiRGlhbG9nSGVhZGVyIiwiRGlhbG9nVGl0bGUiLCJEaWFsb2dEZXNjcmlwdGlvbiIsIkxhYmVsIiwiU2Nyb2xsQXJlYSIsIkFsZXJ0IiwiQWxlcnREZXNjcmlwdGlvbiIsIlVzZXJzIiwiVXNlclBsdXMiLCJDb3B5IiwiQ2hlY2siLCJNZXNzYWdlQ2lyY2xlIiwiV2lmaSIsIkNsb2NrIiwiQ2hlY2tDaXJjbGUyIiwiWENpcmNsZSIsIlNoYXJlMiIsIkFsZXJ0Q2lyY2xlIiwidXNlVG9hc3QiLCJ1c2VGcmllbmRzIiwiSWRlbnRpdHlBdmF0YXIiLCJGcmllbmRzTWFuYWdlciIsImlkZW50aXR5Iiwib25PcGVuQ2hhdCIsInRvYXN0IiwibXlQZWVyQ29kZSIsImZyaWVuZHMiLCJmcmllbmRSZXF1ZXN0cyIsInNlbmRGcmllbmRSZXF1ZXN0IiwiYWNjZXB0RnJpZW5kUmVxdWVzdCIsInJlamVjdEZyaWVuZFJlcXVlc3QiLCJyZW1vdmVGcmllbmQiLCJnZXRVbnJlYWRDb3VudCIsInNob3dBZGREaWFsb2ciLCJzZXRTaG93QWRkRGlhbG9nIiwiZnJpZW5kQ29kZSIsInNldEZyaWVuZENvZGUiLCJjb3BpZWQiLCJzZXRDb3BpZWQiLCJpc0FkZGluZyIsInNldElzQWRkaW5nIiwic3RhdHMiLCJvbmxpbmVGcmllbmRzIiwiZmlsdGVyIiwiZiIsImlzT25saW5lIiwibGVuZ3RoIiwidG90YWxVbnJlYWQiLCJyZWR1Y2UiLCJzdW0iLCJpZCIsInBlbmRpbmdSZXF1ZXN0cyIsImhhbmRsZUNvcHlDb2RlIiwibmF2aWdhdG9yIiwiY2xpcGJvYXJkIiwid3JpdGVUZXh0Iiwic2V0VGltZW91dCIsInRpdGxlIiwiZGVzY3JpcHRpb24iLCJlcnJvciIsInZhcmlhbnQiLCJoYW5kbGVBZGRGcmllbmQiLCJjb2RlIiwidHJpbSIsInRvVXBwZXJDYXNlIiwic29tZSIsInBlZXJDb2RlIiwiRXJyb3IiLCJtZXNzYWdlIiwiaGFuZGxlQWNjZXB0UmVxdWVzdCIsInJlcXVlc3QiLCJkaXNwbGF5TmFtZSIsImhhbmRsZVJlamVjdFJlcXVlc3QiLCJyZXF1ZXN0SWQiLCJoYW5kbGVSZW1vdmVGcmllbmQiLCJmcmllbmQiLCJ3aW5kb3ciLCJjb25maXJtIiwiaGFuZGxlT3BlbkNoYXQiLCJmcmllbmRJZCIsImZvcm1hdExhc3RTZWVuIiwidGltZXN0YW1wIiwibm93IiwiRGF0ZSIsImRpZmYiLCJNYXRoIiwiZmxvb3IiLCJkaXYiLCJjbGFzc05hbWUiLCJwIiwidmFsdWUiLCJyZWFkT25seSIsInNpemUiLCJvbkNsaWNrIiwiZGVmYXVsdFZhbHVlIiwibWFwIiwidW5yZWFkQ291bnQiLCJzZWVkIiwiYXZhdGFyIiwiaDMiLCJsYXN0U2VlbiIsIm9wZW4iLCJvbk9wZW5DaGFuZ2UiLCJodG1sRm9yIiwicGxhY2Vob2xkZXIiLCJvbkNoYW5nZSIsImUiLCJ0YXJnZXQiLCJtYXhMZW5ndGgiLCJkaXNhYmxlZCJdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsU0FBU0EsUUFBUSxFQUFFQyxPQUFPLFFBQVEsUUFBUTtBQUMxQyxTQUFTQyxJQUFJLEVBQUVDLFdBQVcsRUFBRUMsVUFBVSxFQUFFQyxTQUFTLFFBQVEsdUJBQXVCO0FBQ2hGLFNBQVNDLE1BQU0sUUFBUSx5QkFBeUI7QUFDaEQsU0FBU0MsS0FBSyxRQUFRLHdCQUF3QjtBQUM5QyxTQUFTQyxLQUFLLFFBQVEsd0JBQXdCO0FBRTlDLFNBQVNDLElBQUksRUFBRUMsV0FBVyxFQUFFQyxRQUFRLEVBQUVDLFdBQVcsUUFBUSx1QkFBdUI7QUFDaEYsU0FBU0MsTUFBTSxFQUFFQyxhQUFhLEVBQUVDLFlBQVksRUFBRUMsV0FBVyxFQUFFQyxpQkFBaUIsUUFBUSx5QkFBeUI7QUFDN0csU0FBU0MsS0FBSyxRQUFRLHdCQUF3QjtBQUM5QyxTQUFTQyxVQUFVLFFBQVEsOEJBQThCO0FBRXpELFNBQVNDLEtBQUssRUFBRUMsZ0JBQWdCLFFBQVEsd0JBQXdCO0FBQ2hFLFNBQ0VDLEtBQUssRUFDTEMsUUFBUSxFQUNSQyxJQUFJLEVBQ0pDLEtBQUssRUFDTEMsYUFBYSxFQUNiQyxJQUFJLEVBRUpDLEtBQUssRUFDTEMsWUFBWSxFQUNaQyxPQUFPLEVBR1BDLE1BQU0sRUFDTkMsV0FBVyxRQUNOLGVBQWU7QUFDdEIsU0FBU0MsUUFBUSxRQUFRLG9CQUFvQjtBQUM3QyxTQUFTQyxVQUFVLFFBQStCLHFCQUFxQjtBQUV2RSxTQUFTQyxjQUFjLFFBQVEsdUNBQXVDO0FBT3RFLE9BQU8sTUFBTUMsaUJBQWlCLENBQUMsRUFBRUMsUUFBUSxFQUFFQyxVQUFVLEVBQXVCOztJQUMxRSxNQUFNLEVBQUVDLEtBQUssRUFBRSxHQUFHTjtJQUNsQixNQUFNLEVBQ0pPLFVBQVUsRUFDVkMsT0FBTyxFQUNQQyxjQUFjLEVBQ2RDLGlCQUFpQixFQUNqQkMsbUJBQW1CLEVBQ25CQyxtQkFBbUIsRUFDbkJDLFlBQVksRUFDWkMsY0FBYyxFQUNmLEdBQUdiLFdBQVdHO0lBRWYsTUFBTSxDQUFDVyxlQUFlQyxpQkFBaUIsR0FBR2pELFNBQVM7SUFDbkQsTUFBTSxDQUFDa0QsWUFBWUMsY0FBYyxHQUFHbkQsU0FBUztJQUM3QyxNQUFNLENBQUNvRCxRQUFRQyxVQUFVLEdBQUdyRCxTQUFTO0lBQ3JDLE1BQU0sQ0FBQ3NELFVBQVVDLFlBQVksR0FBR3ZELFNBQVM7SUFFekMsa0JBQWtCO0lBQ2xCLE1BQU13RCxRQUFRdkQsUUFBUTtRQUNwQixNQUFNd0QsZ0JBQWdCaEIsUUFBUWlCLE1BQU0sQ0FBQ0MsQ0FBQUEsSUFBS0EsRUFBRUMsUUFBUSxFQUFFQyxNQUFNO1FBQzVELE1BQU1DLGNBQWNyQixRQUFRc0IsTUFBTSxDQUFDLENBQUNDLEtBQUtMLElBQU1LLE1BQU1qQixlQUFlWSxFQUFFTSxFQUFFLEdBQUc7UUFDM0UsTUFBTUMsa0JBQWtCeEIsZUFBZW1CLE1BQU07UUFFN0MsT0FBTztZQUFFSjtZQUFlSztZQUFhSTtRQUFnQjtJQUN2RCxHQUFHO1FBQUN6QjtRQUFTQztRQUFnQks7S0FBZTtJQUU1QyxNQUFNb0IsaUJBQWlCO1FBQ3JCLElBQUk7WUFDRixNQUFNQyxVQUFVQyxTQUFTLENBQUNDLFNBQVMsQ0FBQzlCO1lBQ3BDYSxVQUFVO1lBQ1ZrQixXQUFXLElBQU1sQixVQUFVLFFBQVE7WUFDbkNkLE1BQU07Z0JBQ0ppQyxPQUFPO2dCQUNQQyxhQUFhO1lBQ2Y7UUFDRixFQUFFLE9BQU9DLE9BQU87WUFDZG5DLE1BQU07Z0JBQ0ppQyxPQUFPO2dCQUNQQyxhQUFhO2dCQUNiRSxTQUFTO1lBQ1g7UUFDRjtJQUNGO0lBRUEsTUFBTUMsa0JBQWtCO1FBQ3RCLE1BQU1DLE9BQU8zQixXQUFXNEIsSUFBSSxHQUFHQyxXQUFXO1FBRTFDLElBQUksQ0FBQ0YsTUFBTTtZQUNUdEMsTUFBTTtnQkFDSmlDLE9BQU87Z0JBQ1BDLGFBQWE7Z0JBQ2JFLFNBQVM7WUFDWDtZQUNBO1FBQ0Y7UUFFQSxJQUFJRSxTQUFTckMsWUFBWTtZQUN2QkQsTUFBTTtnQkFDSmlDLE9BQU87Z0JBQ1BDLGFBQWE7Z0JBQ2JFLFNBQVM7WUFDWDtZQUNBO1FBQ0Y7UUFFQSwyQkFBMkI7UUFDM0IsSUFBSWxDLFFBQVF1QyxJQUFJLENBQUNyQixDQUFBQSxJQUFLQSxFQUFFc0IsUUFBUSxLQUFLSixPQUFPO1lBQzFDdEMsTUFBTTtnQkFDSmlDLE9BQU87Z0JBQ1BDLGFBQWE7Z0JBQ2JFLFNBQVM7WUFDWDtZQUNBO1FBQ0Y7UUFFQXBCLFlBQVk7UUFDWixJQUFJO1lBQ0YsTUFBTVosa0JBQWtCa0M7WUFDeEIxQixjQUFjO1lBQ2RGLGlCQUFpQjtZQUNqQlYsTUFBTTtnQkFDSmlDLE9BQU87Z0JBQ1BDLGFBQWE7WUFDZjtRQUNGLEVBQUUsT0FBT0MsT0FBTztZQUNkbkMsTUFBTTtnQkFDSmlDLE9BQU87Z0JBQ1BDLGFBQWFDLGlCQUFpQlEsUUFBUVIsTUFBTVMsT0FBTyxHQUFHO2dCQUN0RFIsU0FBUztZQUNYO1FBQ0YsU0FBVTtZQUNScEIsWUFBWTtRQUNkO0lBQ0Y7SUFFQSxNQUFNNkIsc0JBQXNCLE9BQU9DO1FBQ2pDLElBQUk7WUFDRixNQUFNekMsb0JBQW9CeUMsUUFBUXBCLEVBQUU7WUFDcEMxQixNQUFNO2dCQUNKaUMsT0FBTztnQkFDUEMsYUFBYSxHQUFHWSxRQUFRQyxXQUFXLENBQUMsbUJBQW1CLENBQUM7WUFDMUQ7UUFDRixFQUFFLE9BQU9aLE9BQU87WUFDZG5DLE1BQU07Z0JBQ0ppQyxPQUFPO2dCQUNQQyxhQUFhO2dCQUNiRSxTQUFTO1lBQ1g7UUFDRjtJQUNGO0lBRUEsTUFBTVksc0JBQXNCLE9BQU9DO1FBQ2pDLElBQUk7WUFDRixNQUFNM0Msb0JBQW9CMkM7WUFDMUJqRCxNQUFNO2dCQUNKaUMsT0FBTztnQkFDUEMsYUFBYTtZQUNmO1FBQ0YsRUFBRSxPQUFPQyxPQUFPO1lBQ2RuQyxNQUFNO2dCQUNKaUMsT0FBTztnQkFDUEMsYUFBYTtnQkFDYkUsU0FBUztZQUNYO1FBQ0Y7SUFDRjtJQUVBLE1BQU1jLHFCQUFxQixPQUFPQztRQUNoQyxJQUFJLENBQUNDLE9BQU9DLE9BQU8sQ0FBQyxDQUFDLE9BQU8sRUFBRUYsT0FBT0osV0FBVyxDQUFDLGNBQWMsQ0FBQyxHQUFHO1lBQ2pFO1FBQ0Y7UUFFQSxJQUFJO1lBQ0YsTUFBTXhDLGFBQWE0QyxPQUFPekIsRUFBRTtZQUM1QjFCLE1BQU07Z0JBQ0ppQyxPQUFPO2dCQUNQQyxhQUFhLEdBQUdpQixPQUFPSixXQUFXLENBQUMscUJBQXFCLENBQUM7WUFDM0Q7UUFDRixFQUFFLE9BQU9aLE9BQU87WUFDZG5DLE1BQU07Z0JBQ0ppQyxPQUFPO2dCQUNQQyxhQUFhO2dCQUNiRSxTQUFTO1lBQ1g7UUFDRjtJQUNGO0lBRUEsTUFBTWtCLGlCQUFpQixDQUFDQztRQUN0QixJQUFJeEQsWUFBWTtZQUNkQSxXQUFXd0Q7UUFDYjtJQUNGO0lBRUEsTUFBTUMsaUJBQWlCLENBQUNDO1FBQ3RCLE1BQU1DLE1BQU1DLEtBQUtELEdBQUc7UUFDcEIsTUFBTUUsT0FBT0YsTUFBTUQ7UUFFbkIsSUFBSUcsT0FBTyxPQUFPLE9BQU87UUFDekIsSUFBSUEsT0FBTyxTQUFTLE9BQU8sR0FBR0MsS0FBS0MsS0FBSyxDQUFDRixPQUFPLE9BQU8sS0FBSyxDQUFDO1FBQzdELElBQUlBLE9BQU8sVUFBVSxPQUFPLEdBQUdDLEtBQUtDLEtBQUssQ0FBQ0YsT0FBTyxTQUFTLEtBQUssQ0FBQztRQUNoRSxPQUFPLEdBQUdDLEtBQUtDLEtBQUssQ0FBQ0YsT0FBTyxVQUFVLEtBQUssQ0FBQztJQUM5QztJQUVBLHFCQUNFLFFBQUNHO1FBQUlDLFdBQVU7OzBCQUViLFFBQUNEO2dCQUFJQyxXQUFVOztrQ0FDYixRQUFDckc7a0NBQ0MsY0FBQSxRQUFDQzs0QkFBWW9HLFdBQVU7c0NBQ3JCLGNBQUEsUUFBQ0Q7Z0NBQUlDLFdBQVU7O2tEQUNiLFFBQUNqRjt3Q0FBTWlGLFdBQVU7Ozs7OztrREFDakIsUUFBQ0Q7d0NBQUlDLFdBQVU7a0RBQXNCOUQsUUFBUW9CLE1BQU07Ozs7OztrREFDbkQsUUFBQzJDO3dDQUFFRCxXQUFVO2tEQUFnQzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztrQ0FJbkQsUUFBQ3JHO2tDQUNDLGNBQUEsUUFBQ0M7NEJBQVlvRyxXQUFVO3NDQUNyQixjQUFBLFFBQUNEO2dDQUFJQyxXQUFVOztrREFDYixRQUFDNUU7d0NBQUs0RSxXQUFVOzs7Ozs7a0RBQ2hCLFFBQUNEO3dDQUFJQyxXQUFVO2tEQUFzQi9DLE1BQU1DLGFBQWE7Ozs7OztrREFDeEQsUUFBQytDO3dDQUFFRCxXQUFVO2tEQUFnQzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztrQ0FJbkQsUUFBQ3JHO2tDQUNDLGNBQUEsUUFBQ0M7NEJBQVlvRyxXQUFVO3NDQUNyQixjQUFBLFFBQUNEO2dDQUFJQyxXQUFVOztrREFDYixRQUFDN0U7d0NBQWM2RSxXQUFVOzs7Ozs7a0RBQ3pCLFFBQUNEO3dDQUFJQyxXQUFVO2tEQUFzQi9DLE1BQU1NLFdBQVc7Ozs7OztrREFDdEQsUUFBQzBDO3dDQUFFRCxXQUFVO2tEQUFnQzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OzswQkFPckQsUUFBQ3JHOztrQ0FDQyxRQUFDRTtrQ0FDQyxjQUFBLFFBQUNDOzRCQUFVa0csV0FBVTs7OENBQ25CLFFBQUN4RTtvQ0FBT3dFLFdBQVU7Ozs7OztnQ0FBWTs7Ozs7Ozs7Ozs7O2tDQUlsQyxRQUFDcEc7d0JBQVlvRyxXQUFVOzswQ0FDckIsUUFBQ0Q7Z0NBQUlDLFdBQVU7O2tEQUNiLFFBQUNoRzt3Q0FDQ2tHLE9BQU9qRTt3Q0FDUGtFLFFBQVE7d0NBQ1JILFdBQVU7Ozs7OztrREFFWixRQUFDakc7d0NBQ0NxRyxNQUFLO3dDQUNMaEMsU0FBUTt3Q0FDUmlDLFNBQVN6QztrREFFUmYsdUJBQ0MsUUFBQzNCOzRDQUFNOEUsV0FBVTs7Ozs7aUVBRWpCLFFBQUMvRTs0Q0FBSytFLFdBQVU7Ozs7Ozs7Ozs7Ozs7Ozs7OzBDQUl0QixRQUFDQztnQ0FBRUQsV0FBVTswQ0FBNEM7Ozs7Ozs7Ozs7Ozs7Ozs7OzswQkFPN0QsUUFBQ2pHO2dCQUNDc0csU0FBUyxJQUFNM0QsaUJBQWlCO2dCQUNoQ3NELFdBQVU7Z0JBQ1ZJLE1BQUs7O2tDQUVMLFFBQUNwRjt3QkFBU2dGLFdBQVU7Ozs7OztvQkFBaUI7Ozs7Ozs7MEJBS3ZDLFFBQUM5RjtnQkFBS29HLGNBQWE7Z0JBQVVOLFdBQVU7O2tDQUNyQyxRQUFDNUY7d0JBQVM0RixXQUFVOzswQ0FDbEIsUUFBQzNGO2dDQUFZNkYsT0FBTTs7b0NBQVU7b0NBQ2pCaEUsUUFBUW9CLE1BQU07b0NBQUM7Ozs7Ozs7MENBRTNCLFFBQUNqRDtnQ0FBWTZGLE9BQU07O29DQUFXO29DQUNqQmpELE1BQU1VLGVBQWU7b0NBQUM7b0NBQ2hDVixNQUFNVSxlQUFlLEdBQUcsbUJBQ3ZCLFFBQUMxRDt3Q0FBTW1FLFNBQVE7d0NBQWM0QixXQUFVO2tEQUNwQy9DLE1BQU1VLGVBQWU7Ozs7Ozs7Ozs7Ozs7Ozs7OztrQ0FPOUIsUUFBQ3hEO3dCQUFZK0YsT0FBTTt3QkFBVUYsV0FBVTtrQ0FDcEM5RCxRQUFRb0IsTUFBTSxLQUFLLGtCQUNsQixRQUFDekM7OzhDQUNDLFFBQUNZO29DQUFZdUUsV0FBVTs7Ozs7OzhDQUN2QixRQUFDbEY7OENBQWlCOzs7Ozs7Ozs7OztpREFLcEIsUUFBQ0Y7NEJBQVdvRixXQUFVO3NDQUNwQixjQUFBLFFBQUNEO2dDQUFJQyxXQUFVOzBDQUNaOUQsUUFBUXFFLEdBQUcsQ0FBQyxDQUFDcEI7b0NBQ1osTUFBTXFCLGNBQWNoRSxlQUFlMkMsT0FBT3pCLEVBQUU7b0NBRTVDLHFCQUNFLFFBQUMvRDtrREFDQyxjQUFBLFFBQUNDOzRDQUFZb0csV0FBVTtzREFDckIsY0FBQSxRQUFDRDtnREFBSUMsV0FBVTs7a0VBRWIsUUFBQ0Q7d0RBQUlDLFdBQVU7OzBFQUNiLFFBQUNwRTtnRUFDQzZFLE1BQU10QixPQUFPdUIsTUFBTTtnRUFDbkJOLE1BQU07Z0VBQ05KLFdBQVU7Ozs7Ozs0REFHWGIsT0FBTzlCLFFBQVEsa0JBQ2QsUUFBQzBDO2dFQUFJQyxXQUFVOzs7Ozs7Ozs7Ozs7a0VBS25CLFFBQUNEO3dEQUFJQyxXQUFVOzswRUFDYixRQUFDRDtnRUFBSUMsV0FBVTs7a0ZBQ2IsUUFBQ1c7d0VBQUdYLFdBQVU7a0ZBQ1hiLE9BQU9KLFdBQVc7Ozs7OztvRUFFcEJJLE9BQU85QixRQUFRLGlCQUNkLFFBQUNwRDt3RUFBTW1FLFNBQVE7d0VBQVU0QixXQUFVOzswRkFDakMsUUFBQzVFO2dGQUFLNEUsV0FBVTs7Ozs7OzRFQUFpQjs7Ozs7OzZGQUluQyxRQUFDL0Y7d0VBQU1tRSxTQUFROzswRkFDYixRQUFDL0M7Z0ZBQU0yRSxXQUFVOzs7Ozs7NEVBQ2hCUixlQUFlTCxPQUFPeUIsUUFBUTs7Ozs7Ozs7Ozs7OzswRUFJckMsUUFBQ1g7Z0VBQUVELFdBQVU7MEVBQ1ZiLE9BQU9ULFFBQVE7Ozs7Ozs7Ozs7OztrRUFLcEIsUUFBQ3FCO3dEQUFJQyxXQUFVOzswRUFDYixRQUFDakc7Z0VBQ0NxRyxNQUFLO2dFQUNMaEMsU0FBU29DLGNBQWMsSUFBSSxZQUFZO2dFQUN2Q0gsU0FBUyxJQUFNZixlQUFlSCxPQUFPekIsRUFBRTtnRUFDdkNzQyxXQUFVOztrRkFFVixRQUFDN0U7d0VBQWM2RSxXQUFVOzs7Ozs7b0VBQWlCO29FQUV6Q1EsY0FBYyxtQkFDYixRQUFDdkc7d0VBQ0NtRSxTQUFRO3dFQUNSNEIsV0FBVTtrRkFFVFEsY0FBYyxJQUFJLE9BQU9BOzs7Ozs7Ozs7Ozs7MEVBSWhDLFFBQUN6RztnRUFDQ3FHLE1BQUs7Z0VBQ0xoQyxTQUFRO2dFQUNSaUMsU0FBUyxJQUFNbkIsbUJBQW1CQzswRUFFbEMsY0FBQSxRQUFDNUQ7b0VBQVF5RSxXQUFVOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O3VDQS9EbEJiLE9BQU96QixFQUFFOzs7OztnQ0FzRXhCOzs7Ozs7Ozs7Ozs7Ozs7O2tDQU9SLFFBQUN2RDt3QkFBWStGLE9BQU07d0JBQVdGLFdBQVU7a0NBQ3JDN0QsZUFBZW1CLE1BQU0sS0FBSyxrQkFDekIsUUFBQ3pDOzs4Q0FDQyxRQUFDWTtvQ0FBWXVFLFdBQVU7Ozs7Ozs4Q0FDdkIsUUFBQ2xGOzhDQUFpQjs7Ozs7Ozs7Ozs7aURBS3BCLFFBQUNGOzRCQUFXb0YsV0FBVTtzQ0FDcEIsY0FBQSxRQUFDRDtnQ0FBSUMsV0FBVTswQ0FDWjdELGVBQWVvRSxHQUFHLENBQUMsQ0FBQ3pCLHdCQUNuQixRQUFDbkY7a0RBQ0MsY0FBQSxRQUFDQzs0Q0FBWW9HLFdBQVU7c0RBQ3JCLGNBQUEsUUFBQ0Q7Z0RBQUlDLFdBQVU7O2tFQUViLFFBQUNwRTt3REFDQzZFLE1BQU0zQixRQUFRNEIsTUFBTTt3REFDcEJOLE1BQU07d0RBQ05KLFdBQVU7Ozs7OztrRUFJWixRQUFDRDt3REFBSUMsV0FBVTs7MEVBQ2IsUUFBQ1c7Z0VBQUdYLFdBQVU7MEVBQ1hsQixRQUFRQyxXQUFXOzs7Ozs7MEVBRXRCLFFBQUNrQjtnRUFBRUQsV0FBVTswRUFBZ0M7Ozs7OzswRUFHN0MsUUFBQ0M7Z0VBQUVELFdBQVU7MEVBQ1ZsQixRQUFRSixRQUFROzs7Ozs7Ozs7Ozs7a0VBS3JCLFFBQUNxQjt3REFBSUMsV0FBVTs7MEVBQ2IsUUFBQ2pHO2dFQUNDcUcsTUFBSztnRUFDTEMsU0FBUyxJQUFNeEIsb0JBQW9CQzs7a0ZBRW5DLFFBQUN4RDt3RUFBYTBFLFdBQVU7Ozs7OztvRUFBaUI7Ozs7Ozs7MEVBRzNDLFFBQUNqRztnRUFDQ3FHLE1BQUs7Z0VBQ0xoQyxTQUFRO2dFQUNSaUMsU0FBUyxJQUFNckIsb0JBQW9CRixRQUFRcEIsRUFBRTswRUFFN0MsY0FBQSxRQUFDbkM7b0VBQVF5RSxXQUFVOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O3VDQXJDbEJsQixRQUFRcEIsRUFBRTs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7MEJBbURqQyxRQUFDcEQ7Z0JBQU91RyxNQUFNcEU7Z0JBQWVxRSxjQUFjcEU7MEJBQ3pDLGNBQUEsUUFBQ25DOztzQ0FDQyxRQUFDQzs7OENBQ0MsUUFBQ0M7b0NBQVl1RixXQUFVOztzREFDckIsUUFBQ2hGOzRDQUFTZ0YsV0FBVTs7Ozs7O3dDQUFZOzs7Ozs7OzhDQUdsQyxRQUFDdEY7OENBQWtCOzs7Ozs7Ozs7Ozs7c0NBS3JCLFFBQUNxRjs0QkFBSUMsV0FBVTs7OENBQ2IsUUFBQ0Q7b0NBQUlDLFdBQVU7O3NEQUNiLFFBQUNyRjs0Q0FBTW9HLFNBQVE7c0RBQWM7Ozs7OztzREFDN0IsUUFBQy9HOzRDQUNDMEQsSUFBRzs0Q0FDSHNELGFBQVk7NENBQ1pkLE9BQU92RDs0Q0FDUHNFLFVBQVUsQ0FBQ0MsSUFBTXRFLGNBQWNzRSxFQUFFQyxNQUFNLENBQUNqQixLQUFLLENBQUMxQixXQUFXOzRDQUN6RHdCLFdBQVU7NENBQ1ZvQixXQUFXOzs7Ozs7c0RBRWIsUUFBQ25COzRDQUFFRCxXQUFVO3NEQUFnQzs7Ozs7Ozs7Ozs7OzhDQUsvQyxRQUFDRDtvQ0FBSUMsV0FBVTs7c0RBQ2IsUUFBQ2pHOzRDQUNDc0csU0FBU2hDOzRDQUNUZ0QsVUFBVXRFLFlBQVksQ0FBQ0osV0FBVzRCLElBQUk7NENBQ3RDeUIsV0FBVTtzREFFVGpELFdBQVcsdUJBQXVCOzs7Ozs7c0RBRXJDLFFBQUNoRDs0Q0FDQ3FFLFNBQVE7NENBQ1JpQyxTQUFTO2dEQUNQM0QsaUJBQWlCO2dEQUNqQkUsY0FBYzs0Q0FDaEI7c0RBQ0Q7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBU2YsRUFBRTtHQS9jV2Y7O1FBQ09IO1FBVWRDOzs7S0FYT0UifQ==

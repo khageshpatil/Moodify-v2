@@ -1,0 +1,821 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/SharedPlaylistAccess.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"];
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "/src/components/ui/dialog.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Input } from "/src/components/ui/input.tsx";
+import { Label } from "/src/components/ui/label.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "/src/components/ui/card.tsx";
+import { Badge } from "/src/components/ui/badge.tsx";
+import { ScrollArea } from "/src/components/ui/scroll-area.tsx";
+import { Search, Lock, Users, Heart, Play, Plus, Eye, Calendar, Music, Loader2, AlertCircle } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { useToast } from "/src/hooks/use-toast.ts";
+import { usePlaylistSharing } from "/src/hooks/usePlaylistSharing.ts";
+export const SharedPlaylistAccess = ({ open, onOpenChange, onPlayPlaylist, onAddToLibrary, currentUser })=>{
+    _s();
+    const { toast } = useToast();
+    const { state, accessSharedPlaylist, likePlaylist } = usePlaylistSharing(currentUser);
+    const [shareCode, setShareCode] = useState('');
+    const [password, setPassword] = useState('');
+    const [isAccessing, setIsAccessing] = useState(false);
+    const [accessedPlaylist, setAccessedPlaylist] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const handleAccessPlaylist = async ()=>{
+        if (!shareCode.trim()) {
+            toast({
+                title: 'Enter Share Code',
+                description: 'Please enter a valid share code',
+                variant: 'destructive'
+            });
+            return;
+        }
+        setIsAccessing(true);
+        try {
+            const playlist = await accessSharedPlaylist(shareCode.trim(), password || undefined);
+            if (playlist) {
+                setAccessedPlaylist(playlist);
+                setShareCode('');
+                setPassword('');
+                setShowPassword(false);
+            }
+        } catch (error) {
+            console.error('Failed to access playlist:', error);
+        } finally{
+            setIsAccessing(false);
+        }
+    };
+    const handleLikePlaylist = (playlist)=>{
+        likePlaylist(playlist.shareId);
+    };
+    const formatDate = (date)=>{
+        return new Date(date).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+    const formatDuration = (tracks)=>{
+        const totalSeconds = tracks.reduce((sum, track)=>sum + track.duration, 0);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor(totalSeconds % 3600 / 60);
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        return `${minutes}m`;
+    };
+    return /*#__PURE__*/ _jsxDEV(Dialog, {
+        open: open,
+        onOpenChange: onOpenChange,
+        children: /*#__PURE__*/ _jsxDEV(DialogContent, {
+            className: "sm:max-w-4xl max-h-[90vh] overflow-hidden",
+            children: [
+                /*#__PURE__*/ _jsxDEV(DialogHeader, {
+                    children: /*#__PURE__*/ _jsxDEV(DialogTitle, {
+                        className: "flex items-center gap-2",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Search, {
+                                className: "w-5 h-5"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                lineNumber: 105,
+                                columnNumber: 13
+                            }, this),
+                            "Access Shared Playlist"
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                        lineNumber: 104,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                    lineNumber: 103,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ _jsxDEV("div", {
+                    className: "space-y-6",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV(Card, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                    children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                        className: "text-lg",
+                                        children: "Enter Share Code"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                        lineNumber: 114,
+                                        columnNumber: 15
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                    lineNumber: 113,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(CardContent, {
+                                    className: "space-y-4",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "space-y-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Label, {
+                                                    htmlFor: "shareCode",
+                                                    children: "Share Code"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 118,
+                                                    columnNumber: 17
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Input, {
+                                                            id: "shareCode",
+                                                            placeholder: "Enter 6-digit code (e.g., ABC123)",
+                                                            value: shareCode,
+                                                            onChange: (e)=>setShareCode(e.target.value.toUpperCase()),
+                                                            className: "font-mono text-center text-lg",
+                                                            maxLength: 6
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 120,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                                            onClick: handleAccessPlaylist,
+                                                            disabled: isAccessing || !shareCode.trim(),
+                                                            children: isAccessing ? /*#__PURE__*/ _jsxDEV(Loader2, {
+                                                                className: "w-4 h-4 animate-spin"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 133,
+                                                                columnNumber: 23
+                                                            }, this) : 'Access'
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 128,
+                                                            columnNumber: 19
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 119,
+                                                    columnNumber: 17
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                            lineNumber: 117,
+                                            columnNumber: 15
+                                        }, this),
+                                        showPassword && /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "space-y-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Label, {
+                                                    htmlFor: "password",
+                                                    children: "Password"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 143,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Input, {
+                                                    id: "password",
+                                                    type: "password",
+                                                    placeholder: "Enter password",
+                                                    value: password,
+                                                    onChange: (e)=>setPassword(e.target.value)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 144,
+                                                    columnNumber: 19
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                            lineNumber: 142,
+                                            columnNumber: 17
+                                        }, this),
+                                        !showPassword && /*#__PURE__*/ _jsxDEV(Button, {
+                                            variant: "ghost",
+                                            size: "sm",
+                                            onClick: ()=>setShowPassword(true),
+                                            className: "text-muted-foreground",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Lock, {
+                                                    className: "w-4 h-4 mr-1"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 161,
+                                                    columnNumber: 19
+                                                }, this),
+                                                "Playlist is password protected?"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                            lineNumber: 155,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                    lineNumber: 116,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                            lineNumber: 112,
+                            columnNumber: 11
+                        }, this),
+                        accessedPlaylist && /*#__PURE__*/ _jsxDEV(Card, {
+                            className: "border-primary/20 bg-gradient-to-r from-primary/5 to-transparent",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                    children: /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-start justify-between",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "space-y-2",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                        className: "text-xl",
+                                                        children: accessedPlaylist.name
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                        lineNumber: 174,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center gap-2 text-sm text-muted-foreground",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                children: [
+                                                                    "by ",
+                                                                    accessedPlaylist.sharedBy.name
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 176,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                children: "•"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 177,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                children: [
+                                                                    accessedPlaylist.tracks.length,
+                                                                    " songs"
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 178,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                children: "•"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 179,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                children: formatDuration(accessedPlaylist.tracks)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 180,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                        lineNumber: 175,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex gap-2",
+                                                        children: [
+                                                            accessedPlaylist.isPublic && /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                variant: "secondary",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(Eye, {
+                                                                        className: "w-3 h-3 mr-1"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                        lineNumber: 185,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    "Public"
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 184,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            accessedPlaylist.collaborators.length > 0 && /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                variant: "secondary",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(Users, {
+                                                                        className: "w-3 h-3 mr-1"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                        lineNumber: 191,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    accessedPlaylist.collaborators.length,
+                                                                    " collaborators"
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 190,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                variant: "outline",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(Calendar, {
+                                                                        className: "w-3 h-3 mr-1"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                        lineNumber: 196,
+                                                                        columnNumber: 25
+                                                                    }, this),
+                                                                    formatDate(accessedPlaylist.sharedAt)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 195,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                        lineNumber: 182,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                lineNumber: 173,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex flex-col gap-2",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        onClick: ()=>onPlayPlaylist(accessedPlaylist.tracks),
+                                                        className: "min-w-[100px]",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Play, {
+                                                                className: "w-4 h-4 mr-2"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 206,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            "Play All"
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                        lineNumber: 202,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        variant: "outline",
+                                                        onClick: ()=>onAddToLibrary(accessedPlaylist),
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Plus, {
+                                                                className: "w-4 h-4 mr-2"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 213,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            "Add to Library"
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                        lineNumber: 209,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        variant: "ghost",
+                                                        size: "sm",
+                                                        onClick: ()=>handleLikePlaylist(accessedPlaylist),
+                                                        className: "text-muted-foreground hover:text-red-500",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Heart, {
+                                                                className: "w-4 h-4 mr-1"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 222,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            accessedPlaylist.likes
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                        lineNumber: 216,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                lineNumber: 201,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                        lineNumber: 172,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                    lineNumber: 171,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(CardContent, {
+                                    children: /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                                        className: "h-64",
+                                        children: /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "space-y-2",
+                                            children: accessedPlaylist.tracks.map((track, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 transition-colors",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                            className: "text-sm text-muted-foreground w-8 text-center",
+                                                            children: index + 1
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 236,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("img", {
+                                                            src: track.albumArt || `https://picsum.photos/40/40?random=${track.id}`,
+                                                            alt: track.title,
+                                                            className: "w-10 h-10 rounded object-cover"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 239,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex-1 min-w-0",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "font-medium truncate",
+                                                                    children: track.title
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                    lineNumber: 245,
+                                                                    columnNumber: 27
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "text-sm text-muted-foreground truncate",
+                                                                    children: [
+                                                                        track.artist,
+                                                                        " • ",
+                                                                        track.album
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                    lineNumber: 246,
+                                                                    columnNumber: 27
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 244,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                            className: "text-sm text-muted-foreground",
+                                                            children: [
+                                                                Math.floor(track.duration / 60),
+                                                                ":",
+                                                                (track.duration % 60).toString().padStart(2, '0')
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 250,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, track.id, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 232,
+                                                    columnNumber: 23
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                            lineNumber: 230,
+                                            columnNumber: 19
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                        lineNumber: 229,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                    lineNumber: 228,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                            lineNumber: 170,
+                            columnNumber: 13
+                        }, this),
+                        state.discoveredPlaylists.length > 0 && /*#__PURE__*/ _jsxDEV(Card, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                    children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                        className: "flex items-center gap-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Music, {
+                                                className: "w-5 h-5"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                lineNumber: 266,
+                                                columnNumber: 19
+                                            }, this),
+                                            "Recently Discovered"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                        lineNumber: 265,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                    lineNumber: 264,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(CardContent, {
+                                    children: /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                                        className: "h-48",
+                                        children: /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "space-y-3",
+                                            children: state.discoveredPlaylists.map((playlist)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center",
+                                                            children: /*#__PURE__*/ _jsxDEV(Music, {
+                                                                className: "w-6 h-6 text-white"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 279,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 278,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex-1 min-w-0",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "font-medium truncate",
+                                                                    children: playlist.name
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                    lineNumber: 282,
+                                                                    columnNumber: 27
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "text-sm text-muted-foreground",
+                                                                    children: [
+                                                                        "by ",
+                                                                        playlist.sharedBy.name,
+                                                                        " • ",
+                                                                        playlist.tracks.length,
+                                                                        " songs"
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                    lineNumber: 283,
+                                                                    columnNumber: 27
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 281,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex items-center gap-1 text-sm text-muted-foreground",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV(Heart, {
+                                                                    className: "w-4 h-4"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                    lineNumber: 288,
+                                                                    columnNumber: 27
+                                                                }, this),
+                                                                playlist.likes
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 287,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                                            size: "sm",
+                                                            variant: "outline",
+                                                            onClick: ()=>onPlayPlaylist(playlist.tracks),
+                                                            children: /*#__PURE__*/ _jsxDEV(Play, {
+                                                                className: "w-4 h-4"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                                lineNumber: 296,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 291,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, playlist.shareId, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 274,
+                                                    columnNumber: 23
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                            lineNumber: 272,
+                                            columnNumber: 19
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                        lineNumber: 271,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                    lineNumber: 270,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                            lineNumber: 263,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(Card, {
+                            className: "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20",
+                            children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                                className: "pt-6",
+                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex gap-3",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(AlertCircle, {
+                                            className: "w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                            lineNumber: 310,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "space-y-1",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                    className: "text-sm font-medium text-blue-900 dark:text-blue-100",
+                                                    children: "How to access shared playlists:"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 312,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("ul", {
+                                                    className: "text-sm text-blue-700 dark:text-blue-300 space-y-1",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("li", {
+                                                            children: "• Enter the 6-digit share code you received"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 316,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("li", {
+                                                            children: "• If password protected, enter the password"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 317,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("li", {
+                                                            children: "• Scan QR codes with your camera app"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 318,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("li", {
+                                                            children: "• Click on shared links from social media"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                            lineNumber: 319,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                                    lineNumber: 315,
+                                                    columnNumber: 19
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                            lineNumber: 311,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                    lineNumber: 309,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                                lineNumber: 308,
+                                columnNumber: 13
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                            lineNumber: 307,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+                    lineNumber: 110,
+                    columnNumber: 9
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+            lineNumber: 102,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx",
+        lineNumber: 101,
+        columnNumber: 5
+    }, this);
+};
+_s(SharedPlaylistAccess, "kcweoR0z3KgFa6L8mJlWvR/IP9s=", false, function() {
+    return [
+        useToast,
+        usePlaylistSharing
+    ];
+});
+_c = SharedPlaylistAccess;
+var _c;
+$RefreshReg$(_c, "SharedPlaylistAccess");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/SharedPlaylistAccess.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNoYXJlZFBsYXlsaXN0QWNjZXNzLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VTdGF0ZSB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgRGlhbG9nLCBEaWFsb2dDb250ZW50LCBEaWFsb2dIZWFkZXIsIERpYWxvZ1RpdGxlIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2RpYWxvZyc7XHJcbmltcG9ydCB7IEJ1dHRvbiB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9idXR0b24nO1xyXG5pbXBvcnQgeyBJbnB1dCB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9pbnB1dCc7XHJcbmltcG9ydCB7IExhYmVsIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2xhYmVsJztcclxuaW1wb3J0IHsgQ2FyZCwgQ2FyZENvbnRlbnQsIENhcmRIZWFkZXIsIENhcmRUaXRsZSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9jYXJkJztcclxuaW1wb3J0IHsgQmFkZ2UgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYmFkZ2UnO1xyXG5pbXBvcnQgeyBTY3JvbGxBcmVhIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL3Njcm9sbC1hcmVhJztcclxuaW1wb3J0IHsgXHJcbiAgU2VhcmNoLCBcclxuICBMb2NrLCBcclxuICBVc2VycywgXHJcbiAgSGVhcnQsXHJcbiAgUGxheSxcclxuICBQbHVzLFxyXG4gIEV5ZSxcclxuICBDYWxlbmRhcixcclxuICBNdXNpYyxcclxuICBMb2FkZXIyLFxyXG4gIEFsZXJ0Q2lyY2xlXHJcbn0gZnJvbSAnbHVjaWRlLXJlYWN0JztcclxuaW1wb3J0IHsgdXNlVG9hc3QgfSBmcm9tICdAL2hvb2tzL3VzZS10b2FzdCc7XHJcbmltcG9ydCB7IE1vb2RpZnlJZGVudGl0eSB9IGZyb20gJ0AvaG9va3MvdXNlQW5vbnltb3VzSWRlbnRpdHknO1xyXG5pbXBvcnQgeyBTaGFyZWRQbGF5bGlzdCwgdXNlUGxheWxpc3RTaGFyaW5nIH0gZnJvbSAnQC9ob29rcy91c2VQbGF5bGlzdFNoYXJpbmcnO1xyXG5pbXBvcnQgeyBUcmFjayB9IGZyb20gJ0AvZGF0YS9tb2NrTXVzaWMnO1xyXG5cclxuaW50ZXJmYWNlIFNoYXJlZFBsYXlsaXN0QWNjZXNzUHJvcHMge1xyXG4gIG9wZW46IGJvb2xlYW47XHJcbiAgb25PcGVuQ2hhbmdlOiAob3BlbjogYm9vbGVhbikgPT4gdm9pZDtcclxuICBvblBsYXlQbGF5bGlzdDogKHRyYWNrczogVHJhY2tbXSkgPT4gdm9pZDtcclxuICBvbkFkZFRvTGlicmFyeTogKHBsYXlsaXN0OiBTaGFyZWRQbGF5bGlzdCkgPT4gdm9pZDtcclxuICBjdXJyZW50VXNlcjogeyBuYW1lOiBzdHJpbmc7IGF2YXRhcj86IHN0cmluZzsgaWRlbnRpdHk/OiBNb29kaWZ5SWRlbnRpdHkgfTtcclxufVxyXG5cclxuZXhwb3J0IGNvbnN0IFNoYXJlZFBsYXlsaXN0QWNjZXNzID0gKHtcclxuICBvcGVuLFxyXG4gIG9uT3BlbkNoYW5nZSxcclxuICBvblBsYXlQbGF5bGlzdCxcclxuICBvbkFkZFRvTGlicmFyeSxcclxuICBjdXJyZW50VXNlcixcclxufTogU2hhcmVkUGxheWxpc3RBY2Nlc3NQcm9wcykgPT4ge1xyXG4gIGNvbnN0IHsgdG9hc3QgfSA9IHVzZVRvYXN0KCk7XHJcbiAgY29uc3QgeyBzdGF0ZSwgYWNjZXNzU2hhcmVkUGxheWxpc3QsIGxpa2VQbGF5bGlzdCB9ID0gdXNlUGxheWxpc3RTaGFyaW5nKGN1cnJlbnRVc2VyKTtcclxuICBcclxuICBjb25zdCBbc2hhcmVDb2RlLCBzZXRTaGFyZUNvZGVdID0gdXNlU3RhdGUoJycpO1xyXG4gIGNvbnN0IFtwYXNzd29yZCwgc2V0UGFzc3dvcmRdID0gdXNlU3RhdGUoJycpO1xyXG4gIGNvbnN0IFtpc0FjY2Vzc2luZywgc2V0SXNBY2Nlc3NpbmddID0gdXNlU3RhdGUoZmFsc2UpO1xyXG4gIGNvbnN0IFthY2Nlc3NlZFBsYXlsaXN0LCBzZXRBY2Nlc3NlZFBsYXlsaXN0XSA9IHVzZVN0YXRlPFNoYXJlZFBsYXlsaXN0IHwgbnVsbD4obnVsbCk7XHJcbiAgY29uc3QgW3Nob3dQYXNzd29yZCwgc2V0U2hvd1Bhc3N3b3JkXSA9IHVzZVN0YXRlKGZhbHNlKTtcclxuXHJcbiAgY29uc3QgaGFuZGxlQWNjZXNzUGxheWxpc3QgPSBhc3luYyAoKSA9PiB7XHJcbiAgICBpZiAoIXNoYXJlQ29kZS50cmltKCkpIHtcclxuICAgICAgdG9hc3Qoe1xyXG4gICAgICAgIHRpdGxlOiAnRW50ZXIgU2hhcmUgQ29kZScsXHJcbiAgICAgICAgZGVzY3JpcHRpb246ICdQbGVhc2UgZW50ZXIgYSB2YWxpZCBzaGFyZSBjb2RlJyxcclxuICAgICAgICB2YXJpYW50OiAnZGVzdHJ1Y3RpdmUnLFxyXG4gICAgICB9KTtcclxuICAgICAgcmV0dXJuO1xyXG4gICAgfVxyXG5cclxuICAgIHNldElzQWNjZXNzaW5nKHRydWUpO1xyXG4gICAgdHJ5IHtcclxuICAgICAgY29uc3QgcGxheWxpc3QgPSBhd2FpdCBhY2Nlc3NTaGFyZWRQbGF5bGlzdChzaGFyZUNvZGUudHJpbSgpLCBwYXNzd29yZCB8fCB1bmRlZmluZWQpO1xyXG4gICAgICBpZiAocGxheWxpc3QpIHtcclxuICAgICAgICBzZXRBY2Nlc3NlZFBsYXlsaXN0KHBsYXlsaXN0KTtcclxuICAgICAgICBzZXRTaGFyZUNvZGUoJycpO1xyXG4gICAgICAgIHNldFBhc3N3b3JkKCcnKTtcclxuICAgICAgICBzZXRTaG93UGFzc3dvcmQoZmFsc2UpO1xyXG4gICAgICB9XHJcbiAgICB9IGNhdGNoIChlcnJvcikge1xyXG4gICAgICBjb25zb2xlLmVycm9yKCdGYWlsZWQgdG8gYWNjZXNzIHBsYXlsaXN0OicsIGVycm9yKTtcclxuICAgIH0gZmluYWxseSB7XHJcbiAgICAgIHNldElzQWNjZXNzaW5nKGZhbHNlKTtcclxuICAgIH1cclxuICB9O1xyXG5cclxuICBjb25zdCBoYW5kbGVMaWtlUGxheWxpc3QgPSAocGxheWxpc3Q6IFNoYXJlZFBsYXlsaXN0KSA9PiB7XHJcbiAgICBsaWtlUGxheWxpc3QocGxheWxpc3Quc2hhcmVJZCk7XHJcbiAgfTtcclxuXHJcbiAgY29uc3QgZm9ybWF0RGF0ZSA9IChkYXRlOiBEYXRlKSA9PiB7XHJcbiAgICByZXR1cm4gbmV3IERhdGUoZGF0ZSkudG9Mb2NhbGVEYXRlU3RyaW5nKHVuZGVmaW5lZCwge1xyXG4gICAgICB5ZWFyOiAnbnVtZXJpYycsXHJcbiAgICAgIG1vbnRoOiAnc2hvcnQnLFxyXG4gICAgICBkYXk6ICdudW1lcmljJyxcclxuICAgIH0pO1xyXG4gIH07XHJcblxyXG4gIGNvbnN0IGZvcm1hdER1cmF0aW9uID0gKHRyYWNrczogVHJhY2tbXSkgPT4ge1xyXG4gICAgY29uc3QgdG90YWxTZWNvbmRzID0gdHJhY2tzLnJlZHVjZSgoc3VtLCB0cmFjaykgPT4gc3VtICsgdHJhY2suZHVyYXRpb24sIDApO1xyXG4gICAgY29uc3QgaG91cnMgPSBNYXRoLmZsb29yKHRvdGFsU2Vjb25kcyAvIDM2MDApO1xyXG4gICAgY29uc3QgbWludXRlcyA9IE1hdGguZmxvb3IoKHRvdGFsU2Vjb25kcyAlIDM2MDApIC8gNjApO1xyXG4gICAgXHJcbiAgICBpZiAoaG91cnMgPiAwKSB7XHJcbiAgICAgIHJldHVybiBgJHtob3Vyc31oICR7bWludXRlc31tYDtcclxuICAgIH1cclxuICAgIHJldHVybiBgJHttaW51dGVzfW1gO1xyXG4gIH07XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8RGlhbG9nIG9wZW49e29wZW59IG9uT3BlbkNoYW5nZT17b25PcGVuQ2hhbmdlfT5cclxuICAgICAgPERpYWxvZ0NvbnRlbnQgY2xhc3NOYW1lPVwic206bWF4LXctNHhsIG1heC1oLVs5MHZoXSBvdmVyZmxvdy1oaWRkZW5cIj5cclxuICAgICAgICA8RGlhbG9nSGVhZGVyPlxyXG4gICAgICAgICAgPERpYWxvZ1RpdGxlIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICAgIDxTZWFyY2ggY2xhc3NOYW1lPVwidy01IGgtNVwiIC8+XHJcbiAgICAgICAgICAgIEFjY2VzcyBTaGFyZWQgUGxheWxpc3RcclxuICAgICAgICAgIDwvRGlhbG9nVGl0bGU+XHJcbiAgICAgICAgPC9EaWFsb2dIZWFkZXI+XHJcblxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS02XCI+XHJcbiAgICAgICAgICB7LyogQWNjZXNzIGJ5IENvZGUgKi99XHJcbiAgICAgICAgICA8Q2FyZD5cclxuICAgICAgICAgICAgPENhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJ0ZXh0LWxnXCI+RW50ZXIgU2hhcmUgQ29kZTwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgIDxDYXJkQ29udGVudCBjbGFzc05hbWU9XCJzcGFjZS15LTRcIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgICAgPExhYmVsIGh0bWxGb3I9XCJzaGFyZUNvZGVcIj5TaGFyZSBDb2RlPC9MYWJlbD5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8SW5wdXRcclxuICAgICAgICAgICAgICAgICAgICBpZD1cInNoYXJlQ29kZVwiXHJcbiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJFbnRlciA2LWRpZ2l0IGNvZGUgKGUuZy4sIEFCQzEyMylcIlxyXG4gICAgICAgICAgICAgICAgICAgIHZhbHVlPXtzaGFyZUNvZGV9XHJcbiAgICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRTaGFyZUNvZGUoZS50YXJnZXQudmFsdWUudG9VcHBlckNhc2UoKSl9XHJcbiAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZm9udC1tb25vIHRleHQtY2VudGVyIHRleHQtbGdcIlxyXG4gICAgICAgICAgICAgICAgICAgIG1heExlbmd0aD17Nn1cclxuICAgICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9e2hhbmRsZUFjY2Vzc1BsYXlsaXN0fVxyXG4gICAgICAgICAgICAgICAgICAgIGRpc2FibGVkPXtpc0FjY2Vzc2luZyB8fCAhc2hhcmVDb2RlLnRyaW0oKX1cclxuICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgIHtpc0FjY2Vzc2luZyA/IChcclxuICAgICAgICAgICAgICAgICAgICAgIDxMb2FkZXIyIGNsYXNzTmFtZT1cInctNCBoLTQgYW5pbWF0ZS1zcGluXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgICAgICAgJ0FjY2VzcydcclxuICAgICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICB7c2hvd1Bhc3N3b3JkICYmIChcclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxMYWJlbCBodG1sRm9yPVwicGFzc3dvcmRcIj5QYXNzd29yZDwvTGFiZWw+XHJcbiAgICAgICAgICAgICAgICAgIDxJbnB1dFxyXG4gICAgICAgICAgICAgICAgICAgIGlkPVwicGFzc3dvcmRcIlxyXG4gICAgICAgICAgICAgICAgICAgIHR5cGU9XCJwYXNzd29yZFwiXHJcbiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJFbnRlciBwYXNzd29yZFwiXHJcbiAgICAgICAgICAgICAgICAgICAgdmFsdWU9e3Bhc3N3b3JkfVxyXG4gICAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0UGFzc3dvcmQoZS50YXJnZXQudmFsdWUpfVxyXG4gICAgICAgICAgICAgICAgICAvPlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgKX1cclxuXHJcbiAgICAgICAgICAgICAgeyFzaG93UGFzc3dvcmQgJiYgKFxyXG4gICAgICAgICAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICB2YXJpYW50PVwiZ2hvc3RcIlxyXG4gICAgICAgICAgICAgICAgICBzaXplPVwic21cIlxyXG4gICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRTaG93UGFzc3dvcmQodHJ1ZSl9XHJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiXHJcbiAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgIDxMb2NrIGNsYXNzTmFtZT1cInctNCBoLTQgbXItMVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgIFBsYXlsaXN0IGlzIHBhc3N3b3JkIHByb3RlY3RlZD9cclxuICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICA8L0NhcmQ+XHJcblxyXG4gICAgICAgICAgey8qIEFjY2Vzc2VkIFBsYXlsaXN0ICovfVxyXG4gICAgICAgICAge2FjY2Vzc2VkUGxheWxpc3QgJiYgKFxyXG4gICAgICAgICAgICA8Q2FyZCBjbGFzc05hbWU9XCJib3JkZXItcHJpbWFyeS8yMCBiZy1ncmFkaWVudC10by1yIGZyb20tcHJpbWFyeS81IHRvLXRyYW5zcGFyZW50XCI+XHJcbiAgICAgICAgICAgICAgPENhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtc3RhcnQganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJ0ZXh0LXhsXCI+e2FjY2Vzc2VkUGxheWxpc3QubmFtZX08L0NhcmRUaXRsZT5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIHRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj5ieSB7YWNjZXNzZWRQbGF5bGlzdC5zaGFyZWRCeS5uYW1lfTwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPuKAojwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPnthY2Nlc3NlZFBsYXlsaXN0LnRyYWNrcy5sZW5ndGh9IHNvbmdzPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+4oCiPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+e2Zvcm1hdER1cmF0aW9uKGFjY2Vzc2VkUGxheWxpc3QudHJhY2tzKX08L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICB7YWNjZXNzZWRQbGF5bGlzdC5pc1B1YmxpYyAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxCYWRnZSB2YXJpYW50PVwic2Vjb25kYXJ5XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPEV5ZSBjbGFzc05hbWU9XCJ3LTMgaC0zIG1yLTFcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIFB1YmxpY1xyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L0JhZGdlPlxyXG4gICAgICAgICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICAgICAgICAgIHthY2Nlc3NlZFBsYXlsaXN0LmNvbGxhYm9yYXRvcnMubGVuZ3RoID4gMCAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxCYWRnZSB2YXJpYW50PVwic2Vjb25kYXJ5XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPFVzZXJzIGNsYXNzTmFtZT1cInctMyBoLTMgbXItMVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAge2FjY2Vzc2VkUGxheWxpc3QuY29sbGFib3JhdG9ycy5sZW5ndGh9IGNvbGxhYm9yYXRvcnNcclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cclxuICAgICAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cIm91dGxpbmVcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPENhbGVuZGFyIGNsYXNzTmFtZT1cInctMyBoLTMgbXItMVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIHtmb3JtYXREYXRlKGFjY2Vzc2VkUGxheWxpc3Quc2hhcmVkQXQpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cclxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LWNvbCBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uUGxheVBsYXlsaXN0KGFjY2Vzc2VkUGxheWxpc3QudHJhY2tzKX1cclxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cIm1pbi13LVsxMDBweF1cIlxyXG4gICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgIDxQbGF5IGNsYXNzTmFtZT1cInctNCBoLTQgbXItMlwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICBQbGF5IEFsbFxyXG4gICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJvdXRsaW5lXCJcclxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uQWRkVG9MaWJyYXJ5KGFjY2Vzc2VkUGxheWxpc3QpfVxyXG4gICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgIDxQbHVzIGNsYXNzTmFtZT1cInctNCBoLTQgbXItMlwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICBBZGQgdG8gTGlicmFyeVxyXG4gICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJnaG9zdFwiXHJcbiAgICAgICAgICAgICAgICAgICAgICBzaXplPVwic21cIlxyXG4gICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gaGFuZGxlTGlrZVBsYXlsaXN0KGFjY2Vzc2VkUGxheWxpc3QpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidGV4dC1tdXRlZC1mb3JlZ3JvdW5kIGhvdmVyOnRleHQtcmVkLTUwMFwiXHJcbiAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPEhlYXJ0IGNsYXNzTmFtZT1cInctNCBoLTQgbXItMVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICB7YWNjZXNzZWRQbGF5bGlzdC5saWtlc31cclxuICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgPENhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgPFNjcm9sbEFyZWEgY2xhc3NOYW1lPVwiaC02NFwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHthY2Nlc3NlZFBsYXlsaXN0LnRyYWNrcy5tYXAoKHRyYWNrLCBpbmRleCkgPT4gKFxyXG4gICAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAgICBrZXk9e3RyYWNrLmlkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyBwLTIgcm91bmRlZC1tZCBob3ZlcjpiZy1hY2NlbnQvNTAgdHJhbnNpdGlvbi1jb2xvcnNcIlxyXG4gICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCB3LTggdGV4dC1jZW50ZXJcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7aW5kZXggKyAxfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxpbWdcclxuICAgICAgICAgICAgICAgICAgICAgICAgICBzcmM9e3RyYWNrLmFsYnVtQXJ0IHx8IGBodHRwczovL3BpY3N1bS5waG90b3MvNDAvNDA/cmFuZG9tPSR7dHJhY2suaWR9YH1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICBhbHQ9e3RyYWNrLnRpdGxlfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctMTAgaC0xMCByb3VuZGVkIG9iamVjdC1jb3ZlclwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIG1pbi13LTBcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJmb250LW1lZGl1bSB0cnVuY2F0ZVwiPnt0cmFjay50aXRsZX08L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQgdHJ1bmNhdGVcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIHt0cmFjay5hcnRpc3R9IOKAoiB7dHJhY2suYWxidW19XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7TWF0aC5mbG9vcih0cmFjay5kdXJhdGlvbiAvIDYwKX06eyh0cmFjay5kdXJhdGlvbiAlIDYwKS50b1N0cmluZygpLnBhZFN0YXJ0KDIsICcwJyl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvU2Nyb2xsQXJlYT5cclxuICAgICAgICAgICAgICA8L0NhcmRDb250ZW50PlxyXG4gICAgICAgICAgICA8L0NhcmQ+XHJcbiAgICAgICAgICApfVxyXG5cclxuICAgICAgICAgIHsvKiBEaXNjb3ZlcmVkIFBsYXlsaXN0cyAqL31cclxuICAgICAgICAgIHtzdGF0ZS5kaXNjb3ZlcmVkUGxheWxpc3RzLmxlbmd0aCA+IDAgJiYgKFxyXG4gICAgICAgICAgICA8Q2FyZD5cclxuICAgICAgICAgICAgICA8Q2FyZEhlYWRlcj5cclxuICAgICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgPE11c2ljIGNsYXNzTmFtZT1cInctNSBoLTVcIiAvPlxyXG4gICAgICAgICAgICAgICAgICBSZWNlbnRseSBEaXNjb3ZlcmVkXHJcbiAgICAgICAgICAgICAgICA8L0NhcmRUaXRsZT5cclxuICAgICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgPENhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgPFNjcm9sbEFyZWEgY2xhc3NOYW1lPVwiaC00OFwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktM1wiPlxyXG4gICAgICAgICAgICAgICAgICAgIHtzdGF0ZS5kaXNjb3ZlcmVkUGxheWxpc3RzLm1hcCgocGxheWxpc3QpID0+IChcclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXZcclxuICAgICAgICAgICAgICAgICAgICAgICAga2V5PXtwbGF5bGlzdC5zaGFyZUlkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyBwLTMgYm9yZGVyIHJvdW5kZWQtbGcgaG92ZXI6YmctYWNjZW50LzUwIHRyYW5zaXRpb24tY29sb3JzXCJcclxuICAgICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTEyIGgtMTIgYmctZ3JhZGllbnQtcHJpbWFyeSByb3VuZGVkLWxnIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPE11c2ljIGNsYXNzTmFtZT1cInctNiBoLTYgdGV4dC13aGl0ZVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMSBtaW4tdy0wXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwiZm9udC1tZWRpdW0gdHJ1bmNhdGVcIj57cGxheWxpc3QubmFtZX08L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIGJ5IHtwbGF5bGlzdC5zaGFyZWRCeS5uYW1lfSDigKIge3BsYXlsaXN0LnRyYWNrcy5sZW5ndGh9IHNvbmdzXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMSB0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxIZWFydCBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7cGxheWxpc3QubGlrZXN9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwib3V0bGluZVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25QbGF5UGxheWxpc3QocGxheWxpc3QudHJhY2tzKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxQbGF5IGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvU2Nyb2xsQXJlYT5cclxuICAgICAgICAgICAgICA8L0NhcmRDb250ZW50PlxyXG4gICAgICAgICAgICA8L0NhcmQ+XHJcbiAgICAgICAgICApfVxyXG5cclxuICAgICAgICAgIHsvKiBIZWxwICovfVxyXG4gICAgICAgICAgPENhcmQgY2xhc3NOYW1lPVwiYm9yZGVyLWJsdWUtMjAwIGJnLWJsdWUtNTAvNTAgZGFyazpib3JkZXItYmx1ZS04MDAgZGFyazpiZy1ibHVlLTk1MC8yMFwiPlxyXG4gICAgICAgICAgICA8Q2FyZENvbnRlbnQgY2xhc3NOYW1lPVwicHQtNlwiPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtM1wiPlxyXG4gICAgICAgICAgICAgICAgPEFsZXJ0Q2lyY2xlIGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC1ibHVlLTYwMCBkYXJrOnRleHQtYmx1ZS00MDAgbXQtMC41XCIgLz5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0xXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1tZWRpdW0gdGV4dC1ibHVlLTkwMCBkYXJrOnRleHQtYmx1ZS0xMDBcIj5cclxuICAgICAgICAgICAgICAgICAgICBIb3cgdG8gYWNjZXNzIHNoYXJlZCBwbGF5bGlzdHM6XHJcbiAgICAgICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1ibHVlLTcwMCBkYXJrOnRleHQtYmx1ZS0zMDAgc3BhY2UteS0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGxpPuKAoiBFbnRlciB0aGUgNi1kaWdpdCBzaGFyZSBjb2RlIHlvdSByZWNlaXZlZDwvbGk+XHJcbiAgICAgICAgICAgICAgICAgICAgPGxpPuKAoiBJZiBwYXNzd29yZCBwcm90ZWN0ZWQsIGVudGVyIHRoZSBwYXNzd29yZDwvbGk+XHJcbiAgICAgICAgICAgICAgICAgICAgPGxpPuKAoiBTY2FuIFFSIGNvZGVzIHdpdGggeW91ciBjYW1lcmEgYXBwPC9saT5cclxuICAgICAgICAgICAgICAgICAgICA8bGk+4oCiIENsaWNrIG9uIHNoYXJlZCBsaW5rcyBmcm9tIHNvY2lhbCBtZWRpYTwvbGk+XHJcbiAgICAgICAgICAgICAgICAgIDwvdWw+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgIDwvQ2FyZD5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9EaWFsb2dDb250ZW50PlxyXG4gICAgPC9EaWFsb2c+XHJcbiAgKTtcclxufTtcclxuIl0sIm5hbWVzIjpbInVzZVN0YXRlIiwiRGlhbG9nIiwiRGlhbG9nQ29udGVudCIsIkRpYWxvZ0hlYWRlciIsIkRpYWxvZ1RpdGxlIiwiQnV0dG9uIiwiSW5wdXQiLCJMYWJlbCIsIkNhcmQiLCJDYXJkQ29udGVudCIsIkNhcmRIZWFkZXIiLCJDYXJkVGl0bGUiLCJCYWRnZSIsIlNjcm9sbEFyZWEiLCJTZWFyY2giLCJMb2NrIiwiVXNlcnMiLCJIZWFydCIsIlBsYXkiLCJQbHVzIiwiRXllIiwiQ2FsZW5kYXIiLCJNdXNpYyIsIkxvYWRlcjIiLCJBbGVydENpcmNsZSIsInVzZVRvYXN0IiwidXNlUGxheWxpc3RTaGFyaW5nIiwiU2hhcmVkUGxheWxpc3RBY2Nlc3MiLCJvcGVuIiwib25PcGVuQ2hhbmdlIiwib25QbGF5UGxheWxpc3QiLCJvbkFkZFRvTGlicmFyeSIsImN1cnJlbnRVc2VyIiwidG9hc3QiLCJzdGF0ZSIsImFjY2Vzc1NoYXJlZFBsYXlsaXN0IiwibGlrZVBsYXlsaXN0Iiwic2hhcmVDb2RlIiwic2V0U2hhcmVDb2RlIiwicGFzc3dvcmQiLCJzZXRQYXNzd29yZCIsImlzQWNjZXNzaW5nIiwic2V0SXNBY2Nlc3NpbmciLCJhY2Nlc3NlZFBsYXlsaXN0Iiwic2V0QWNjZXNzZWRQbGF5bGlzdCIsInNob3dQYXNzd29yZCIsInNldFNob3dQYXNzd29yZCIsImhhbmRsZUFjY2Vzc1BsYXlsaXN0IiwidHJpbSIsInRpdGxlIiwiZGVzY3JpcHRpb24iLCJ2YXJpYW50IiwicGxheWxpc3QiLCJ1bmRlZmluZWQiLCJlcnJvciIsImNvbnNvbGUiLCJoYW5kbGVMaWtlUGxheWxpc3QiLCJzaGFyZUlkIiwiZm9ybWF0RGF0ZSIsImRhdGUiLCJEYXRlIiwidG9Mb2NhbGVEYXRlU3RyaW5nIiwieWVhciIsIm1vbnRoIiwiZGF5IiwiZm9ybWF0RHVyYXRpb24iLCJ0cmFja3MiLCJ0b3RhbFNlY29uZHMiLCJyZWR1Y2UiLCJzdW0iLCJ0cmFjayIsImR1cmF0aW9uIiwiaG91cnMiLCJNYXRoIiwiZmxvb3IiLCJtaW51dGVzIiwiY2xhc3NOYW1lIiwiZGl2IiwiaHRtbEZvciIsImlkIiwicGxhY2Vob2xkZXIiLCJ2YWx1ZSIsIm9uQ2hhbmdlIiwiZSIsInRhcmdldCIsInRvVXBwZXJDYXNlIiwibWF4TGVuZ3RoIiwib25DbGljayIsImRpc2FibGVkIiwidHlwZSIsInNpemUiLCJuYW1lIiwic3BhbiIsInNoYXJlZEJ5IiwibGVuZ3RoIiwiaXNQdWJsaWMiLCJjb2xsYWJvcmF0b3JzIiwic2hhcmVkQXQiLCJsaWtlcyIsIm1hcCIsImluZGV4IiwiaW1nIiwic3JjIiwiYWxidW1BcnQiLCJhbHQiLCJwIiwiYXJ0aXN0IiwiYWxidW0iLCJ0b1N0cmluZyIsInBhZFN0YXJ0IiwiZGlzY292ZXJlZFBsYXlsaXN0cyIsInVsIiwibGkiXSwibWFwcGluZ3MiOiI7Ozs7Ozs7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

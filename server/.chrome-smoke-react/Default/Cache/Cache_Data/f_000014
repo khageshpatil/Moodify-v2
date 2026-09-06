@@ -1,0 +1,316 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/FavoritesView.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/FavoritesView.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+import { Card } from "/src/components/ui/card.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { ScrollArea } from "/src/components/ui/scroll-area.tsx";
+import { Heart, Play, Trash2 } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+export const FavoritesView = ({ favorites, currentTrack, isPlaying, onTrackSelect, onRemoveFavorite, onPlayAll })=>{
+    const formatDuration = (seconds)=>{
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "w-full max-w-4xl mx-auto",
+        children: /*#__PURE__*/ _jsxDEV(Card, {
+            className: "glass-card p-6",
+            children: [
+                /*#__PURE__*/ _jsxDEV("div", {
+                    className: "flex items-center justify-between mb-6",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "flex items-center gap-3",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(Heart, {
+                                    className: "h-8 w-8 text-accent fill-accent"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                    lineNumber: 35,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("h2", {
+                                            className: "text-2xl font-bold text-white",
+                                            children: "Favorites"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                            lineNumber: 37,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("p", {
+                                            className: "text-white/60",
+                                            children: [
+                                                favorites.length,
+                                                " ",
+                                                favorites.length === 1 ? 'song' : 'songs'
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                            lineNumber: 38,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                    lineNumber: 36,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                            lineNumber: 34,
+                            columnNumber: 11
+                        }, this),
+                        favorites.length > 0 && /*#__PURE__*/ _jsxDEV(Button, {
+                            onClick: onPlayAll,
+                            className: "glass-button",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(Play, {
+                                    className: "h-4 w-4 mr-2"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                    lineNumber: 45,
+                                    columnNumber: 15
+                                }, this),
+                                "Play All"
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                            lineNumber: 44,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                    lineNumber: 33,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                    className: "h-[500px]",
+                    children: favorites.length === 0 ? /*#__PURE__*/ _jsxDEV("div", {
+                        className: "flex flex-col items-center justify-center py-12 text-white/60",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Heart, {
+                                className: "h-16 w-16 mb-4 opacity-40"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                lineNumber: 54,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("p", {
+                                className: "text-lg",
+                                children: "No favorites yet"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                lineNumber: 55,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("p", {
+                                className: "text-sm mt-2",
+                                children: "Heart songs to add them here"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                lineNumber: 56,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                        lineNumber: 53,
+                        columnNumber: 13
+                    }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                        className: "space-y-2",
+                        children: favorites.map((track)=>{
+                            const isCurrentTrack = currentTrack?.id === track.id;
+                            return /*#__PURE__*/ _jsxDEV("div", {
+                                className: `glass-card p-4 flex items-center gap-4 transition-all hover:bg-white/10 group cursor-pointer ${isCurrentTrack ? 'ring-2 ring-accent' : ''}`,
+                                onClick: ()=>onTrackSelect(track, favorites),
+                                children: [
+                                    track.albumArt && /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "relative",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("img", {
+                                                src: track.albumArt,
+                                                alt: track.album,
+                                                className: "w-14 h-14 rounded object-cover"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                lineNumber: 73,
+                                                columnNumber: 25
+                                            }, this),
+                                            isCurrentTrack && isPlaying && /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "absolute inset-0 flex items-center justify-center bg-black/40 rounded",
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex gap-0.5",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "w-1 h-3 bg-white rounded-full animate-pulse"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                            lineNumber: 81,
+                                                            columnNumber: 31
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "w-1 h-4 bg-white rounded-full animate-pulse animation-delay-100"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                            lineNumber: 82,
+                                                            columnNumber: 31
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "w-1 h-3 bg-white rounded-full animate-pulse animation-delay-200"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                            lineNumber: 83,
+                                                            columnNumber: 31
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                    lineNumber: 80,
+                                                    columnNumber: 29
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                lineNumber: 79,
+                                                columnNumber: 27
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                        lineNumber: 72,
+                                        columnNumber: 23
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex-1 min-w-0",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "font-medium text-white truncate",
+                                                children: track.title
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                lineNumber: 91,
+                                                columnNumber: 23
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "text-sm text-white/60 truncate",
+                                                children: track.artist
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                lineNumber: 94,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                        lineNumber: 90,
+                                        columnNumber: 21
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center gap-3",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                className: "text-sm text-white/60",
+                                                children: formatDuration(track.duration || 0)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                lineNumber: 100,
+                                                columnNumber: 23
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                variant: "ghost",
+                                                size: "icon",
+                                                onClick: (e)=>{
+                                                    e.stopPropagation();
+                                                    onRemoveFavorite(track);
+                                                },
+                                                className: "opacity-0 group-hover:opacity-100 transition-opacity text-accent hover:text-accent/80",
+                                                children: /*#__PURE__*/ _jsxDEV(Trash2, {
+                                                    className: "h-4 w-4"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                    lineNumber: 112,
+                                                    columnNumber: 25
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                                lineNumber: 103,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                        lineNumber: 99,
+                                        columnNumber: 21
+                                    }, this)
+                                ]
+                            }, track.id, true, {
+                                fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                                lineNumber: 64,
+                                columnNumber: 19
+                            }, this);
+                        })
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                        lineNumber: 59,
+                        columnNumber: 13
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+                    lineNumber: 51,
+                    columnNumber: 9
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+            lineNumber: 32,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/FavoritesView.tsx",
+        lineNumber: 31,
+        columnNumber: 5
+    }, this);
+};
+_c = FavoritesView;
+var _c;
+$RefreshReg$(_c, "FavoritesView");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/FavoritesView.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/FavoritesView.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkZhdm9yaXRlc1ZpZXcudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IFRyYWNrIH0gZnJvbSBcIkAvZGF0YS9tb2NrTXVzaWNcIjtcbmltcG9ydCB7IENhcmQgfSBmcm9tIFwiQC9jb21wb25lbnRzL3VpL2NhcmRcIjtcbmltcG9ydCB7IEJ1dHRvbiB9IGZyb20gXCJAL2NvbXBvbmVudHMvdWkvYnV0dG9uXCI7XG5pbXBvcnQgeyBTY3JvbGxBcmVhIH0gZnJvbSBcIkAvY29tcG9uZW50cy91aS9zY3JvbGwtYXJlYVwiO1xuaW1wb3J0IHsgSGVhcnQsIFBsYXksIFRyYXNoMiB9IGZyb20gXCJsdWNpZGUtcmVhY3RcIjtcblxuaW50ZXJmYWNlIEZhdm9yaXRlc1ZpZXdQcm9wcyB7XG4gIGZhdm9yaXRlczogVHJhY2tbXTtcbiAgY3VycmVudFRyYWNrOiBUcmFjayB8IG51bGw7XG4gIGlzUGxheWluZzogYm9vbGVhbjtcbiAgb25UcmFja1NlbGVjdDogKHRyYWNrOiBUcmFjaywgdHJhY2tzOiBUcmFja1tdKSA9PiB2b2lkO1xuICBvblJlbW92ZUZhdm9yaXRlOiAodHJhY2s6IFRyYWNrKSA9PiB2b2lkO1xuICBvblBsYXlBbGw6ICgpID0+IHZvaWQ7XG59XG5cbmV4cG9ydCBjb25zdCBGYXZvcml0ZXNWaWV3ID0gKHtcbiAgZmF2b3JpdGVzLFxuICBjdXJyZW50VHJhY2ssXG4gIGlzUGxheWluZyxcbiAgb25UcmFja1NlbGVjdCxcbiAgb25SZW1vdmVGYXZvcml0ZSxcbiAgb25QbGF5QWxsLFxufTogRmF2b3JpdGVzVmlld1Byb3BzKSA9PiB7XG4gIGNvbnN0IGZvcm1hdER1cmF0aW9uID0gKHNlY29uZHM6IG51bWJlcikgPT4ge1xuICAgIGNvbnN0IG1pbnMgPSBNYXRoLmZsb29yKHNlY29uZHMgLyA2MCk7XG4gICAgY29uc3Qgc2VjcyA9IE1hdGguZmxvb3Ioc2Vjb25kcyAlIDYwKTtcbiAgICByZXR1cm4gYCR7bWluc306JHtzZWNzLnRvU3RyaW5nKCkucGFkU3RhcnQoMiwgJzAnKX1gO1xuICB9O1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJ3LWZ1bGwgbWF4LXctNHhsIG14LWF1dG9cIj5cbiAgICAgIDxDYXJkIGNsYXNzTmFtZT1cImdsYXNzLWNhcmQgcC02XCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIG1iLTZcIj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgICAgICA8SGVhcnQgY2xhc3NOYW1lPVwiaC04IHctOCB0ZXh0LWFjY2VudCBmaWxsLWFjY2VudFwiIC8+XG4gICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC0yeGwgZm9udC1ib2xkIHRleHQtd2hpdGVcIj5GYXZvcml0ZXM8L2gyPlxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXdoaXRlLzYwXCI+XG4gICAgICAgICAgICAgICAge2Zhdm9yaXRlcy5sZW5ndGh9IHtmYXZvcml0ZXMubGVuZ3RoID09PSAxID8gJ3NvbmcnIDogJ3NvbmdzJ31cbiAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAge2Zhdm9yaXRlcy5sZW5ndGggPiAwICYmIChcbiAgICAgICAgICAgIDxCdXR0b24gb25DbGljaz17b25QbGF5QWxsfSBjbGFzc05hbWU9XCJnbGFzcy1idXR0b25cIj5cbiAgICAgICAgICAgICAgPFBsYXkgY2xhc3NOYW1lPVwiaC00IHctNCBtci0yXCIgLz5cbiAgICAgICAgICAgICAgUGxheSBBbGxcbiAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICl9XG4gICAgICAgIDwvZGl2PlxuXG4gICAgICAgIDxTY3JvbGxBcmVhIGNsYXNzTmFtZT1cImgtWzUwMHB4XVwiPlxuICAgICAgICAgIHtmYXZvcml0ZXMubGVuZ3RoID09PSAwID8gKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBweS0xMiB0ZXh0LXdoaXRlLzYwXCI+XG4gICAgICAgICAgICAgIDxIZWFydCBjbGFzc05hbWU9XCJoLTE2IHctMTYgbWItNCBvcGFjaXR5LTQwXCIgLz5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1sZ1wiPk5vIGZhdm9yaXRlcyB5ZXQ8L3A+XG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gbXQtMlwiPkhlYXJ0IHNvbmdzIHRvIGFkZCB0aGVtIGhlcmU8L3A+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApIDogKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cbiAgICAgICAgICAgICAge2Zhdm9yaXRlcy5tYXAoKHRyYWNrKSA9PiB7XG4gICAgICAgICAgICAgICAgY29uc3QgaXNDdXJyZW50VHJhY2sgPSBjdXJyZW50VHJhY2s/LmlkID09PSB0cmFjay5pZDtcbiAgICAgICAgICAgICAgICBcbiAgICAgICAgICAgICAgICByZXR1cm4gKFxuICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICBrZXk9e3RyYWNrLmlkfVxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9e2BnbGFzcy1jYXJkIHAtNCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtNCB0cmFuc2l0aW9uLWFsbCBob3ZlcjpiZy13aGl0ZS8xMCBncm91cCBjdXJzb3ItcG9pbnRlciAke1xuICAgICAgICAgICAgICAgICAgICAgIGlzQ3VycmVudFRyYWNrID8gJ3JpbmctMiByaW5nLWFjY2VudCcgOiAnJ1xuICAgICAgICAgICAgICAgICAgICB9YH1cbiAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25UcmFja1NlbGVjdCh0cmFjaywgZmF2b3JpdGVzKX1cbiAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAge3RyYWNrLmFsYnVtQXJ0ICYmIChcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInJlbGF0aXZlXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICA8aW1nXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHNyYz17dHJhY2suYWxidW1BcnR9XG4gICAgICAgICAgICAgICAgICAgICAgICAgIGFsdD17dHJhY2suYWxidW19XG4gICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctMTQgaC0xNCByb3VuZGVkIG9iamVjdC1jb3ZlclwiXG4gICAgICAgICAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgICAgICAgICAge2lzQ3VycmVudFRyYWNrICYmIGlzUGxheWluZyAmJiAoXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgaW5zZXQtMCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBiZy1ibGFjay80MCByb3VuZGVkXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0wLjVcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy0xIGgtMyBiZy13aGl0ZSByb3VuZGVkLWZ1bGwgYW5pbWF0ZS1wdWxzZVwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMSBoLTQgYmctd2hpdGUgcm91bmRlZC1mdWxsIGFuaW1hdGUtcHVsc2UgYW5pbWF0aW9uLWRlbGF5LTEwMFwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMSBoLTMgYmctd2hpdGUgcm91bmRlZC1mdWxsIGFuaW1hdGUtcHVsc2UgYW5pbWF0aW9uLWRlbGF5LTIwMFwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgKX1cblxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMSBtaW4tdy0wXCI+XG4gICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwiZm9udC1tZWRpdW0gdGV4dC13aGl0ZSB0cnVuY2F0ZVwiPlxuICAgICAgICAgICAgICAgICAgICAgICAge3RyYWNrLnRpdGxlfVxuICAgICAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtd2hpdGUvNjAgdHJ1bmNhdGVcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIHt0cmFjay5hcnRpc3R9XG4gICAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXdoaXRlLzYwXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICB7Zm9ybWF0RHVyYXRpb24odHJhY2suZHVyYXRpb24gfHwgMCl9XG4gICAgICAgICAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJnaG9zdFwiXG4gICAgICAgICAgICAgICAgICAgICAgICBzaXplPVwiaWNvblwiXG4gICAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoZSkgPT4ge1xuICAgICAgICAgICAgICAgICAgICAgICAgICBlLnN0b3BQcm9wYWdhdGlvbigpO1xuICAgICAgICAgICAgICAgICAgICAgICAgICBvblJlbW92ZUZhdm9yaXRlKHRyYWNrKTtcbiAgICAgICAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJvcGFjaXR5LTAgZ3JvdXAtaG92ZXI6b3BhY2l0eS0xMDAgdHJhbnNpdGlvbi1vcGFjaXR5IHRleHQtYWNjZW50IGhvdmVyOnRleHQtYWNjZW50LzgwXCJcbiAgICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgICA8VHJhc2gyIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICk7XG4gICAgICAgICAgICAgIH0pfVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKX1cbiAgICAgICAgPC9TY3JvbGxBcmVhPlxuICAgICAgPC9DYXJkPlxuICAgIDwvZGl2PlxuICApO1xufTsiXSwibmFtZXMiOlsiQ2FyZCIsIkJ1dHRvbiIsIlNjcm9sbEFyZWEiLCJIZWFydCIsIlBsYXkiLCJUcmFzaDIiLCJGYXZvcml0ZXNWaWV3IiwiZmF2b3JpdGVzIiwiY3VycmVudFRyYWNrIiwiaXNQbGF5aW5nIiwib25UcmFja1NlbGVjdCIsIm9uUmVtb3ZlRmF2b3JpdGUiLCJvblBsYXlBbGwiLCJmb3JtYXREdXJhdGlvbiIsInNlY29uZHMiLCJtaW5zIiwiTWF0aCIsImZsb29yIiwic2VjcyIsInRvU3RyaW5nIiwicGFkU3RhcnQiLCJkaXYiLCJjbGFzc05hbWUiLCJoMiIsInAiLCJsZW5ndGgiLCJvbkNsaWNrIiwibWFwIiwidHJhY2siLCJpc0N1cnJlbnRUcmFjayIsImlkIiwiYWxidW1BcnQiLCJpbWciLCJzcmMiLCJhbHQiLCJhbGJ1bSIsInRpdGxlIiwiYXJ0aXN0Iiwic3BhbiIsImR1cmF0aW9uIiwidmFyaWFudCIsInNpemUiLCJlIiwic3RvcFByb3BhZ2F0aW9uIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUNBLFNBQVNBLElBQUksUUFBUSx1QkFBdUI7QUFDNUMsU0FBU0MsTUFBTSxRQUFRLHlCQUF5QjtBQUNoRCxTQUFTQyxVQUFVLFFBQVEsOEJBQThCO0FBQ3pELFNBQVNDLEtBQUssRUFBRUMsSUFBSSxFQUFFQyxNQUFNLFFBQVEsZUFBZTtBQVduRCxPQUFPLE1BQU1DLGdCQUFnQixDQUFDLEVBQzVCQyxTQUFTLEVBQ1RDLFlBQVksRUFDWkMsU0FBUyxFQUNUQyxhQUFhLEVBQ2JDLGdCQUFnQixFQUNoQkMsU0FBUyxFQUNVO0lBQ25CLE1BQU1DLGlCQUFpQixDQUFDQztRQUN0QixNQUFNQyxPQUFPQyxLQUFLQyxLQUFLLENBQUNILFVBQVU7UUFDbEMsTUFBTUksT0FBT0YsS0FBS0MsS0FBSyxDQUFDSCxVQUFVO1FBQ2xDLE9BQU8sR0FBR0MsS0FBSyxDQUFDLEVBQUVHLEtBQUtDLFFBQVEsR0FBR0MsUUFBUSxDQUFDLEdBQUcsTUFBTTtJQUN0RDtJQUVBLHFCQUNFLFFBQUNDO1FBQUlDLFdBQVU7a0JBQ2IsY0FBQSxRQUFDdEI7WUFBS3NCLFdBQVU7OzhCQUNkLFFBQUNEO29CQUFJQyxXQUFVOztzQ0FDYixRQUFDRDs0QkFBSUMsV0FBVTs7OENBQ2IsUUFBQ25CO29DQUFNbUIsV0FBVTs7Ozs7OzhDQUNqQixRQUFDRDs7c0RBQ0MsUUFBQ0U7NENBQUdELFdBQVU7c0RBQWdDOzs7Ozs7c0RBQzlDLFFBQUNFOzRDQUFFRixXQUFVOztnREFDVmYsVUFBVWtCLE1BQU07Z0RBQUM7Z0RBQUVsQixVQUFVa0IsTUFBTSxLQUFLLElBQUksU0FBUzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozt3QkFJM0RsQixVQUFVa0IsTUFBTSxHQUFHLG1CQUNsQixRQUFDeEI7NEJBQU95QixTQUFTZDs0QkFBV1UsV0FBVTs7OENBQ3BDLFFBQUNsQjtvQ0FBS2tCLFdBQVU7Ozs7OztnQ0FBaUI7Ozs7Ozs7Ozs7Ozs7OEJBTXZDLFFBQUNwQjtvQkFBV29CLFdBQVU7OEJBQ25CZixVQUFVa0IsTUFBTSxLQUFLLGtCQUNwQixRQUFDSjt3QkFBSUMsV0FBVTs7MENBQ2IsUUFBQ25CO2dDQUFNbUIsV0FBVTs7Ozs7OzBDQUNqQixRQUFDRTtnQ0FBRUYsV0FBVTswQ0FBVTs7Ozs7OzBDQUN2QixRQUFDRTtnQ0FBRUYsV0FBVTswQ0FBZTs7Ozs7Ozs7Ozs7NkNBRzlCLFFBQUNEO3dCQUFJQyxXQUFVO2tDQUNaZixVQUFVb0IsR0FBRyxDQUFDLENBQUNDOzRCQUNkLE1BQU1DLGlCQUFpQnJCLGNBQWNzQixPQUFPRixNQUFNRSxFQUFFOzRCQUVwRCxxQkFDRSxRQUFDVDtnQ0FFQ0MsV0FBVyxDQUFDLDZGQUE2RixFQUN2R08saUJBQWlCLHVCQUF1QixJQUN4QztnQ0FDRkgsU0FBUyxJQUFNaEIsY0FBY2tCLE9BQU9yQjs7b0NBRW5DcUIsTUFBTUcsUUFBUSxrQkFDYixRQUFDVjt3Q0FBSUMsV0FBVTs7MERBQ2IsUUFBQ1U7Z0RBQ0NDLEtBQUtMLE1BQU1HLFFBQVE7Z0RBQ25CRyxLQUFLTixNQUFNTyxLQUFLO2dEQUNoQmIsV0FBVTs7Ozs7OzRDQUVYTyxrQkFBa0JwQiwyQkFDakIsUUFBQ1k7Z0RBQUlDLFdBQVU7MERBQ2IsY0FBQSxRQUFDRDtvREFBSUMsV0FBVTs7c0VBQ2IsUUFBQ0Q7NERBQUlDLFdBQVU7Ozs7OztzRUFDZixRQUFDRDs0REFBSUMsV0FBVTs7Ozs7O3NFQUNmLFFBQUNEOzREQUFJQyxXQUFVOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztrREFPekIsUUFBQ0Q7d0NBQUlDLFdBQVU7OzBEQUNiLFFBQUNFO2dEQUFFRixXQUFVOzBEQUNWTSxNQUFNUSxLQUFLOzs7Ozs7MERBRWQsUUFBQ1o7Z0RBQUVGLFdBQVU7MERBQ1ZNLE1BQU1TLE1BQU07Ozs7Ozs7Ozs7OztrREFJakIsUUFBQ2hCO3dDQUFJQyxXQUFVOzswREFDYixRQUFDZ0I7Z0RBQUtoQixXQUFVOzBEQUNiVCxlQUFlZSxNQUFNVyxRQUFRLElBQUk7Ozs7OzswREFFcEMsUUFBQ3RDO2dEQUNDdUMsU0FBUTtnREFDUkMsTUFBSztnREFDTGYsU0FBUyxDQUFDZ0I7b0RBQ1JBLEVBQUVDLGVBQWU7b0RBQ2pCaEMsaUJBQWlCaUI7Z0RBQ25CO2dEQUNBTixXQUFVOzBEQUVWLGNBQUEsUUFBQ2pCO29EQUFPaUIsV0FBVTs7Ozs7Ozs7Ozs7Ozs7Ozs7OytCQS9DakJNLE1BQU1FLEVBQUU7Ozs7O3dCQW9EbkI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFPZCxFQUFFO0tBNUdXeEIifQ==

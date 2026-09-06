@@ -1,0 +1,1326 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/LocalSocialDiscovery.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"];
+import { Card, CardContent, CardHeader, CardTitle } from "/src/components/ui/card.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Badge } from "/src/components/ui/badge.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "/src/components/ui/tabs.tsx";
+import { Avatar, AvatarFallback } from "/src/components/ui/avatar.tsx";
+import { Users, Heart, Play, TrendingUp, Clock, Music, Star, Radio, User, Eye } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { useLocalSocialFeatures } from "/src/hooks/useLocalSocialFeatures.ts";
+import { useEnhancedNotifications } from "/src/hooks/useEnhancedNotifications.ts";
+import { useIdentityContext } from "/src/components/identity/IdentityProvider.tsx";
+import { IdentityAvatarLarge } from "/src/components/identity/IdentityAvatar.tsx";
+import { LoadingState } from "/src/components/ui/loading.tsx";
+export const LocalSocialDiscovery = ({ onPlayPlaylist, onAddToLibrary, userPlaylists, userFavorites })=>{
+    _s();
+    const { user, discoveredContent, trendingContent, recentConnections, activeSessions, likeContent, updateUserProfile, generateRecommendations, createListeningSession } = useLocalSocialFeatures();
+    const { notifySuccess } = useEnhancedNotifications();
+    const { identity } = useIdentityContext();
+    const [isLoading, setIsLoading] = useState(true);
+    const [recommendations, setRecommendations] = useState([]);
+    // Initialize data
+    useEffect(()=>{
+        const init = async ()=>{
+            setIsLoading(true);
+            const recs = generateRecommendations(userPlaylists, userFavorites);
+            setRecommendations(recs);
+            setIsLoading(false);
+        };
+        init();
+    }, [
+        generateRecommendations,
+        userPlaylists,
+        userFavorites
+    ]);
+    const handleLikeContent = (contentId, contentName)=>{
+        likeContent(contentId);
+        notifySuccess('Liked!', `You liked "${contentName}"`);
+    };
+    const handleJoinSession = (session)=>{
+        notifySuccess('Joined Session!', `Connected to ${session.name}`);
+    // In a real implementation, this would connect to the session
+    };
+    const formatTimeAgo = (date)=>{
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        return `${days}d ago`;
+    };
+    if (isLoading) {
+        return /*#__PURE__*/ _jsxDEV("div", {
+            className: "space-y-6",
+            children: /*#__PURE__*/ _jsxDEV(LoadingState, {
+                type: "social",
+                message: "Loading community content..."
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                lineNumber: 96,
+                columnNumber: 9
+            }, this)
+        }, void 0, false, {
+            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+            lineNumber: 95,
+            columnNumber: 7
+        }, this);
+    }
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "space-y-6",
+        children: [
+            /*#__PURE__*/ _jsxDEV(Card, {
+                className: "border-primary/20 bg-gradient-to-r from-primary/5 to-transparent",
+                children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                    className: "p-6",
+                    children: /*#__PURE__*/ _jsxDEV("div", {
+                        className: "flex items-center gap-4",
+                        children: [
+                            identity ? /*#__PURE__*/ _jsxDEV(IdentityAvatarLarge, {
+                                seed: identity.avatarSeed,
+                                animate: true
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 108,
+                                columnNumber: 15
+                            }, this) : /*#__PURE__*/ _jsxDEV(Avatar, {
+                                className: "w-16 h-16",
+                                children: /*#__PURE__*/ _jsxDEV(AvatarFallback, {
+                                    children: /*#__PURE__*/ _jsxDEV(User, {
+                                        className: "w-8 h-8"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 112,
+                                        columnNumber: 19
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 111,
+                                    columnNumber: 17
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 110,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("div", {
+                                className: "flex-1",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV("h3", {
+                                        className: "text-xl font-semibold",
+                                        children: identity?.displayName || user.displayName
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 117,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "text-muted-foreground",
+                                        children: [
+                                            "Anonymous Music Explorer • ",
+                                            user.sessionCount,
+                                            " sessions"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 120,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex gap-2 mt-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Badge, {
+                                                variant: "secondary",
+                                                children: "No Account Needed"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 124,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(Badge, {
+                                                variant: "outline",
+                                                children: "Privacy First"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 125,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 123,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 116,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                        lineNumber: 106,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                    lineNumber: 105,
+                    columnNumber: 9
+                }, this)
+            }, void 0, false, {
+                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                lineNumber: 104,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ _jsxDEV(Tabs, {
+                defaultValue: "discover",
+                className: "w-full",
+                children: [
+                    /*#__PURE__*/ _jsxDEV(TabsList, {
+                        className: "grid w-full grid-cols-4",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                value: "discover",
+                                children: "Discover"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 134,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                value: "trending",
+                                children: [
+                                    "Trending (",
+                                    trendingContent.length,
+                                    ")"
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 135,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                value: "sessions",
+                                children: [
+                                    "Live Sessions (",
+                                    activeSessions.length,
+                                    ")"
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 138,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                value: "recent",
+                                children: "Recent"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 141,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                        lineNumber: 133,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(TabsContent, {
+                        value: "discover",
+                        className: "space-y-6",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Card, {
+                                className: "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20",
+                                children: /*#__PURE__*/ _jsxDEV(CardContent, {
+                                    className: "pt-6",
+                                    children: /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex gap-3",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Star, {
+                                                className: "w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 149,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                className: "space-y-2",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("p", {
+                                                        className: "text-sm font-medium text-blue-900 dark:text-blue-100",
+                                                        children: "🎵 Anonymous Music Discovery"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 151,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("ul", {
+                                                        className: "text-sm text-blue-700 dark:text-blue-300 space-y-1",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("li", {
+                                                                children: "• No signup required - just start sharing!"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 155,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("li", {
+                                                                children: "• Share playlists with codes - others discover anonymously"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 156,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("li", {
+                                                                children: "• Join temporary listening sessions with other music lovers"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 157,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("li", {
+                                                                children: "• Your identity is local to your device only"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 158,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 154,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 150,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 148,
+                                        columnNumber: 15
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 147,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 146,
+                                columnNumber: 11
+                            }, this),
+                            recommendations.length > 0 && /*#__PURE__*/ _jsxDEV(Card, {
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                        children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                            className: "flex items-center gap-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Star, {
+                                                    className: "w-5 h-5"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                    lineNumber: 170,
+                                                    columnNumber: 19
+                                                }, this),
+                                                "Recommended for You"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                            lineNumber: 169,
+                                            columnNumber: 17
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 168,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(CardContent, {
+                                        children: /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "space-y-4",
+                                            children: recommendations.map((content)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "w-16 h-16 bg-gradient-primary rounded-lg flex items-center justify-center",
+                                                            children: /*#__PURE__*/ _jsxDEV(Music, {
+                                                                className: "w-8 h-8 text-white"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 182,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 181,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex-1",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                                    className: "flex items-center gap-2 mb-1",
+                                                                    children: [
+                                                                        /*#__PURE__*/ _jsxDEV("h3", {
+                                                                            className: "font-semibold",
+                                                                            children: content.name
+                                                                        }, void 0, false, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                            lineNumber: 186,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                            variant: "secondary",
+                                                                            className: "text-xs",
+                                                                            children: content.tags.join(', ')
+                                                                        }, void 0, false, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                            lineNumber: 187,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 185,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "text-sm text-muted-foreground mb-2",
+                                                                    children: [
+                                                                        "by ",
+                                                                        content.sharedBy,
+                                                                        " • ",
+                                                                        formatTimeAgo(content.sharedAt)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 191,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                                    className: "flex items-center gap-4 text-xs text-muted-foreground",
+                                                                    children: [
+                                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                                            className: "flex items-center gap-1",
+                                                                            children: [
+                                                                                /*#__PURE__*/ _jsxDEV(Heart, {
+                                                                                    className: "w-3 h-3"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                                    lineNumber: 196,
+                                                                                    columnNumber: 29
+                                                                                }, this),
+                                                                                content.likes
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                            lineNumber: 195,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                                            className: "flex items-center gap-1",
+                                                                            children: [
+                                                                                /*#__PURE__*/ _jsxDEV(Eye, {
+                                                                                    className: "w-3 h-3"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                                    lineNumber: 200,
+                                                                                    columnNumber: 29
+                                                                                }, this),
+                                                                                content.accessCount
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                            lineNumber: 199,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 194,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 184,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex gap-2",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                                    size: "sm",
+                                                                    onClick: ()=>onPlayPlaylist(content.tracks),
+                                                                    children: /*#__PURE__*/ _jsxDEV(Play, {
+                                                                        className: "w-4 h-4"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 210,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 206,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                                    size: "sm",
+                                                                    variant: "outline",
+                                                                    onClick: ()=>handleLikeContent(content.id, content.name),
+                                                                    children: /*#__PURE__*/ _jsxDEV(Heart, {
+                                                                        className: "w-4 h-4"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 217,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 212,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 205,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, content.id, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                    lineNumber: 177,
+                                                    columnNumber: 21
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                            lineNumber: 175,
+                                            columnNumber: 17
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 174,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 167,
+                                columnNumber: 13
+                            }, this),
+                            discoveredContent.length > 0 && /*#__PURE__*/ _jsxDEV(Card, {
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                        children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                            className: "flex items-center gap-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Music, {
+                                                    className: "w-5 h-5"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                    lineNumber: 232,
+                                                    columnNumber: 19
+                                                }, this),
+                                                "Your Discoveries"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                            lineNumber: 231,
+                                            columnNumber: 17
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 230,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(CardContent, {
+                                        children: /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "space-y-3",
+                                            children: discoveredContent.slice(0, 5).map((content)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "w-12 h-12 bg-gradient-secondary rounded-lg flex items-center justify-center",
+                                                            children: /*#__PURE__*/ _jsxDEV(Music, {
+                                                                className: "w-6 h-6 text-white"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 244,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 243,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex-1",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("h4", {
+                                                                    className: "font-medium",
+                                                                    children: content.name
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 247,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "text-sm text-muted-foreground",
+                                                                    children: [
+                                                                        "by ",
+                                                                        content.sharedBy,
+                                                                        " • ",
+                                                                        formatTimeAgo(content.sharedAt)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 248,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 246,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                                            size: "sm",
+                                                            variant: "outline",
+                                                            onClick: ()=>onPlayPlaylist(content.tracks),
+                                                            children: /*#__PURE__*/ _jsxDEV(Play, {
+                                                                className: "w-4 h-4"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 257,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 252,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, content.id, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                    lineNumber: 239,
+                                                    columnNumber: 21
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                            lineNumber: 237,
+                                            columnNumber: 17
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 236,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                lineNumber: 229,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                        lineNumber: 144,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(TabsContent, {
+                        value: "trending",
+                        className: "space-y-4",
+                        children: /*#__PURE__*/ _jsxDEV(Card, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                    children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                        className: "flex items-center gap-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(TrendingUp, {
+                                                className: "w-5 h-5"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 271,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Community Trending"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 270,
+                                        columnNumber: 15
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 269,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(CardContent, {
+                                    children: trendingContent.length > 0 ? /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "space-y-4",
+                                        children: trendingContent.map((content, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-center w-8 h-8 bg-gradient-primary rounded-full text-white font-bold text-sm",
+                                                        children: [
+                                                            "#",
+                                                            index + 1
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 283,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "w-12 h-12 bg-gradient-secondary rounded-lg flex items-center justify-center",
+                                                        children: /*#__PURE__*/ _jsxDEV(TrendingUp, {
+                                                            className: "w-6 h-6 text-white"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 287,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 286,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex-1",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "flex items-center gap-2 mb-1",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV("h3", {
+                                                                        className: "font-semibold",
+                                                                        children: content.name
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 291,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                        variant: "outline",
+                                                                        className: "text-xs",
+                                                                        children: content.type
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 292,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 290,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-sm text-muted-foreground mb-1",
+                                                                children: content.description
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 296,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-xs text-muted-foreground",
+                                                                children: [
+                                                                    "by ",
+                                                                    content.sharedBy,
+                                                                    " • ",
+                                                                    formatTimeAgo(content.sharedAt)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 299,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "flex items-center gap-4 text-xs text-muted-foreground mt-1",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                                        className: "flex items-center gap-1",
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(Heart, {
+                                                                                className: "w-3 h-3"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                                lineNumber: 304,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            content.likes
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 303,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                                        className: "flex items-center gap-1",
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(Eye, {
+                                                                                className: "w-3 h-3"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                                lineNumber: 308,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            content.accessCount
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 307,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                                        className: "flex gap-1",
+                                                                        children: content.tags.map((tag)=>/*#__PURE__*/ _jsxDEV(Badge, {
+                                                                                variant: "outline",
+                                                                                className: "text-xs",
+                                                                                children: tag
+                                                                            }, tag, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                                lineNumber: 313,
+                                                                                columnNumber: 31
+                                                                            }, this))
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 311,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 302,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 289,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex gap-2",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                size: "sm",
+                                                                onClick: ()=>onPlayPlaylist(content.tracks),
+                                                                children: /*#__PURE__*/ _jsxDEV(Play, {
+                                                                    className: "w-4 h-4"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 325,
+                                                                    columnNumber: 27
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 321,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                                size: "sm",
+                                                                variant: "outline",
+                                                                onClick: ()=>handleLikeContent(content.id, content.name),
+                                                                children: /*#__PURE__*/ _jsxDEV(Heart, {
+                                                                    className: "w-4 h-4"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 332,
+                                                                    columnNumber: 27
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 327,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 320,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, content.id, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 279,
+                                                columnNumber: 21
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 277,
+                                        columnNumber: 17
+                                    }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "text-center py-8",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(TrendingUp, {
+                                                className: "w-12 h-12 mx-auto mb-4 text-muted-foreground"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 340,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "text-muted-foreground",
+                                                children: "No trending content yet. Share some playlists to get started!"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 341,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 339,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 275,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                            lineNumber: 268,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                        lineNumber: 267,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(TabsContent, {
+                        value: "sessions",
+                        className: "space-y-4",
+                        children: /*#__PURE__*/ _jsxDEV(Card, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                    children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                        className: "flex items-center gap-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Radio, {
+                                                className: "w-5 h-5"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 354,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Live Listening Sessions"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 353,
+                                        columnNumber: 15
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 352,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(CardContent, {
+                                    children: activeSessions.length > 0 ? /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "space-y-4",
+                                        children: activeSessions.map((session)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "relative",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "w-12 h-12 bg-gradient-accent rounded-full flex items-center justify-center",
+                                                                children: /*#__PURE__*/ _jsxDEV(Radio, {
+                                                                    className: "w-6 h-6 text-white"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                    lineNumber: 368,
+                                                                    columnNumber: 27
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 367,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-background rounded-full animate-pulse"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 370,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 366,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex-1",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "flex items-center gap-2 mb-1",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV("h3", {
+                                                                        className: "font-semibold",
+                                                                        children: session.name
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 374,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    session.mood && /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                        variant: "secondary",
+                                                                        className: "text-xs",
+                                                                        children: session.mood
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 376,
+                                                                        columnNumber: 29
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 373,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-sm text-muted-foreground mb-1",
+                                                                children: [
+                                                                    "Hosted by ",
+                                                                    session.hostName
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 381,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "flex items-center gap-4 text-xs text-muted-foreground",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                                        className: "flex items-center gap-1",
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(Users, {
+                                                                                className: "w-3 h-3"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                                lineNumber: 386,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            session.participants.length,
+                                                                            " listening"
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 385,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                                        className: "flex items-center gap-1",
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(Clock, {
+                                                                                className: "w-3 h-3"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                                lineNumber: 390,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            formatTimeAgo(session.createdAt)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                        lineNumber: 389,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 384,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 372,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        size: "sm",
+                                                        onClick: ()=>handleJoinSession(session),
+                                                        className: "bg-green-600 hover:bg-green-700",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV(Users, {
+                                                                className: "w-4 h-4 mr-1"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 400,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            "Join"
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 395,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, session.id, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 362,
+                                                columnNumber: 21
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 360,
+                                        columnNumber: 17
+                                    }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "text-center py-8",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Radio, {
+                                                className: "w-12 h-12 mx-auto mb-4 text-muted-foreground"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 408,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "text-muted-foreground mb-4",
+                                                children: "No active listening sessions right now."
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 409,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(Button, {
+                                                onClick: ()=>{
+                                                    createListeningSession([], 'chill');
+                                                    notifySuccess('Session Created!', 'Your listening session is now live');
+                                                },
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(Radio, {
+                                                        className: "w-4 h-4 mr-2"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 418,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    "Start a Session"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 412,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 407,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 358,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                            lineNumber: 351,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                        lineNumber: 350,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV(TabsContent, {
+                        value: "recent",
+                        className: "space-y-4",
+                        children: /*#__PURE__*/ _jsxDEV(Card, {
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                    children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                        className: "flex items-center gap-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Clock, {
+                                                className: "w-5 h-5"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 431,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Recent Connections"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 430,
+                                        columnNumber: 15
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 429,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(CardContent, {
+                                    children: recentConnections.length > 0 ? /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "space-y-3",
+                                        children: recentConnections.map((connection, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex items-center gap-3 p-3 border rounded-lg",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(Avatar, {
+                                                        children: /*#__PURE__*/ _jsxDEV(AvatarFallback, {
+                                                            children: connection.slice(0, 2).toUpperCase()
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                            lineNumber: 444,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 443,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex-1",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "font-medium",
+                                                                children: connection
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 449,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                                className: "text-sm text-muted-foreground",
+                                                                children: "Recent listening partner"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                                lineNumber: 450,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                        lineNumber: 448,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, index, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 439,
+                                                columnNumber: 21
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 437,
+                                        columnNumber: 17
+                                    }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "text-center py-8",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Users, {
+                                                className: "w-12 h-12 mx-auto mb-4 text-muted-foreground"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 459,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("p", {
+                                                className: "text-muted-foreground",
+                                                children: "No recent connections. Join a listening session to connect with others!"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                                lineNumber: 460,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                        lineNumber: 458,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                                    lineNumber: 435,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                            lineNumber: 428,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                        lineNumber: 427,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+                lineNumber: 132,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx",
+        lineNumber: 102,
+        columnNumber: 5
+    }, this);
+};
+_s(LocalSocialDiscovery, "Fg4GijdaetncBYjdaUOL4N4nfgg=", false, function() {
+    return [
+        useLocalSocialFeatures,
+        useEnhancedNotifications,
+        useIdentityContext
+    ];
+});
+_c = LocalSocialDiscovery;
+var _c;
+$RefreshReg$(_c, "LocalSocialDiscovery");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/LocalSocialDiscovery.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkxvY2FsU29jaWFsRGlzY292ZXJ5LnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VTdGF0ZSwgdXNlRWZmZWN0IH0gZnJvbSAncmVhY3QnO1xyXG5pbXBvcnQgeyBDYXJkLCBDYXJkQ29udGVudCwgQ2FyZEhlYWRlciwgQ2FyZFRpdGxlIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2NhcmQnO1xyXG5pbXBvcnQgeyBCdXR0b24gfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYnV0dG9uJztcclxuaW1wb3J0IHsgQmFkZ2UgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYmFkZ2UnO1xyXG5pbXBvcnQgeyBTY3JvbGxBcmVhIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL3Njcm9sbC1hcmVhJztcclxuaW1wb3J0IHsgVGFicywgVGFic0NvbnRlbnQsIFRhYnNMaXN0LCBUYWJzVHJpZ2dlciB9IGZyb20gJ0AvY29tcG9uZW50cy91aS90YWJzJztcclxuaW1wb3J0IHsgQXZhdGFyLCBBdmF0YXJGYWxsYmFjaywgQXZhdGFySW1hZ2UgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYXZhdGFyJztcclxuaW1wb3J0IHsgXHJcbiAgVXNlcnMsIFxyXG4gIEhlYXJ0LCBcclxuICBQbGF5LCBcclxuICBUcmVuZGluZ1VwLCBcclxuICBDbG9jayxcclxuICBNdXNpYyxcclxuICBTdGFyLFxyXG4gIFNoYXJlMixcclxuICBSYWRpbyxcclxuICBVc2VyLFxyXG4gIFNldHRpbmdzLFxyXG4gIEV5ZVxyXG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XHJcbmltcG9ydCB7IHVzZUxvY2FsU29jaWFsRmVhdHVyZXMgfSBmcm9tICdAL2hvb2tzL3VzZUxvY2FsU29jaWFsRmVhdHVyZXMnO1xyXG5pbXBvcnQgeyB1c2VFbmhhbmNlZE5vdGlmaWNhdGlvbnMgfSBmcm9tICdAL2hvb2tzL3VzZUVuaGFuY2VkTm90aWZpY2F0aW9ucyc7XHJcbmltcG9ydCB7IHVzZUlkZW50aXR5Q29udGV4dCB9IGZyb20gJ0AvY29tcG9uZW50cy9pZGVudGl0eS9JZGVudGl0eVByb3ZpZGVyJztcclxuaW1wb3J0IHsgSWRlbnRpdHlBdmF0YXJMYXJnZSB9IGZyb20gJ0AvY29tcG9uZW50cy9pZGVudGl0eS9JZGVudGl0eUF2YXRhcic7XHJcbmltcG9ydCB7IExvYWRpbmdTdGF0ZSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9sb2FkaW5nJztcclxuaW1wb3J0IHsgVHJhY2sgfSBmcm9tICdAL2RhdGEvbW9ja011c2ljJztcclxuXHJcbmludGVyZmFjZSBMb2NhbFNvY2lhbERpc2NvdmVyeVByb3BzIHtcclxuICBvblBsYXlQbGF5bGlzdDogKHRyYWNrczogVHJhY2tbXSkgPT4gdm9pZDtcclxuICBvbkFkZFRvTGlicmFyeTogKHBsYXlsaXN0OiBhbnkpID0+IHZvaWQ7XHJcbiAgdXNlclBsYXlsaXN0czogYW55W107XHJcbiAgdXNlckZhdm9yaXRlczogVHJhY2tbXTtcclxufVxyXG5cclxuZXhwb3J0IGNvbnN0IExvY2FsU29jaWFsRGlzY292ZXJ5ID0gKHtcclxuICBvblBsYXlQbGF5bGlzdCxcclxuICBvbkFkZFRvTGlicmFyeSxcclxuICB1c2VyUGxheWxpc3RzLFxyXG4gIHVzZXJGYXZvcml0ZXMsXHJcbn06IExvY2FsU29jaWFsRGlzY292ZXJ5UHJvcHMpID0+IHtcclxuICBjb25zdCB7XHJcbiAgICB1c2VyLFxyXG4gICAgZGlzY292ZXJlZENvbnRlbnQsXHJcbiAgICB0cmVuZGluZ0NvbnRlbnQsXHJcbiAgICByZWNlbnRDb25uZWN0aW9ucyxcclxuICAgIGFjdGl2ZVNlc3Npb25zLFxyXG4gICAgbGlrZUNvbnRlbnQsXHJcbiAgICB1cGRhdGVVc2VyUHJvZmlsZSxcclxuICAgIGdlbmVyYXRlUmVjb21tZW5kYXRpb25zLFxyXG4gICAgY3JlYXRlTGlzdGVuaW5nU2Vzc2lvbixcclxuICB9ID0gdXNlTG9jYWxTb2NpYWxGZWF0dXJlcygpO1xyXG5cclxuICBjb25zdCB7IG5vdGlmeVN1Y2Nlc3MgfSA9IHVzZUVuaGFuY2VkTm90aWZpY2F0aW9ucygpO1xyXG4gIGNvbnN0IHsgaWRlbnRpdHkgfSA9IHVzZUlkZW50aXR5Q29udGV4dCgpO1xyXG5cclxuICBjb25zdCBbaXNMb2FkaW5nLCBzZXRJc0xvYWRpbmddID0gdXNlU3RhdGUodHJ1ZSk7XHJcbiAgY29uc3QgW3JlY29tbWVuZGF0aW9ucywgc2V0UmVjb21tZW5kYXRpb25zXSA9IHVzZVN0YXRlPGFueVtdPihbXSk7XHJcblxyXG4gIC8vIEluaXRpYWxpemUgZGF0YVxyXG4gIHVzZUVmZmVjdCgoKSA9PiB7XHJcbiAgICBjb25zdCBpbml0ID0gYXN5bmMgKCkgPT4ge1xyXG4gICAgICBzZXRJc0xvYWRpbmcodHJ1ZSk7XHJcbiAgICAgIGNvbnN0IHJlY3MgPSBnZW5lcmF0ZVJlY29tbWVuZGF0aW9ucyh1c2VyUGxheWxpc3RzLCB1c2VyRmF2b3JpdGVzKTtcclxuICAgICAgc2V0UmVjb21tZW5kYXRpb25zKHJlY3MpO1xyXG4gICAgICBzZXRJc0xvYWRpbmcoZmFsc2UpO1xyXG4gICAgfTtcclxuICAgIGluaXQoKTtcclxuICB9LCBbZ2VuZXJhdGVSZWNvbW1lbmRhdGlvbnMsIHVzZXJQbGF5bGlzdHMsIHVzZXJGYXZvcml0ZXNdKTtcclxuXHJcbiAgY29uc3QgaGFuZGxlTGlrZUNvbnRlbnQgPSAoY29udGVudElkOiBzdHJpbmcsIGNvbnRlbnROYW1lOiBzdHJpbmcpID0+IHtcclxuICAgIGxpa2VDb250ZW50KGNvbnRlbnRJZCk7XHJcbiAgICBub3RpZnlTdWNjZXNzKCdMaWtlZCEnLCBgWW91IGxpa2VkIFwiJHtjb250ZW50TmFtZX1cImApO1xyXG4gIH07XHJcblxyXG4gIGNvbnN0IGhhbmRsZUpvaW5TZXNzaW9uID0gKHNlc3Npb246IGFueSkgPT4ge1xyXG4gICAgbm90aWZ5U3VjY2VzcygnSm9pbmVkIFNlc3Npb24hJywgYENvbm5lY3RlZCB0byAke3Nlc3Npb24ubmFtZX1gKTtcclxuICAgIC8vIEluIGEgcmVhbCBpbXBsZW1lbnRhdGlvbiwgdGhpcyB3b3VsZCBjb25uZWN0IHRvIHRoZSBzZXNzaW9uXHJcbiAgfTtcclxuXHJcbiAgY29uc3QgZm9ybWF0VGltZUFnbyA9IChkYXRlOiBEYXRlKSA9PiB7XHJcbiAgICBjb25zdCBub3cgPSBuZXcgRGF0ZSgpO1xyXG4gICAgY29uc3QgZGlmZiA9IG5vdy5nZXRUaW1lKCkgLSBkYXRlLmdldFRpbWUoKTtcclxuICAgIGNvbnN0IG1pbnV0ZXMgPSBNYXRoLmZsb29yKGRpZmYgLyA2MDAwMCk7XHJcbiAgICBjb25zdCBob3VycyA9IE1hdGguZmxvb3IoZGlmZiAvIDM2MDAwMDApO1xyXG4gICAgY29uc3QgZGF5cyA9IE1hdGguZmxvb3IoZGlmZiAvIDg2NDAwMDAwKTtcclxuXHJcbiAgICBpZiAobWludXRlcyA8IDYwKSByZXR1cm4gYCR7bWludXRlc31tIGFnb2A7XHJcbiAgICBpZiAoaG91cnMgPCAyNCkgcmV0dXJuIGAke2hvdXJzfWggYWdvYDtcclxuICAgIHJldHVybiBgJHtkYXlzfWQgYWdvYDtcclxuICB9O1xyXG5cclxuICBpZiAoaXNMb2FkaW5nKSB7XHJcbiAgICByZXR1cm4gKFxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNlwiPlxyXG4gICAgICAgIDxMb2FkaW5nU3RhdGUgdHlwZT1cInNvY2lhbFwiIG1lc3NhZ2U9XCJMb2FkaW5nIGNvbW11bml0eSBjb250ZW50Li4uXCIgLz5cclxuICAgICAgPC9kaXY+XHJcbiAgICApO1xyXG4gIH1cclxuXHJcbiAgcmV0dXJuIChcclxuICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS02XCI+XHJcbiAgICAgIHsvKiBBbm9ueW1vdXMgVXNlciBQcm9maWxlICovfVxyXG4gICAgICA8Q2FyZCBjbGFzc05hbWU9XCJib3JkZXItcHJpbWFyeS8yMCBiZy1ncmFkaWVudC10by1yIGZyb20tcHJpbWFyeS81IHRvLXRyYW5zcGFyZW50XCI+XHJcbiAgICAgICAgPENhcmRDb250ZW50IGNsYXNzTmFtZT1cInAtNlwiPlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtNFwiPlxyXG4gICAgICAgICAgICB7aWRlbnRpdHkgPyAoXHJcbiAgICAgICAgICAgICAgPElkZW50aXR5QXZhdGFyTGFyZ2Ugc2VlZD17aWRlbnRpdHkuYXZhdGFyU2VlZH0gYW5pbWF0ZSAvPlxyXG4gICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgIDxBdmF0YXIgY2xhc3NOYW1lPVwidy0xNiBoLTE2XCI+XHJcbiAgICAgICAgICAgICAgICA8QXZhdGFyRmFsbGJhY2s+XHJcbiAgICAgICAgICAgICAgICAgIDxVc2VyIGNsYXNzTmFtZT1cInctOCBoLThcIiAvPlxyXG4gICAgICAgICAgICAgICAgPC9BdmF0YXJGYWxsYmFjaz5cclxuICAgICAgICAgICAgICA8L0F2YXRhcj5cclxuICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4LTFcIj5cclxuICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwidGV4dC14bCBmb250LXNlbWlib2xkXCI+XHJcbiAgICAgICAgICAgICAgICB7aWRlbnRpdHk/LmRpc3BsYXlOYW1lIHx8IHVzZXIuZGlzcGxheU5hbWV9XHJcbiAgICAgICAgICAgICAgPC9oMz5cclxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cclxuICAgICAgICAgICAgICAgIEFub255bW91cyBNdXNpYyBFeHBsb3JlciDigKIge3VzZXIuc2Vzc2lvbkNvdW50fSBzZXNzaW9uc1xyXG4gICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTIgbXQtMlwiPlxyXG4gICAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9XCJzZWNvbmRhcnlcIj5ObyBBY2NvdW50IE5lZWRlZDwvQmFkZ2U+XHJcbiAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cIm91dGxpbmVcIj5Qcml2YWN5IEZpcnN0PC9CYWRnZT5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L0NhcmRDb250ZW50PlxyXG4gICAgICA8L0NhcmQ+XHJcblxyXG4gICAgICA8VGFicyBkZWZhdWx0VmFsdWU9XCJkaXNjb3ZlclwiIGNsYXNzTmFtZT1cInctZnVsbFwiPlxyXG4gICAgICAgIDxUYWJzTGlzdCBjbGFzc05hbWU9XCJncmlkIHctZnVsbCBncmlkLWNvbHMtNFwiPlxyXG4gICAgICAgICAgPFRhYnNUcmlnZ2VyIHZhbHVlPVwiZGlzY292ZXJcIj5EaXNjb3ZlcjwvVGFic1RyaWdnZXI+XHJcbiAgICAgICAgICA8VGFic1RyaWdnZXIgdmFsdWU9XCJ0cmVuZGluZ1wiPlxyXG4gICAgICAgICAgICBUcmVuZGluZyAoe3RyZW5kaW5nQ29udGVudC5sZW5ndGh9KVxyXG4gICAgICAgICAgPC9UYWJzVHJpZ2dlcj5cclxuICAgICAgICAgIDxUYWJzVHJpZ2dlciB2YWx1ZT1cInNlc3Npb25zXCI+XHJcbiAgICAgICAgICAgIExpdmUgU2Vzc2lvbnMgKHthY3RpdmVTZXNzaW9ucy5sZW5ndGh9KVxyXG4gICAgICAgICAgPC9UYWJzVHJpZ2dlcj5cclxuICAgICAgICAgIDxUYWJzVHJpZ2dlciB2YWx1ZT1cInJlY2VudFwiPlJlY2VudDwvVGFic1RyaWdnZXI+XHJcbiAgICAgICAgPC9UYWJzTGlzdD5cclxuXHJcbiAgICAgICAgPFRhYnNDb250ZW50IHZhbHVlPVwiZGlzY292ZXJcIiBjbGFzc05hbWU9XCJzcGFjZS15LTZcIj5cclxuICAgICAgICAgIHsvKiBIb3cgSXQgV29ya3MgKi99XHJcbiAgICAgICAgICA8Q2FyZCBjbGFzc05hbWU9XCJib3JkZXItYmx1ZS0yMDAgYmctYmx1ZS01MC81MCBkYXJrOmJvcmRlci1ibHVlLTgwMCBkYXJrOmJnLWJsdWUtOTUwLzIwXCI+XHJcbiAgICAgICAgICAgIDxDYXJkQ29udGVudCBjbGFzc05hbWU9XCJwdC02XCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0zXCI+XHJcbiAgICAgICAgICAgICAgICA8U3RhciBjbGFzc05hbWU9XCJ3LTUgaC01IHRleHQtYmx1ZS02MDAgZGFyazp0ZXh0LWJsdWUtNDAwIG10LTAuNVwiIC8+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtYmx1ZS05MDAgZGFyazp0ZXh0LWJsdWUtMTAwXCI+XHJcbiAgICAgICAgICAgICAgICAgICAg8J+OtSBBbm9ueW1vdXMgTXVzaWMgRGlzY292ZXJ5XHJcbiAgICAgICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1ibHVlLTcwMCBkYXJrOnRleHQtYmx1ZS0zMDAgc3BhY2UteS0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGxpPuKAoiBObyBzaWdudXAgcmVxdWlyZWQgLSBqdXN0IHN0YXJ0IHNoYXJpbmchPC9saT5cclxuICAgICAgICAgICAgICAgICAgICA8bGk+4oCiIFNoYXJlIHBsYXlsaXN0cyB3aXRoIGNvZGVzIC0gb3RoZXJzIGRpc2NvdmVyIGFub255bW91c2x5PC9saT5cclxuICAgICAgICAgICAgICAgICAgICA8bGk+4oCiIEpvaW4gdGVtcG9yYXJ5IGxpc3RlbmluZyBzZXNzaW9ucyB3aXRoIG90aGVyIG11c2ljIGxvdmVyczwvbGk+XHJcbiAgICAgICAgICAgICAgICAgICAgPGxpPuKAoiBZb3VyIGlkZW50aXR5IGlzIGxvY2FsIHRvIHlvdXIgZGV2aWNlIG9ubHk8L2xpPlxyXG4gICAgICAgICAgICAgICAgICA8L3VsPlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICA8L0NhcmQ+XHJcblxyXG4gICAgICAgICAgey8qIFJlY29tbWVuZGF0aW9ucyAqL31cclxuICAgICAgICAgIHtyZWNvbW1lbmRhdGlvbnMubGVuZ3RoID4gMCAmJiAoXHJcbiAgICAgICAgICAgIDxDYXJkPlxyXG4gICAgICAgICAgICAgIDxDYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8U3RhciBjbGFzc05hbWU9XCJ3LTUgaC01XCIgLz5cclxuICAgICAgICAgICAgICAgICAgUmVjb21tZW5kZWQgZm9yIFlvdVxyXG4gICAgICAgICAgICAgICAgPC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgIDxDYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgICAgIHtyZWNvbW1lbmRhdGlvbnMubWFwKChjb250ZW50KSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAga2V5PXtjb250ZW50LmlkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTQgcC00IGJvcmRlciByb3VuZGVkLWxnIGhvdmVyOmJnLWFjY2VudC81MCB0cmFuc2l0aW9uLWNvbG9yc1wiXHJcbiAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTE2IGgtMTYgYmctZ3JhZGllbnQtcHJpbWFyeSByb3VuZGVkLWxnIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxNdXNpYyBjbGFzc05hbWU9XCJ3LTggaC04IHRleHQtd2hpdGVcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIG1iLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwiZm9udC1zZW1pYm9sZFwiPntjb250ZW50Lm5hbWV9PC9oMz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cInNlY29uZGFyeVwiIGNsYXNzTmFtZT1cInRleHQteHNcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIHtjb250ZW50LnRhZ3Muam9pbignLCAnKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L0JhZGdlPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQgbWItMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGJ5IHtjb250ZW50LnNoYXJlZEJ5fSDigKIge2Zvcm1hdFRpbWVBZ28oY29udGVudC5zaGFyZWRBdCl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtNCB0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8SGVhcnQgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y29udGVudC5saWtlc31cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxFeWUgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y29udGVudC5hY2Nlc3NDb3VudH1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25QbGF5UGxheWxpc3QoY29udGVudC50cmFja3MpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPFBsYXkgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwib3V0bGluZVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gaGFuZGxlTGlrZUNvbnRlbnQoY29udGVudC5pZCwgY29udGVudC5uYW1lKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxIZWFydCBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgKSl9XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L0NhcmRDb250ZW50PlxyXG4gICAgICAgICAgICA8L0NhcmQ+XHJcbiAgICAgICAgICApfVxyXG5cclxuICAgICAgICAgIHsvKiBEaXNjb3ZlcmVkIENvbnRlbnQgKi99XHJcbiAgICAgICAgICB7ZGlzY292ZXJlZENvbnRlbnQubGVuZ3RoID4gMCAmJiAoXHJcbiAgICAgICAgICAgIDxDYXJkPlxyXG4gICAgICAgICAgICAgIDxDYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8TXVzaWMgY2xhc3NOYW1lPVwidy01IGgtNVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgIFlvdXIgRGlzY292ZXJpZXNcclxuICAgICAgICAgICAgICAgIDwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICAgIDwvQ2FyZEhlYWRlcj5cclxuICAgICAgICAgICAgICA8Q2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktM1wiPlxyXG4gICAgICAgICAgICAgICAgICB7ZGlzY292ZXJlZENvbnRlbnQuc2xpY2UoMCwgNSkubWFwKChjb250ZW50KSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAga2V5PXtjb250ZW50LmlkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcC0zIGJvcmRlciByb3VuZGVkLWxnIGhvdmVyOmJnLWFjY2VudC81MCB0cmFuc2l0aW9uLWNvbG9yc1wiXHJcbiAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTEyIGgtMTIgYmctZ3JhZGllbnQtc2Vjb25kYXJ5IHJvdW5kZWQtbGcgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXJcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPE11c2ljIGNsYXNzTmFtZT1cInctNiBoLTYgdGV4dC13aGl0ZVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxoNCBjbGFzc05hbWU9XCJmb250LW1lZGl1bVwiPntjb250ZW50Lm5hbWV9PC9oND5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICBieSB7Y29udGVudC5zaGFyZWRCeX0g4oCiIHtmb3JtYXRUaW1lQWdvKGNvbnRlbnQuc2hhcmVkQXQpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cIm91dGxpbmVcIlxyXG4gICAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBvblBsYXlQbGF5bGlzdChjb250ZW50LnRyYWNrcyl9XHJcbiAgICAgICAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxQbGF5IGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgICAgPC9DYXJkPlxyXG4gICAgICAgICAgKX1cclxuICAgICAgICA8L1RhYnNDb250ZW50PlxyXG5cclxuICAgICAgICA8VGFic0NvbnRlbnQgdmFsdWU9XCJ0cmVuZGluZ1wiIGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgPENhcmQ+XHJcbiAgICAgICAgICAgIDxDYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgIDxUcmVuZGluZ1VwIGNsYXNzTmFtZT1cInctNSBoLTVcIiAvPlxyXG4gICAgICAgICAgICAgICAgQ29tbXVuaXR5IFRyZW5kaW5nXHJcbiAgICAgICAgICAgICAgPC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgIDwvQ2FyZEhlYWRlcj5cclxuICAgICAgICAgICAgPENhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgIHt0cmVuZGluZ0NvbnRlbnQubGVuZ3RoID4gMCA/IChcclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgICAgIHt0cmVuZGluZ0NvbnRlbnQubWFwKChjb250ZW50LCBpbmRleCkgPT4gKFxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXZcclxuICAgICAgICAgICAgICAgICAgICAgIGtleT17Y29udGVudC5pZH1cclxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC00IHAtNCBib3JkZXIgcm91bmRlZC1sZyBob3ZlcjpiZy1hY2NlbnQvNTAgdHJhbnNpdGlvbi1jb2xvcnNcIlxyXG4gICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgdy04IGgtOCBiZy1ncmFkaWVudC1wcmltYXJ5IHJvdW5kZWQtZnVsbCB0ZXh0LXdoaXRlIGZvbnQtYm9sZCB0ZXh0LXNtXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICN7aW5kZXggKyAxfVxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMTIgaC0xMiBiZy1ncmFkaWVudC1zZWNvbmRhcnkgcm91bmRlZC1sZyBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlclwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8VHJlbmRpbmdVcCBjbGFzc05hbWU9XCJ3LTYgaC02IHRleHQtd2hpdGVcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIG1iLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwiZm9udC1zZW1pYm9sZFwiPntjb250ZW50Lm5hbWV9PC9oMz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cIm91dGxpbmVcIiBjbGFzc05hbWU9XCJ0ZXh0LXhzXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y29udGVudC50eXBlfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvQmFkZ2U+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCBtYi0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAge2NvbnRlbnQuZGVzY3JpcHRpb259XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICBieSB7Y29udGVudC5zaGFyZWRCeX0g4oCiIHtmb3JtYXRUaW1lQWdvKGNvbnRlbnQuc2hhcmVkQXQpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTQgdGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmQgbXQtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8SGVhcnQgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y29udGVudC5saWtlc31cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxFeWUgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y29udGVudC5hY2Nlc3NDb3VudH1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y29udGVudC50YWdzLm1hcCgodGFnKSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxCYWRnZSBrZXk9e3RhZ30gdmFyaWFudD1cIm91dGxpbmVcIiBjbGFzc05hbWU9XCJ0ZXh0LXhzXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge3RhZ31cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplPVwic21cIlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uUGxheVBsYXlsaXN0KGNvbnRlbnQudHJhY2tzKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxQbGF5IGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cIm91dGxpbmVcIlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGhhbmRsZUxpa2VDb250ZW50KGNvbnRlbnQuaWQsIGNvbnRlbnQubmFtZSl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8SGVhcnQgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXIgcHktOFwiPlxyXG4gICAgICAgICAgICAgICAgICA8VHJlbmRpbmdVcCBjbGFzc05hbWU9XCJ3LTEyIGgtMTIgbXgtYXV0byBtYi00IHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIE5vIHRyZW5kaW5nIGNvbnRlbnQgeWV0LiBTaGFyZSBzb21lIHBsYXlsaXN0cyB0byBnZXQgc3RhcnRlZCFcclxuICAgICAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgIDwvQ2FyZD5cclxuICAgICAgICA8L1RhYnNDb250ZW50PlxyXG5cclxuICAgICAgICA8VGFic0NvbnRlbnQgdmFsdWU9XCJzZXNzaW9uc1wiIGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgPENhcmQ+XHJcbiAgICAgICAgICAgIDxDYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgIDxSYWRpbyBjbGFzc05hbWU9XCJ3LTUgaC01XCIgLz5cclxuICAgICAgICAgICAgICAgIExpdmUgTGlzdGVuaW5nIFNlc3Npb25zXHJcbiAgICAgICAgICAgICAgPC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgIDwvQ2FyZEhlYWRlcj5cclxuICAgICAgICAgICAgPENhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgIHthY3RpdmVTZXNzaW9ucy5sZW5ndGggPiAwID8gKFxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTRcIj5cclxuICAgICAgICAgICAgICAgICAge2FjdGl2ZVNlc3Npb25zLm1hcCgoc2Vzc2lvbikgPT4gKFxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXZcclxuICAgICAgICAgICAgICAgICAgICAgIGtleT17c2Vzc2lvbi5pZH1cclxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC00IHAtNCBib3JkZXIgcm91bmRlZC1sZyBob3ZlcjpiZy1hY2NlbnQvNTAgdHJhbnNpdGlvbi1jb2xvcnNcIlxyXG4gICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVsYXRpdmVcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTEyIGgtMTIgYmctZ3JhZGllbnQtYWNjZW50IHJvdW5kZWQtZnVsbCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlclwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxSYWRpbyBjbGFzc05hbWU9XCJ3LTYgaC02IHRleHQtd2hpdGVcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhYnNvbHV0ZSAtdG9wLTEgLXJpZ2h0LTEgdy00IGgtNCBiZy1ncmVlbi01MDAgYm9yZGVyLTIgYm9yZGVyLWJhY2tncm91bmQgcm91bmRlZC1mdWxsIGFuaW1hdGUtcHVsc2VcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIG1iLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwiZm9udC1zZW1pYm9sZFwiPntzZXNzaW9uLm5hbWV9PC9oMz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7c2Vzc2lvbi5tb29kICYmIChcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxCYWRnZSB2YXJpYW50PVwic2Vjb25kYXJ5XCIgY2xhc3NOYW1lPVwidGV4dC14c1wiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7c2Vzc2lvbi5tb29kfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9CYWRnZT5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQgbWItMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIEhvc3RlZCBieSB7c2Vzc2lvbi5ob3N0TmFtZX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC00IHRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxVc2VycyBjbGFzc05hbWU9XCJ3LTMgaC0zXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIHtzZXNzaW9uLnBhcnRpY2lwYW50cy5sZW5ndGh9IGxpc3RlbmluZ1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPENsb2NrIGNsYXNzTmFtZT1cInctMyBoLTNcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAge2Zvcm1hdFRpbWVBZ28oc2Vzc2lvbi5jcmVhdGVkQXQpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT1cInNtXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gaGFuZGxlSm9pblNlc3Npb24oc2Vzc2lvbil9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImJnLWdyZWVuLTYwMCBob3ZlcjpiZy1ncmVlbi03MDBcIlxyXG4gICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8VXNlcnMgY2xhc3NOYW1lPVwidy00IGgtNCBtci0xXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgSm9pblxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXIgcHktOFwiPlxyXG4gICAgICAgICAgICAgICAgICA8UmFkaW8gY2xhc3NOYW1lPVwidy0xMiBoLTEyIG14LWF1dG8gbWItNCB0ZXh0LW11dGVkLWZvcmVncm91bmRcIiAvPlxyXG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LW11dGVkLWZvcmVncm91bmQgbWItNFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIE5vIGFjdGl2ZSBsaXN0ZW5pbmcgc2Vzc2lvbnMgcmlnaHQgbm93LlxyXG4gICAgICAgICAgICAgICAgICA8L3A+XHJcbiAgICAgICAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiB7XHJcbiAgICAgICAgICAgICAgICAgICAgICBjcmVhdGVMaXN0ZW5pbmdTZXNzaW9uKFtdLCAnY2hpbGwnKTtcclxuICAgICAgICAgICAgICAgICAgICAgIG5vdGlmeVN1Y2Nlc3MoJ1Nlc3Npb24gQ3JlYXRlZCEnLCAnWW91ciBsaXN0ZW5pbmcgc2Vzc2lvbiBpcyBub3cgbGl2ZScpO1xyXG4gICAgICAgICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICA8UmFkaW8gY2xhc3NOYW1lPVwidy00IGgtNCBtci0yXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICBTdGFydCBhIFNlc3Npb25cclxuICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICA8L0NhcmRDb250ZW50PlxyXG4gICAgICAgICAgPC9DYXJkPlxyXG4gICAgICAgIDwvVGFic0NvbnRlbnQ+XHJcblxyXG4gICAgICAgIDxUYWJzQ29udGVudCB2YWx1ZT1cInJlY2VudFwiIGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgPENhcmQ+XHJcbiAgICAgICAgICAgIDxDYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgIDxDbG9jayBjbGFzc05hbWU9XCJ3LTUgaC01XCIgLz5cclxuICAgICAgICAgICAgICAgIFJlY2VudCBDb25uZWN0aW9uc1xyXG4gICAgICAgICAgICAgIDwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgIDxDYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICB7cmVjZW50Q29ubmVjdGlvbnMubGVuZ3RoID4gMCA/IChcclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0zXCI+XHJcbiAgICAgICAgICAgICAgICAgIHtyZWNlbnRDb25uZWN0aW9ucy5tYXAoKGNvbm5lY3Rpb24sIGluZGV4KSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAga2V5PXtpbmRleH1cclxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHAtMyBib3JkZXIgcm91bmRlZC1sZ1wiXHJcbiAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPEF2YXRhcj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPEF2YXRhckZhbGxiYWNrPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHtjb25uZWN0aW9uLnNsaWNlKDAsIDIpLnRvVXBwZXJDYXNlKCl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvQXZhdGFyRmFsbGJhY2s+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L0F2YXRhcj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtXCI+e2Nvbm5lY3Rpb259PC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIFJlY2VudCBsaXN0ZW5pbmcgcGFydG5lclxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgKSl9XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBweS04XCI+XHJcbiAgICAgICAgICAgICAgICAgIDxVc2VycyBjbGFzc05hbWU9XCJ3LTEyIGgtMTIgbXgtYXV0byBtYi00IHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIE5vIHJlY2VudCBjb25uZWN0aW9ucy4gSm9pbiBhIGxpc3RlbmluZyBzZXNzaW9uIHRvIGNvbm5lY3Qgd2l0aCBvdGhlcnMhXHJcbiAgICAgICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICA8L0NhcmQ+XHJcbiAgICAgICAgPC9UYWJzQ29udGVudD5cclxuICAgICAgPC9UYWJzPlxyXG4gICAgPC9kaXY+XHJcbiAgKTtcclxufTtcclxuIl0sIm5hbWVzIjpbInVzZVN0YXRlIiwidXNlRWZmZWN0IiwiQ2FyZCIsIkNhcmRDb250ZW50IiwiQ2FyZEhlYWRlciIsIkNhcmRUaXRsZSIsIkJ1dHRvbiIsIkJhZGdlIiwiVGFicyIsIlRhYnNDb250ZW50IiwiVGFic0xpc3QiLCJUYWJzVHJpZ2dlciIsIkF2YXRhciIsIkF2YXRhckZhbGxiYWNrIiwiVXNlcnMiLCJIZWFydCIsIlBsYXkiLCJUcmVuZGluZ1VwIiwiQ2xvY2siLCJNdXNpYyIsIlN0YXIiLCJSYWRpbyIsIlVzZXIiLCJFeWUiLCJ1c2VMb2NhbFNvY2lhbEZlYXR1cmVzIiwidXNlRW5oYW5jZWROb3RpZmljYXRpb25zIiwidXNlSWRlbnRpdHlDb250ZXh0IiwiSWRlbnRpdHlBdmF0YXJMYXJnZSIsIkxvYWRpbmdTdGF0ZSIsIkxvY2FsU29jaWFsRGlzY292ZXJ5Iiwib25QbGF5UGxheWxpc3QiLCJvbkFkZFRvTGlicmFyeSIsInVzZXJQbGF5bGlzdHMiLCJ1c2VyRmF2b3JpdGVzIiwidXNlciIsImRpc2NvdmVyZWRDb250ZW50IiwidHJlbmRpbmdDb250ZW50IiwicmVjZW50Q29ubmVjdGlvbnMiLCJhY3RpdmVTZXNzaW9ucyIsImxpa2VDb250ZW50IiwidXBkYXRlVXNlclByb2ZpbGUiLCJnZW5lcmF0ZVJlY29tbWVuZGF0aW9ucyIsImNyZWF0ZUxpc3RlbmluZ1Nlc3Npb24iLCJub3RpZnlTdWNjZXNzIiwiaWRlbnRpdHkiLCJpc0xvYWRpbmciLCJzZXRJc0xvYWRpbmciLCJyZWNvbW1lbmRhdGlvbnMiLCJzZXRSZWNvbW1lbmRhdGlvbnMiLCJpbml0IiwicmVjcyIsImhhbmRsZUxpa2VDb250ZW50IiwiY29udGVudElkIiwiY29udGVudE5hbWUiLCJoYW5kbGVKb2luU2Vzc2lvbiIsInNlc3Npb24iLCJuYW1lIiwiZm9ybWF0VGltZUFnbyIsImRhdGUiLCJub3ciLCJEYXRlIiwiZGlmZiIsImdldFRpbWUiLCJtaW51dGVzIiwiTWF0aCIsImZsb29yIiwiaG91cnMiLCJkYXlzIiwiZGl2IiwiY2xhc3NOYW1lIiwidHlwZSIsIm1lc3NhZ2UiLCJzZWVkIiwiYXZhdGFyU2VlZCIsImFuaW1hdGUiLCJoMyIsImRpc3BsYXlOYW1lIiwicCIsInNlc3Npb25Db3VudCIsInZhcmlhbnQiLCJkZWZhdWx0VmFsdWUiLCJ2YWx1ZSIsImxlbmd0aCIsInVsIiwibGkiLCJtYXAiLCJjb250ZW50IiwidGFncyIsImpvaW4iLCJzaGFyZWRCeSIsInNoYXJlZEF0Iiwic3BhbiIsImxpa2VzIiwiYWNjZXNzQ291bnQiLCJzaXplIiwib25DbGljayIsInRyYWNrcyIsImlkIiwic2xpY2UiLCJoNCIsImluZGV4IiwiZGVzY3JpcHRpb24iLCJ0YWciLCJtb29kIiwiaG9zdE5hbWUiLCJwYXJ0aWNpcGFudHMiLCJjcmVhdGVkQXQiLCJjb25uZWN0aW9uIiwidG9VcHBlckNhc2UiXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLFNBQVNBLFFBQVEsRUFBRUMsU0FBUyxRQUFRLFFBQVE7QUFDNUMsU0FBU0MsSUFBSSxFQUFFQyxXQUFXLEVBQUVDLFVBQVUsRUFBRUMsU0FBUyxRQUFRLHVCQUF1QjtB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

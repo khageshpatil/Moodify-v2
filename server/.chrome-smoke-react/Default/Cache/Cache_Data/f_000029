@@ -1,0 +1,1857 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/PremiumAudioControls.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/PremiumAudioControls.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"];
+import { Card, CardContent, CardHeader, CardTitle } from "/src/components/ui/card.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Slider } from "/src/components/ui/slider.tsx";
+import { Switch } from "/src/components/ui/switch.tsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "/src/components/ui/tabs.tsx";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "/src/components/ui/select.tsx";
+import { Sliders, Waves, Music, Timer, Gauge, Headphones, Settings, RotateCcw, Play } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { useEnhancedAudioEngine } from "/src/hooks/useEnhancedAudioEngine.ts";
+export const PremiumAudioControls = ({ isOpen, onClose })=>{
+    _s();
+    const { effects, settings, applyEQPreset, updateBassBoost, setPlaybackSpeed, visualizerData } = useEnhancedAudioEngine();
+    const [sleepTimer, setSleepTimer] = useState(0);
+    const [customEQBands, setCustomEQBands] = useState(effects.equalizer.bands);
+    if (!isOpen) return null;
+    const handleEQBandChange = (bandIndex, value)=>{
+        const newBands = [
+            ...customEQBands
+        ];
+        newBands[bandIndex] = value;
+        setCustomEQBands(newBands);
+    };
+    const eqFrequencies = [
+        '32Hz',
+        '64Hz',
+        '125Hz',
+        '250Hz',
+        '500Hz',
+        '1kHz',
+        '2kHz',
+        '4kHz',
+        '8kHz',
+        '16kHz'
+    ];
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4",
+        children: /*#__PURE__*/ _jsxDEV(Card, {
+            className: "w-full max-w-4xl max-h-[90vh] overflow-hidden",
+            children: [
+                /*#__PURE__*/ _jsxDEV(CardHeader, {
+                    className: "flex flex-row items-center justify-between",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV(CardTitle, {
+                            className: "flex items-center gap-2",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(Headphones, {
+                                    className: "w-5 h-5"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                    lineNumber: 57,
+                                    columnNumber: 13
+                                }, this),
+                                "Premium Audio Controls"
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                            lineNumber: 56,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(Button, {
+                            variant: "ghost",
+                            size: "sm",
+                            onClick: onClose,
+                            children: "✕"
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                            lineNumber: 60,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                    lineNumber: 55,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ _jsxDEV(CardContent, {
+                    className: "overflow-y-auto",
+                    children: /*#__PURE__*/ _jsxDEV(Tabs, {
+                        defaultValue: "equalizer",
+                        className: "w-full",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(TabsList, {
+                                className: "grid w-full grid-cols-5",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                        value: "equalizer",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Sliders, {
+                                                className: "w-4 h-4 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 69,
+                                                columnNumber: 17
+                                            }, this),
+                                            "EQ"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 68,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                        value: "effects",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Waves, {
+                                                className: "w-4 h-4 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 73,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Effects"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 72,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                        value: "playback",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Play, {
+                                                className: "w-4 h-4 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 77,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Playback"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 76,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                        value: "visualizer",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Music, {
+                                                className: "w-4 h-4 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 81,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Visualizer"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 80,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(TabsTrigger, {
+                                        value: "advanced",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Settings, {
+                                                className: "w-4 h-4 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 85,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Advanced"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 84,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                lineNumber: 67,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsContent, {
+                                value: "equalizer",
+                                className: "space-y-6",
+                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex items-center justify-between mb-4",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("h3", {
+                                                    className: "text-lg font-semibold",
+                                                    children: "10-Band Equalizer"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 94,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Switch, {
+                                                            checked: effects.equalizer.enabled,
+                                                            onCheckedChange: (enabled)=>{
+                                                            // Update equalizer enabled state
+                                                            }
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 96,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                            className: "text-sm",
+                                                            children: "Enabled"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 102,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 95,
+                                                    columnNumber: 19
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                            lineNumber: 93,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "mb-6",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("label", {
+                                                    className: "text-sm font-medium mb-2 block",
+                                                    children: "Presets"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 108,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex flex-wrap gap-2",
+                                                    children: [
+                                                        'flat',
+                                                        'rock',
+                                                        'pop',
+                                                        'jazz',
+                                                        'classical',
+                                                        'electronic'
+                                                    ].map((preset)=>/*#__PURE__*/ _jsxDEV(Button, {
+                                                            variant: effects.equalizer.presets === preset ? 'default' : 'outline',
+                                                            size: "sm",
+                                                            onClick: ()=>applyEQPreset(preset),
+                                                            className: "capitalize",
+                                                            children: preset
+                                                        }, preset, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 111,
+                                                            columnNumber: 23
+                                                        }, this))
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 109,
+                                                    columnNumber: 19
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                            lineNumber: 107,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "grid grid-cols-5 md:grid-cols-10 gap-4",
+                                            children: eqFrequencies.map((freq, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex flex-col items-center space-y-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "h-32 flex items-end",
+                                                            children: /*#__PURE__*/ _jsxDEV(Slider, {
+                                                                orientation: "vertical",
+                                                                value: [
+                                                                    customEQBands[index]
+                                                                ],
+                                                                onValueChange: ([value])=>handleEQBandChange(index, value),
+                                                                max: 12,
+                                                                min: -12,
+                                                                step: 0.5,
+                                                                className: "h-full"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 129,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 128,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                            className: "text-xs font-mono",
+                                                            children: freq
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 139,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                            className: "text-xs text-muted-foreground",
+                                                            children: [
+                                                                customEQBands[index] > 0 ? '+' : '',
+                                                                customEQBands[index],
+                                                                "dB"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 140,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, freq, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 127,
+                                                    columnNumber: 21
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                            lineNumber: 125,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex gap-2 mt-4",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    variant: "outline",
+                                                    size: "sm",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(RotateCcw, {
+                                                            className: "w-4 h-4 mr-2"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 149,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        "Reset"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 148,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    size: "sm",
+                                                    children: "Save Custom"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 152,
+                                                    columnNumber: 19
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                            lineNumber: 147,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                    lineNumber: 92,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                lineNumber: 91,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsContent, {
+                                value: "effects",
+                                className: "space-y-6",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                className: "pb-3",
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center justify-between",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                            className: "text-base",
+                                                            children: "Bass Boost"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 165,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Switch, {
+                                                            checked: effects.bassBoost.enabled,
+                                                            onCheckedChange: (enabled)=>{
+                                                            // Update bass boost enabled state
+                                                            }
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 166,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 164,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 163,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "space-y-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex justify-between text-sm",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: "Level"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 177,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: [
+                                                                        effects.bassBoost.level,
+                                                                        "%"
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 178,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 176,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Slider, {
+                                                            value: [
+                                                                effects.bassBoost.level
+                                                            ],
+                                                            onValueChange: ([value])=>updateBassBoost(value),
+                                                            max: 100,
+                                                            step: 1,
+                                                            className: "w-full"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 180,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 175,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 174,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 162,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                className: "pb-3",
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center justify-between",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                            className: "text-base",
+                                                            children: "Virtual Surround"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 195,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Switch, {
+                                                            checked: effects.virtualSurround.enabled,
+                                                            onCheckedChange: (enabled)=>{
+                                                            // Update virtual surround enabled state
+                                                            }
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 196,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 194,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 193,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "space-y-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex justify-between text-sm",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: "Spaciousness"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 207,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: [
+                                                                        effects.virtualSurround.level,
+                                                                        "%"
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 208,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 206,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Slider, {
+                                                            value: [
+                                                                effects.virtualSurround.level
+                                                            ],
+                                                            onValueChange: ([value])=>{
+                                                            // Update virtual surround level
+                                                            },
+                                                            max: 100,
+                                                            step: 1,
+                                                            className: "w-full"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 210,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 205,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 204,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 192,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                className: "pb-3",
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center justify-between",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                            className: "text-base",
+                                                            children: "Reverb"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 227,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Switch, {
+                                                            checked: effects.reverb.enabled,
+                                                            onCheckedChange: (enabled)=>{
+                                                            // Update reverb enabled state
+                                                            }
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 228,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 226,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 225,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                className: "space-y-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("label", {
+                                                                className: "text-sm font-medium mb-2 block",
+                                                                children: "Type"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 238,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Select, {
+                                                                value: effects.reverb.type,
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(SelectTrigger, {
+                                                                        children: /*#__PURE__*/ _jsxDEV(SelectValue, {}, void 0, false, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                            lineNumber: 241,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 240,
+                                                                        columnNumber: 23
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV(SelectContent, {
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "hall",
+                                                                                children: "Concert Hall"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 244,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "room",
+                                                                                children: "Room"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 245,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "cathedral",
+                                                                                children: "Cathedral"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 246,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "plate",
+                                                                                children: "Plate"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 247,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "spring",
+                                                                                children: "Spring"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 248,
+                                                                                columnNumber: 25
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 243,
+                                                                        columnNumber: 23
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 239,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 237,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "space-y-2",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "flex justify-between text-sm",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                                        children: "Wetness"
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 254,
+                                                                        columnNumber: 23
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                                        children: [
+                                                                            effects.reverb.wetness,
+                                                                            "%"
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 255,
+                                                                        columnNumber: 23
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 253,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Slider, {
+                                                                value: [
+                                                                    effects.reverb.wetness
+                                                                ],
+                                                                onValueChange: ([value])=>{
+                                                                // Update reverb wetness
+                                                                },
+                                                                max: 100,
+                                                                step: 1,
+                                                                className: "w-full"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 257,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 252,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 236,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 224,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                lineNumber: 160,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsContent, {
+                                value: "playback",
+                                className: "space-y-6",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                className: "pb-3",
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base flex items-center gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Gauge, {
+                                                            className: "w-4 h-4"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 277,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        "Playback Speed"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 276,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 275,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "space-y-4",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex justify-between text-sm",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: "Speed"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 284,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: [
+                                                                        settings.playbackSpeed,
+                                                                        "x"
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 285,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 283,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Slider, {
+                                                            value: [
+                                                                settings.playbackSpeed
+                                                            ],
+                                                            onValueChange: ([value])=>setPlaybackSpeed(value),
+                                                            min: 0.5,
+                                                            max: 2.0,
+                                                            step: 0.1,
+                                                            className: "w-full"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 287,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex justify-between text-xs text-muted-foreground",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: "0.5x"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 296,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: "1.0x"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 297,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: "2.0x"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 298,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 295,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 282,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 281,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 274,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                className: "pb-3",
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base",
+                                                    children: "Crossfade"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 307,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 306,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "space-y-4",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex justify-between text-sm",
+                                                            children: [
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: "Duration"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 312,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                                    children: [
+                                                                        settings.crossfadeDuration,
+                                                                        "s"
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 313,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 311,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV(Slider, {
+                                                            value: [
+                                                                settings.crossfadeDuration
+                                                            ],
+                                                            onValueChange: ([value])=>{
+                                                            // Update crossfade duration
+                                                            },
+                                                            max: 10,
+                                                            min: 0,
+                                                            step: 0.5,
+                                                            className: "w-full"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 315,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 310,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 309,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 305,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                className: "pb-3",
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base flex items-center gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Timer, {
+                                                            className: "w-4 h-4"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 333,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        "Sleep Timer"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 332,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 331,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "space-y-4",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "grid grid-cols-4 gap-2",
+                                                            children: [
+                                                                0,
+                                                                15,
+                                                                30,
+                                                                60
+                                                            ].map((minutes)=>/*#__PURE__*/ _jsxDEV(Button, {
+                                                                    variant: sleepTimer === minutes ? 'default' : 'outline',
+                                                                    size: "sm",
+                                                                    onClick: ()=>setSleepTimer(minutes),
+                                                                    children: minutes === 0 ? 'Off' : `${minutes}m`
+                                                                }, minutes, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                    lineNumber: 341,
+                                                                    columnNumber: 25
+                                                                }, this))
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 339,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        sleepTimer > 0 && /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "text-sm text-muted-foreground text-center",
+                                                            children: [
+                                                                "Music will stop in ",
+                                                                sleepTimer,
+                                                                " minutes"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 352,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 338,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 337,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 330,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                className: "pb-3",
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base",
+                                                    children: "Settings"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 363,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 362,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                className: "space-y-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Gapless Playback"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 367,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {
+                                                                checked: settings.gaplessPlayback
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 368,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 366,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Normalize Volume"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 371,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {
+                                                                checked: settings.normalizeVolume
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 372,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 370,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Fade In/Out"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 375,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {
+                                                                checked: settings.fadeInOut
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 376,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 374,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Replay Gain"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 379,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {
+                                                                checked: settings.replayGain
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 380,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 378,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 365,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 361,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                lineNumber: 272,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsContent, {
+                                value: "visualizer",
+                                className: "space-y-6",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base",
+                                                    children: "Audio Spectrum"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 390,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 389,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "h-32 bg-gradient-to-t from-primary/20 to-primary/5 rounded-lg p-4 flex items-end justify-center gap-1",
+                                                    children: Array.from({
+                                                        length: 32
+                                                    }, (_, i)=>{
+                                                        const height = visualizerData[i * 8] || 0;
+                                                        return /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "bg-gradient-to-t from-primary to-primary/60 rounded-sm transition-all duration-75",
+                                                            style: {
+                                                                width: '6px',
+                                                                height: `${Math.max(2, height / 255 * 100)}px`
+                                                            }
+                                                        }, i, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                            lineNumber: 397,
+                                                            columnNumber: 25
+                                                        }, this);
+                                                    })
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 393,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 392,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 388,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base",
+                                                    children: "Visualizer Settings"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 413,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 412,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                className: "space-y-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Show Visualizer"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 417,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {}, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 418,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 416,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Full Screen Mode"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 421,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {}, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 422,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 420,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("label", {
+                                                                className: "text-sm font-medium mb-2 block",
+                                                                children: "Style"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 425,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Select, {
+                                                                defaultValue: "bars",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(SelectTrigger, {
+                                                                        children: /*#__PURE__*/ _jsxDEV(SelectValue, {}, void 0, false, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                            lineNumber: 428,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 427,
+                                                                        columnNumber: 23
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV(SelectContent, {
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "bars",
+                                                                                children: "Bars"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 431,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "wave",
+                                                                                children: "Wave"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 432,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "circular",
+                                                                                children: "Circular"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 433,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "particles",
+                                                                                children: "Particles"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 434,
+                                                                                columnNumber: 25
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 430,
+                                                                        columnNumber: 23
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 426,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 424,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 415,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 411,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                lineNumber: 387,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV(TabsContent, {
+                                value: "advanced",
+                                className: "space-y-6",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base",
+                                                    children: "Audio Quality"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 446,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 445,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                className: "space-y-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("label", {
+                                                                className: "text-sm font-medium mb-2 block",
+                                                                children: "Sample Rate"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 450,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Select, {
+                                                                defaultValue: "44100",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(SelectTrigger, {
+                                                                        children: /*#__PURE__*/ _jsxDEV(SelectValue, {}, void 0, false, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                            lineNumber: 453,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 452,
+                                                                        columnNumber: 23
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV(SelectContent, {
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "44100",
+                                                                                children: "44.1 kHz"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 456,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "48000",
+                                                                                children: "48 kHz"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 457,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "96000",
+                                                                                children: "96 kHz"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 458,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "192000",
+                                                                                children: "192 kHz"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 459,
+                                                                                columnNumber: 25
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 455,
+                                                                        columnNumber: 23
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 451,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 449,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("label", {
+                                                                className: "text-sm font-medium mb-2 block",
+                                                                children: "Bit Depth"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 464,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Select, {
+                                                                defaultValue: "16",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(SelectTrigger, {
+                                                                        children: /*#__PURE__*/ _jsxDEV(SelectValue, {}, void 0, false, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                            lineNumber: 467,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 466,
+                                                                        columnNumber: 23
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV(SelectContent, {
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "16",
+                                                                                children: "16-bit"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 470,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "24",
+                                                                                children: "24-bit"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 471,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "32",
+                                                                                children: "32-bit"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 472,
+                                                                                columnNumber: 25
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 469,
+                                                                        columnNumber: 23
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 465,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 463,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 448,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 444,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base",
+                                                    children: "Performance"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 481,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 480,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                className: "space-y-4",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Hardware Acceleration"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 485,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {
+                                                                defaultChecked: true
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 486,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 484,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Low Latency Mode"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 489,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Switch, {}, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 490,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 488,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center justify-between",
+                                                        children: [
+                                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                                className: "text-sm",
+                                                                children: "Audio Buffer Size"
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 493,
+                                                                columnNumber: 21
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV(Select, {
+                                                                defaultValue: "512",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV(SelectTrigger, {
+                                                                        className: "w-24",
+                                                                        children: /*#__PURE__*/ _jsxDEV(SelectValue, {}, void 0, false, {
+                                                                            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                            lineNumber: 496,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 495,
+                                                                        columnNumber: 23
+                                                                    }, this),
+                                                                    /*#__PURE__*/ _jsxDEV(SelectContent, {
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "128",
+                                                                                children: "128"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 499,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "256",
+                                                                                children: "256"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 500,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "512",
+                                                                                children: "512"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 501,
+                                                                                columnNumber: 25
+                                                                            }, this),
+                                                                            /*#__PURE__*/ _jsxDEV(SelectItem, {
+                                                                                value: "1024",
+                                                                                children: "1024"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                                lineNumber: 502,
+                                                                                columnNumber: 25
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                        lineNumber: 498,
+                                                                        columnNumber: 23
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                                lineNumber: 494,
+                                                                columnNumber: 21
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 492,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 483,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 479,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV(Card, {
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(CardHeader, {
+                                                children: /*#__PURE__*/ _jsxDEV(CardTitle, {
+                                                    className: "text-base",
+                                                    children: "Reset Options"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                    lineNumber: 511,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 510,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV(CardContent, {
+                                                className: "space-y-2",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        variant: "outline",
+                                                        className: "w-full",
+                                                        children: "Reset Audio Settings"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 514,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        variant: "outline",
+                                                        className: "w-full",
+                                                        children: "Reset All Effects"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 517,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV(Button, {
+                                                        variant: "destructive",
+                                                        className: "w-full",
+                                                        children: "Factory Reset"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                        lineNumber: 520,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                                lineNumber: 513,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                        lineNumber: 509,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                                lineNumber: 443,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                        lineNumber: 66,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+                    lineNumber: 65,
+                    columnNumber: 9
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+            lineNumber: 54,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/PremiumAudioControls.tsx",
+        lineNumber: 53,
+        columnNumber: 5
+    }, this);
+};
+_s(PremiumAudioControls, "w+bWyyvisI/fAEJ2YFyIAAGI1JA=", false, function() {
+    return [
+        useEnhancedAudioEngine
+    ];
+});
+_c = PremiumAudioControls;
+var _c;
+$RefreshReg$(_c, "PremiumAudioControls");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/PremiumAudioControls.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/PremiumAudioControls.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlByZW1pdW1BdWRpb0NvbnRyb2xzLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VTdGF0ZSB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgQ2FyZCwgQ2FyZENvbnRlbnQsIENhcmRIZWFkZXIsIENhcmRUaXRsZSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9jYXJkJztcclxuaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2J1dHRvbic7XHJcbmltcG9ydCB7IFNsaWRlciB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9zbGlkZXInO1xyXG5pbXBvcnQgeyBTd2l0Y2ggfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvc3dpdGNoJztcclxuaW1wb3J0IHsgQmFkZ2UgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvYmFkZ2UnO1xyXG5pbXBvcnQgeyBUYWJzLCBUYWJzQ29udGVudCwgVGFic0xpc3QsIFRhYnNUcmlnZ2VyIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL3RhYnMnO1xyXG5pbXBvcnQgeyBTZWxlY3QsIFNlbGVjdENvbnRlbnQsIFNlbGVjdEl0ZW0sIFNlbGVjdFRyaWdnZXIsIFNlbGVjdFZhbHVlIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL3NlbGVjdCc7XHJcbmltcG9ydCB7IFxyXG4gIFNsaWRlcnMsIFxyXG4gIFZvbHVtZTIsIFxyXG4gIFdhdmVzLCBcclxuICBNdXNpYywgXHJcbiAgWmFwLCBcclxuICBUaW1lciwgXHJcbiAgR2F1Z2UsXHJcbiAgSGVhZHBob25lcyxcclxuICBTZXR0aW5ncyxcclxuICBSb3RhdGVDY3csXHJcbiAgUGxheVxyXG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XHJcbmltcG9ydCB7IHVzZUVuaGFuY2VkQXVkaW9FbmdpbmUgfSBmcm9tICdAL2hvb2tzL3VzZUVuaGFuY2VkQXVkaW9FbmdpbmUnO1xyXG5cclxuaW50ZXJmYWNlIFByZW1pdW1BdWRpb0NvbnRyb2xzUHJvcHMge1xyXG4gIGlzT3BlbjogYm9vbGVhbjtcclxuICBvbkNsb3NlOiAoKSA9PiB2b2lkO1xyXG59XHJcblxyXG5leHBvcnQgY29uc3QgUHJlbWl1bUF1ZGlvQ29udHJvbHMgPSAoeyBpc09wZW4sIG9uQ2xvc2UgfTogUHJlbWl1bUF1ZGlvQ29udHJvbHNQcm9wcykgPT4ge1xyXG4gIGNvbnN0IHtcclxuICAgIGVmZmVjdHMsXHJcbiAgICBzZXR0aW5ncyxcclxuICAgIGFwcGx5RVFQcmVzZXQsXHJcbiAgICB1cGRhdGVCYXNzQm9vc3QsXHJcbiAgICBzZXRQbGF5YmFja1NwZWVkLFxyXG4gICAgdmlzdWFsaXplckRhdGEsXHJcbiAgfSA9IHVzZUVuaGFuY2VkQXVkaW9FbmdpbmUoKTtcclxuXHJcbiAgY29uc3QgW3NsZWVwVGltZXIsIHNldFNsZWVwVGltZXJdID0gdXNlU3RhdGUoMCk7XHJcbiAgY29uc3QgW2N1c3RvbUVRQmFuZHMsIHNldEN1c3RvbUVRQmFuZHNdID0gdXNlU3RhdGUoZWZmZWN0cy5lcXVhbGl6ZXIuYmFuZHMpO1xyXG5cclxuICBpZiAoIWlzT3BlbikgcmV0dXJuIG51bGw7XHJcblxyXG4gIGNvbnN0IGhhbmRsZUVRQmFuZENoYW5nZSA9IChiYW5kSW5kZXg6IG51bWJlciwgdmFsdWU6IG51bWJlcikgPT4ge1xyXG4gICAgY29uc3QgbmV3QmFuZHMgPSBbLi4uY3VzdG9tRVFCYW5kc107XHJcbiAgICBuZXdCYW5kc1tiYW5kSW5kZXhdID0gdmFsdWU7XHJcbiAgICBzZXRDdXN0b21FUUJhbmRzKG5ld0JhbmRzKTtcclxuICB9O1xyXG5cclxuICBjb25zdCBlcUZyZXF1ZW5jaWVzID0gWyczMkh6JywgJzY0SHonLCAnMTI1SHonLCAnMjUwSHonLCAnNTAwSHonLCAnMWtIeicsICcya0h6JywgJzRrSHonLCAnOGtIeicsICcxNmtIeiddO1xyXG5cclxuICByZXR1cm4gKFxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJmaXhlZCBpbnNldC0wIHotNTAgYmctYmxhY2svNTAgYmFja2Ryb3AtYmx1ci1zbSBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBwLTRcIj5cclxuICAgICAgPENhcmQgY2xhc3NOYW1lPVwidy1mdWxsIG1heC13LTR4bCBtYXgtaC1bOTB2aF0gb3ZlcmZsb3ctaGlkZGVuXCI+XHJcbiAgICAgICAgPENhcmRIZWFkZXIgY2xhc3NOYW1lPVwiZmxleCBmbGV4LXJvdyBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICA8Q2FyZFRpdGxlIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICAgIDxIZWFkcGhvbmVzIGNsYXNzTmFtZT1cInctNSBoLTVcIiAvPlxyXG4gICAgICAgICAgICBQcmVtaXVtIEF1ZGlvIENvbnRyb2xzXHJcbiAgICAgICAgICA8L0NhcmRUaXRsZT5cclxuICAgICAgICAgIDxCdXR0b24gdmFyaWFudD1cImdob3N0XCIgc2l6ZT1cInNtXCIgb25DbGljaz17b25DbG9zZX0+XHJcbiAgICAgICAgICAgIOKclVxyXG4gICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgIFxyXG4gICAgICAgIDxDYXJkQ29udGVudCBjbGFzc05hbWU9XCJvdmVyZmxvdy15LWF1dG9cIj5cclxuICAgICAgICAgIDxUYWJzIGRlZmF1bHRWYWx1ZT1cImVxdWFsaXplclwiIGNsYXNzTmFtZT1cInctZnVsbFwiPlxyXG4gICAgICAgICAgICA8VGFic0xpc3QgY2xhc3NOYW1lPVwiZ3JpZCB3LWZ1bGwgZ3JpZC1jb2xzLTVcIj5cclxuICAgICAgICAgICAgICA8VGFic1RyaWdnZXIgdmFsdWU9XCJlcXVhbGl6ZXJcIj5cclxuICAgICAgICAgICAgICAgIDxTbGlkZXJzIGNsYXNzTmFtZT1cInctNCBoLTQgbXItMlwiIC8+XHJcbiAgICAgICAgICAgICAgICBFUVxyXG4gICAgICAgICAgICAgIDwvVGFic1RyaWdnZXI+XHJcbiAgICAgICAgICAgICAgPFRhYnNUcmlnZ2VyIHZhbHVlPVwiZWZmZWN0c1wiPlxyXG4gICAgICAgICAgICAgICAgPFdhdmVzIGNsYXNzTmFtZT1cInctNCBoLTQgbXItMlwiIC8+XHJcbiAgICAgICAgICAgICAgICBFZmZlY3RzXHJcbiAgICAgICAgICAgICAgPC9UYWJzVHJpZ2dlcj5cclxuICAgICAgICAgICAgICA8VGFic1RyaWdnZXIgdmFsdWU9XCJwbGF5YmFja1wiPlxyXG4gICAgICAgICAgICAgICAgPFBsYXkgY2xhc3NOYW1lPVwidy00IGgtNCBtci0yXCIgLz5cclxuICAgICAgICAgICAgICAgIFBsYXliYWNrXHJcbiAgICAgICAgICAgICAgPC9UYWJzVHJpZ2dlcj5cclxuICAgICAgICAgICAgICA8VGFic1RyaWdnZXIgdmFsdWU9XCJ2aXN1YWxpemVyXCI+XHJcbiAgICAgICAgICAgICAgICA8TXVzaWMgY2xhc3NOYW1lPVwidy00IGgtNCBtci0yXCIgLz5cclxuICAgICAgICAgICAgICAgIFZpc3VhbGl6ZXJcclxuICAgICAgICAgICAgICA8L1RhYnNUcmlnZ2VyPlxyXG4gICAgICAgICAgICAgIDxUYWJzVHJpZ2dlciB2YWx1ZT1cImFkdmFuY2VkXCI+XHJcbiAgICAgICAgICAgICAgICA8U2V0dGluZ3MgY2xhc3NOYW1lPVwidy00IGgtNCBtci0yXCIgLz5cclxuICAgICAgICAgICAgICAgIEFkdmFuY2VkXHJcbiAgICAgICAgICAgICAgPC9UYWJzVHJpZ2dlcj5cclxuICAgICAgICAgICAgPC9UYWJzTGlzdD5cclxuXHJcbiAgICAgICAgICAgIHsvKiBFcXVhbGl6ZXIgVGFiICovfVxyXG4gICAgICAgICAgICA8VGFic0NvbnRlbnQgdmFsdWU9XCJlcXVhbGl6ZXJcIiBjbGFzc05hbWU9XCJzcGFjZS15LTZcIj5cclxuICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gbWItNFwiPlxyXG4gICAgICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwidGV4dC1sZyBmb250LXNlbWlib2xkXCI+MTAtQmFuZCBFcXVhbGl6ZXI8L2gzPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPFN3aXRjaCBcclxuICAgICAgICAgICAgICAgICAgICAgIGNoZWNrZWQ9e2VmZmVjdHMuZXF1YWxpemVyLmVuYWJsZWR9XHJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNoZWNrZWRDaGFuZ2U9eyhlbmFibGVkKSA9PiB7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIC8vIFVwZGF0ZSBlcXVhbGl6ZXIgZW5hYmxlZCBzdGF0ZVxyXG4gICAgICAgICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAgICAgICAvPlxyXG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc21cIj5FbmFibGVkPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICAgIHsvKiBFUSBQcmVzZXRzICovfVxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtYi02XCI+XHJcbiAgICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtIG1iLTIgYmxvY2tcIj5QcmVzZXRzPC9sYWJlbD5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtd3JhcCBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHtbJ2ZsYXQnLCAncm9jaycsICdwb3AnLCAnamF6eicsICdjbGFzc2ljYWwnLCAnZWxlY3Ryb25pYyddLm1hcCgocHJlc2V0KSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIGtleT17cHJlc2V0fVxyXG4gICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PXtlZmZlY3RzLmVxdWFsaXplci5wcmVzZXRzID09PSBwcmVzZXQgPyAnZGVmYXVsdCcgOiAnb3V0bGluZSd9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGFwcGx5RVFQcmVzZXQocHJlc2V0KX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiY2FwaXRhbGl6ZVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIHtwcmVzZXR9XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgICApKX1cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgICAgICB7LyogRVEgU2xpZGVycyAqL31cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBncmlkLWNvbHMtNSBtZDpncmlkLWNvbHMtMTAgZ2FwLTRcIj5cclxuICAgICAgICAgICAgICAgICAge2VxRnJlcXVlbmNpZXMubWFwKChmcmVxLCBpbmRleCkgPT4gKFxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYga2V5PXtmcmVxfSBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGl0ZW1zLWNlbnRlciBzcGFjZS15LTJcIj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiaC0zMiBmbGV4IGl0ZW1zLWVuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2xpZGVyXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb3JpZW50YXRpb249XCJ2ZXJ0aWNhbFwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgdmFsdWU9e1tjdXN0b21FUUJhbmRzW2luZGV4XV19XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25WYWx1ZUNoYW5nZT17KFt2YWx1ZV0pID0+IGhhbmRsZUVRQmFuZENoYW5nZShpbmRleCwgdmFsdWUpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIG1heD17MTJ9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgbWluPXstMTJ9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgc3RlcD17MC41fVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImgtZnVsbFwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1tb25vXCI+e2ZyZXF9PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAge2N1c3RvbUVRQmFuZHNbaW5kZXhdID4gMCA/ICcrJyA6ICcnfXtjdXN0b21FUUJhbmRzW2luZGV4XX1kQlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICApKX1cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMiBtdC00XCI+XHJcbiAgICAgICAgICAgICAgICAgIDxCdXR0b24gdmFyaWFudD1cIm91dGxpbmVcIiBzaXplPVwic21cIj5cclxuICAgICAgICAgICAgICAgICAgICA8Um90YXRlQ2N3IGNsYXNzTmFtZT1cInctNCBoLTQgbXItMlwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgUmVzZXRcclxuICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICAgIDxCdXR0b24gc2l6ZT1cInNtXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgU2F2ZSBDdXN0b21cclxuICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9UYWJzQ29udGVudD5cclxuXHJcbiAgICAgICAgICAgIHsvKiBFZmZlY3RzIFRhYiAqL31cclxuICAgICAgICAgICAgPFRhYnNDb250ZW50IHZhbHVlPVwiZWZmZWN0c1wiIGNsYXNzTmFtZT1cInNwYWNlLXktNlwiPlxyXG4gICAgICAgICAgICAgIHsvKiBCYXNzIEJvb3N0ICovfVxyXG4gICAgICAgICAgICAgIDxDYXJkPlxyXG4gICAgICAgICAgICAgICAgPENhcmRIZWFkZXIgY2xhc3NOYW1lPVwicGItM1wiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwidGV4dC1iYXNlXCI+QmFzcyBCb29zdDwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICAgICAgICAgIDxTd2l0Y2ggXHJcbiAgICAgICAgICAgICAgICAgICAgICBjaGVja2VkPXtlZmZlY3RzLmJhc3NCb29zdC5lbmFibGVkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgb25DaGVja2VkQ2hhbmdlPXsoZW5hYmxlZCkgPT4ge1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAvLyBVcGRhdGUgYmFzcyBib29zdCBlbmFibGVkIHN0YXRlXHJcbiAgICAgICAgICAgICAgICAgICAgICB9fVxyXG4gICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBqdXN0aWZ5LWJldHdlZW4gdGV4dC1zbVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+TGV2ZWw8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj57ZWZmZWN0cy5iYXNzQm9vc3QubGV2ZWx9JTwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICA8U2xpZGVyXHJcbiAgICAgICAgICAgICAgICAgICAgICB2YWx1ZT17W2VmZmVjdHMuYmFzc0Jvb3N0LmxldmVsXX1cclxuICAgICAgICAgICAgICAgICAgICAgIG9uVmFsdWVDaGFuZ2U9eyhbdmFsdWVdKSA9PiB1cGRhdGVCYXNzQm9vc3QodmFsdWUpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgbWF4PXsxMDB9XHJcbiAgICAgICAgICAgICAgICAgICAgICBzdGVwPXsxfVxyXG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsXCJcclxuICAgICAgICAgICAgICAgICAgICAvPlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgPC9DYXJkPlxyXG5cclxuICAgICAgICAgICAgICB7LyogVmlydHVhbCBTdXJyb3VuZCAqL31cclxuICAgICAgICAgICAgICA8Q2FyZD5cclxuICAgICAgICAgICAgICAgIDxDYXJkSGVhZGVyIGNsYXNzTmFtZT1cInBiLTNcIj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cclxuICAgICAgICAgICAgICAgICAgICA8Q2FyZFRpdGxlIGNsYXNzTmFtZT1cInRleHQtYmFzZVwiPlZpcnR1YWwgU3Vycm91bmQ8L0NhcmRUaXRsZT5cclxuICAgICAgICAgICAgICAgICAgICA8U3dpdGNoIFxyXG4gICAgICAgICAgICAgICAgICAgICAgY2hlY2tlZD17ZWZmZWN0cy52aXJ0dWFsU3Vycm91bmQuZW5hYmxlZH1cclxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2hlY2tlZENoYW5nZT17KGVuYWJsZWQpID0+IHtcclxuICAgICAgICAgICAgICAgICAgICAgICAgLy8gVXBkYXRlIHZpcnR1YWwgc3Vycm91bmQgZW5hYmxlZCBzdGF0ZVxyXG4gICAgICAgICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAgICAgICAvPlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvQ2FyZEhlYWRlcj5cclxuICAgICAgICAgICAgICAgIDxDYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgganVzdGlmeS1iZXR3ZWVuIHRleHQtc21cIj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPlNwYWNpb3VzbmVzczwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPntlZmZlY3RzLnZpcnR1YWxTdXJyb3VuZC5sZXZlbH0lPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxTbGlkZXJcclxuICAgICAgICAgICAgICAgICAgICAgIHZhbHVlPXtbZWZmZWN0cy52aXJ0dWFsU3Vycm91bmQubGV2ZWxdfVxyXG4gICAgICAgICAgICAgICAgICAgICAgb25WYWx1ZUNoYW5nZT17KFt2YWx1ZV0pID0+IHtcclxuICAgICAgICAgICAgICAgICAgICAgICAgLy8gVXBkYXRlIHZpcnR1YWwgc3Vycm91bmQgbGV2ZWxcclxuICAgICAgICAgICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgICAgICAgICAgICBtYXg9ezEwMH1cclxuICAgICAgICAgICAgICAgICAgICAgIHN0ZXA9ezF9XHJcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGxcIlxyXG4gICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICA8L0NhcmQ+XHJcblxyXG4gICAgICAgICAgICAgIHsvKiBSZXZlcmIgKi99XHJcbiAgICAgICAgICAgICAgPENhcmQ+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZEhlYWRlciBjbGFzc05hbWU9XCJwYi0zXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJ0ZXh0LWJhc2VcIj5SZXZlcmI8L0NhcmRUaXRsZT5cclxuICAgICAgICAgICAgICAgICAgICA8U3dpdGNoIFxyXG4gICAgICAgICAgICAgICAgICAgICAgY2hlY2tlZD17ZWZmZWN0cy5yZXZlcmIuZW5hYmxlZH1cclxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2hlY2tlZENoYW5nZT17KGVuYWJsZWQpID0+IHtcclxuICAgICAgICAgICAgICAgICAgICAgICAgLy8gVXBkYXRlIHJldmVyYiBlbmFibGVkIHN0YXRlXHJcbiAgICAgICAgICAgICAgICAgICAgICB9fVxyXG4gICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRDb250ZW50IGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtIG1iLTIgYmxvY2tcIj5UeXBlPC9sYWJlbD5cclxuICAgICAgICAgICAgICAgICAgICA8U2VsZWN0IHZhbHVlPXtlZmZlY3RzLnJldmVyYi50eXBlfT5cclxuICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RUcmlnZ2VyPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0VmFsdWUgLz5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0VHJpZ2dlcj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cImhhbGxcIj5Db25jZXJ0IEhhbGw8L1NlbGVjdEl0ZW0+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwicm9vbVwiPlJvb208L1NlbGVjdEl0ZW0+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwiY2F0aGVkcmFsXCI+Q2F0aGVkcmFsPC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cInBsYXRlXCI+UGxhdGU8L1NlbGVjdEl0ZW0+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwic3ByaW5nXCI+U3ByaW5nPC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3RDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0PlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgganVzdGlmeS1iZXR3ZWVuIHRleHQtc21cIj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPldldG5lc3M8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj57ZWZmZWN0cy5yZXZlcmIud2V0bmVzc30lPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxTbGlkZXJcclxuICAgICAgICAgICAgICAgICAgICAgIHZhbHVlPXtbZWZmZWN0cy5yZXZlcmIud2V0bmVzc119XHJcbiAgICAgICAgICAgICAgICAgICAgICBvblZhbHVlQ2hhbmdlPXsoW3ZhbHVlXSkgPT4ge1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAvLyBVcGRhdGUgcmV2ZXJiIHdldG5lc3NcclxuICAgICAgICAgICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgICAgICAgICAgICBtYXg9ezEwMH1cclxuICAgICAgICAgICAgICAgICAgICAgIHN0ZXA9ezF9XHJcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGxcIlxyXG4gICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICA8L0NhcmQ+XHJcbiAgICAgICAgICAgIDwvVGFic0NvbnRlbnQ+XHJcblxyXG4gICAgICAgICAgICB7LyogUGxheWJhY2sgVGFiICovfVxyXG4gICAgICAgICAgICA8VGFic0NvbnRlbnQgdmFsdWU9XCJwbGF5YmFja1wiIGNsYXNzTmFtZT1cInNwYWNlLXktNlwiPlxyXG4gICAgICAgICAgICAgIHsvKiBQbGF5YmFjayBTcGVlZCAqL31cclxuICAgICAgICAgICAgICA8Q2FyZD5cclxuICAgICAgICAgICAgICAgIDxDYXJkSGVhZGVyIGNsYXNzTmFtZT1cInBiLTNcIj5cclxuICAgICAgICAgICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJ0ZXh0LWJhc2UgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgICA8R2F1Z2UgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgUGxheWJhY2sgU3BlZWRcclxuICAgICAgICAgICAgICAgICAgPC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGp1c3RpZnktYmV0d2VlbiB0ZXh0LXNtXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj5TcGVlZDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPntzZXR0aW5ncy5wbGF5YmFja1NwZWVkfXg8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgPFNsaWRlclxyXG4gICAgICAgICAgICAgICAgICAgICAgdmFsdWU9e1tzZXR0aW5ncy5wbGF5YmFja1NwZWVkXX1cclxuICAgICAgICAgICAgICAgICAgICAgIG9uVmFsdWVDaGFuZ2U9eyhbdmFsdWVdKSA9PiBzZXRQbGF5YmFja1NwZWVkKHZhbHVlKX1cclxuICAgICAgICAgICAgICAgICAgICAgIG1pbj17MC41fVxyXG4gICAgICAgICAgICAgICAgICAgICAgbWF4PXsyLjB9XHJcbiAgICAgICAgICAgICAgICAgICAgICBzdGVwPXswLjF9XHJcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGxcIlxyXG4gICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGp1c3RpZnktYmV0d2VlbiB0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+MC41eDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPjEuMHg8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj4yLjB4PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgPC9DYXJkPlxyXG5cclxuICAgICAgICAgICAgICB7LyogQ3Jvc3NmYWRlICovfVxyXG4gICAgICAgICAgICAgIDxDYXJkPlxyXG4gICAgICAgICAgICAgICAgPENhcmRIZWFkZXIgY2xhc3NOYW1lPVwicGItM1wiPlxyXG4gICAgICAgICAgICAgICAgICA8Q2FyZFRpdGxlIGNsYXNzTmFtZT1cInRleHQtYmFzZVwiPkNyb3NzZmFkZTwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBqdXN0aWZ5LWJldHdlZW4gdGV4dC1zbVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+RHVyYXRpb248L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj57c2V0dGluZ3MuY3Jvc3NmYWRlRHVyYXRpb259czwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICA8U2xpZGVyXHJcbiAgICAgICAgICAgICAgICAgICAgICB2YWx1ZT17W3NldHRpbmdzLmNyb3NzZmFkZUR1cmF0aW9uXX1cclxuICAgICAgICAgICAgICAgICAgICAgIG9uVmFsdWVDaGFuZ2U9eyhbdmFsdWVdKSA9PiB7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIC8vIFVwZGF0ZSBjcm9zc2ZhZGUgZHVyYXRpb25cclxuICAgICAgICAgICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgICAgICAgICAgICBtYXg9ezEwfVxyXG4gICAgICAgICAgICAgICAgICAgICAgbWluPXswfVxyXG4gICAgICAgICAgICAgICAgICAgICAgc3RlcD17MC41fVxyXG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsXCJcclxuICAgICAgICAgICAgICAgICAgICAvPlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgPC9DYXJkPlxyXG5cclxuICAgICAgICAgICAgICB7LyogU2xlZXAgVGltZXIgKi99XHJcbiAgICAgICAgICAgICAgPENhcmQ+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZEhlYWRlciBjbGFzc05hbWU9XCJwYi0zXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwidGV4dC1iYXNlIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPFRpbWVyIGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgIFNsZWVwIFRpbWVyXHJcbiAgICAgICAgICAgICAgICAgIDwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBncmlkLWNvbHMtNCBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAge1swLCAxNSwgMzAsIDYwXS5tYXAoKG1pbnV0ZXMpID0+IChcclxuICAgICAgICAgICAgICAgICAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGtleT17bWludXRlc31cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PXtzbGVlcFRpbWVyID09PSBtaW51dGVzID8gJ2RlZmF1bHQnIDogJ291dGxpbmUnfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHNpemU9XCJzbVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0U2xlZXBUaW1lcihtaW51dGVzKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHttaW51dGVzID09PSAwID8gJ09mZicgOiBgJHttaW51dGVzfW1gfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIHtzbGVlcFRpbWVyID4gMCAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIHRleHQtY2VudGVyXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIE11c2ljIHdpbGwgc3RvcCBpbiB7c2xlZXBUaW1lcn0gbWludXRlc1xyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L0NhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgIDwvQ2FyZD5cclxuXHJcbiAgICAgICAgICAgICAgey8qIFBsYXliYWNrIFNldHRpbmdzICovfVxyXG4gICAgICAgICAgICAgIDxDYXJkPlxyXG4gICAgICAgICAgICAgICAgPENhcmRIZWFkZXIgY2xhc3NOYW1lPVwicGItM1wiPlxyXG4gICAgICAgICAgICAgICAgICA8Q2FyZFRpdGxlIGNsYXNzTmFtZT1cInRleHQtYmFzZVwiPlNldHRpbmdzPC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZENvbnRlbnQgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbVwiPkdhcGxlc3MgUGxheWJhY2s8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgPFN3aXRjaCBjaGVja2VkPXtzZXR0aW5ncy5nYXBsZXNzUGxheWJhY2t9IC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc21cIj5Ob3JtYWxpemUgVm9sdW1lPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDxTd2l0Y2ggY2hlY2tlZD17c2V0dGluZ3Mubm9ybWFsaXplVm9sdW1lfSAvPlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cclxuICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXNtXCI+RmFkZSBJbi9PdXQ8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgPFN3aXRjaCBjaGVja2VkPXtzZXR0aW5ncy5mYWRlSW5PdXR9IC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc21cIj5SZXBsYXkgR2Fpbjwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8U3dpdGNoIGNoZWNrZWQ9e3NldHRpbmdzLnJlcGxheUdhaW59IC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICA8L0NhcmQ+XHJcbiAgICAgICAgICAgIDwvVGFic0NvbnRlbnQ+XHJcblxyXG4gICAgICAgICAgICB7LyogVmlzdWFsaXplciBUYWIgKi99XHJcbiAgICAgICAgICAgIDxUYWJzQ29udGVudCB2YWx1ZT1cInZpc3VhbGl6ZXJcIiBjbGFzc05hbWU9XCJzcGFjZS15LTZcIj5cclxuICAgICAgICAgICAgICA8Q2FyZD5cclxuICAgICAgICAgICAgICAgIDxDYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgICA8Q2FyZFRpdGxlIGNsYXNzTmFtZT1cInRleHQtYmFzZVwiPkF1ZGlvIFNwZWN0cnVtPC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiaC0zMiBiZy1ncmFkaWVudC10by10IGZyb20tcHJpbWFyeS8yMCB0by1wcmltYXJ5LzUgcm91bmRlZC1sZyBwLTQgZmxleCBpdGVtcy1lbmQganVzdGlmeS1jZW50ZXIgZ2FwLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICB7QXJyYXkuZnJvbSh7IGxlbmd0aDogMzIgfSwgKF8sIGkpID0+IHtcclxuICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IGhlaWdodCA9IHZpc3VhbGl6ZXJEYXRhW2kgKiA4XSB8fCAwO1xyXG4gICAgICAgICAgICAgICAgICAgICAgcmV0dXJuIChcclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGtleT17aX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJiZy1ncmFkaWVudC10by10IGZyb20tcHJpbWFyeSB0by1wcmltYXJ5LzYwIHJvdW5kZWQtc20gdHJhbnNpdGlvbi1hbGwgZHVyYXRpb24tNzVcIlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB3aWR0aDogJzZweCcsXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBoZWlnaHQ6IGAke01hdGgubWF4KDIsIChoZWlnaHQgLyAyNTUpICogMTAwKX1weGAsXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICk7XHJcbiAgICAgICAgICAgICAgICAgICAgfSl9XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICA8L0NhcmQ+XHJcblxyXG4gICAgICAgICAgICAgIDxDYXJkPlxyXG4gICAgICAgICAgICAgICAgPENhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwidGV4dC1iYXNlXCI+VmlzdWFsaXplciBTZXR0aW5nczwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRDb250ZW50IGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc21cIj5TaG93IFZpc3VhbGl6ZXI8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgPFN3aXRjaCAvPlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cclxuICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXNtXCI+RnVsbCBTY3JlZW4gTW9kZTwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8U3dpdGNoIC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtIG1iLTIgYmxvY2tcIj5TdHlsZTwvbGFiZWw+XHJcbiAgICAgICAgICAgICAgICAgICAgPFNlbGVjdCBkZWZhdWx0VmFsdWU9XCJiYXJzXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0VHJpZ2dlcj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdFZhbHVlIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdFRyaWdnZXI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0Q29udGVudD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdEl0ZW0gdmFsdWU9XCJiYXJzXCI+QmFyczwvU2VsZWN0SXRlbT5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdEl0ZW0gdmFsdWU9XCJ3YXZlXCI+V2F2ZTwvU2VsZWN0SXRlbT5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdEl0ZW0gdmFsdWU9XCJjaXJjdWxhclwiPkNpcmN1bGFyPC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cInBhcnRpY2xlc1wiPlBhcnRpY2xlczwvU2VsZWN0SXRlbT5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0Q29udGVudD5cclxuICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdD5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L0NhcmRDb250ZW50PlxyXG4gICAgICAgICAgICAgIDwvQ2FyZD5cclxuICAgICAgICAgICAgPC9UYWJzQ29udGVudD5cclxuXHJcbiAgICAgICAgICAgIHsvKiBBZHZhbmNlZCBUYWIgKi99XHJcbiAgICAgICAgICAgIDxUYWJzQ29udGVudCB2YWx1ZT1cImFkdmFuY2VkXCIgY2xhc3NOYW1lPVwic3BhY2UteS02XCI+XHJcbiAgICAgICAgICAgICAgPENhcmQ+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZEhlYWRlcj5cclxuICAgICAgICAgICAgICAgICAgPENhcmRUaXRsZSBjbGFzc05hbWU9XCJ0ZXh0LWJhc2VcIj5BdWRpbyBRdWFsaXR5PC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZENvbnRlbnQgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1tZWRpdW0gbWItMiBibG9ja1wiPlNhbXBsZSBSYXRlPC9sYWJlbD5cclxuICAgICAgICAgICAgICAgICAgICA8U2VsZWN0IGRlZmF1bHRWYWx1ZT1cIjQ0MTAwXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0VHJpZ2dlcj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdFZhbHVlIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdFRyaWdnZXI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0Q29udGVudD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdEl0ZW0gdmFsdWU9XCI0NDEwMFwiPjQ0LjEga0h6PC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cIjQ4MDAwXCI+NDgga0h6PC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cIjk2MDAwXCI+OTYga0h6PC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cIjE5MjAwMFwiPjE5MiBrSHo8L1NlbGVjdEl0ZW0+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3Q+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtIG1iLTIgYmxvY2tcIj5CaXQgRGVwdGg8L2xhYmVsPlxyXG4gICAgICAgICAgICAgICAgICAgIDxTZWxlY3QgZGVmYXVsdFZhbHVlPVwiMTZcIj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RUcmlnZ2VyPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0VmFsdWUgLz5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0VHJpZ2dlcj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cIjE2XCI+MTYtYml0PC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cIjI0XCI+MjQtYml0PC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cIjMyXCI+MzItYml0PC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3RDb250ZW50PlxyXG4gICAgICAgICAgICAgICAgICAgIDwvU2VsZWN0PlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvQ2FyZENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgPC9DYXJkPlxyXG5cclxuICAgICAgICAgICAgICA8Q2FyZD5cclxuICAgICAgICAgICAgICAgIDxDYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgICA8Q2FyZFRpdGxlIGNsYXNzTmFtZT1cInRleHQtYmFzZVwiPlBlcmZvcm1hbmNlPC9DYXJkVGl0bGU+XHJcbiAgICAgICAgICAgICAgICA8L0NhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICA8Q2FyZENvbnRlbnQgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbVwiPkhhcmR3YXJlIEFjY2VsZXJhdGlvbjwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8U3dpdGNoIGRlZmF1bHRDaGVja2VkIC8+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc21cIj5Mb3cgTGF0ZW5jeSBNb2RlPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDxTd2l0Y2ggLz5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbVwiPkF1ZGlvIEJ1ZmZlciBTaXplPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDxTZWxlY3QgZGVmYXVsdFZhbHVlPVwiNTEyXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0VHJpZ2dlciBjbGFzc05hbWU9XCJ3LTI0XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RWYWx1ZSAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3RUcmlnZ2VyPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwiMTI4XCI+MTI4PC9TZWxlY3RJdGVtPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8U2VsZWN0SXRlbSB2YWx1ZT1cIjI1NlwiPjI1NjwvU2VsZWN0SXRlbT5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPFNlbGVjdEl0ZW0gdmFsdWU9XCI1MTJcIj41MTI8L1NlbGVjdEl0ZW0+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxTZWxlY3RJdGVtIHZhbHVlPVwiMTAyNFwiPjEwMjQ8L1NlbGVjdEl0ZW0+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L1NlbGVjdENvbnRlbnQ+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9TZWxlY3Q+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICA8L0NhcmQ+XHJcblxyXG4gICAgICAgICAgICAgIDxDYXJkPlxyXG4gICAgICAgICAgICAgICAgPENhcmRIZWFkZXI+XHJcbiAgICAgICAgICAgICAgICAgIDxDYXJkVGl0bGUgY2xhc3NOYW1lPVwidGV4dC1iYXNlXCI+UmVzZXQgT3B0aW9uczwvQ2FyZFRpdGxlPlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkSGVhZGVyPlxyXG4gICAgICAgICAgICAgICAgPENhcmRDb250ZW50IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8QnV0dG9uIHZhcmlhbnQ9XCJvdXRsaW5lXCIgY2xhc3NOYW1lPVwidy1mdWxsXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgUmVzZXQgQXVkaW8gU2V0dGluZ3NcclxuICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICAgIDxCdXR0b24gdmFyaWFudD1cIm91dGxpbmVcIiBjbGFzc05hbWU9XCJ3LWZ1bGxcIj5cclxuICAgICAgICAgICAgICAgICAgICBSZXNldCBBbGwgRWZmZWN0c1xyXG4gICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgPEJ1dHRvbiB2YXJpYW50PVwiZGVzdHJ1Y3RpdmVcIiBjbGFzc05hbWU9XCJ3LWZ1bGxcIj5cclxuICAgICAgICAgICAgICAgICAgICBGYWN0b3J5IFJlc2V0XHJcbiAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgICAgICAgICA8L0NhcmQ+XHJcbiAgICAgICAgICAgIDwvVGFic0NvbnRlbnQ+XHJcbiAgICAgICAgICA8L1RhYnM+XHJcbiAgICAgICAgPC9DYXJkQ29udGVudD5cclxuICAgICAgPC9DYXJkPlxyXG4gICAgPC9kaXY+XHJcbiAgKTtcclxufTtcclxuIl0sIm5hbWVzIjpbInVzZVN0YXRlIiwiQ2FyZCIsIkNhcmRDb250ZW50IiwiQ2FyZEhlYWRlciIsIkNhcmRUaXRsZSIsIkJ1dHRvbiIsIlNsaWRlciIsIlN3aXRjaCIsIlRhYnMiLCJUYWJzQ29udGVudCIsIlRhYnNMaXN0IiwiVGFic1RyaWdnZXIiLCJTZWxlY3QiLCJTZWxlY3RDb250ZW50IiwiU2VsZWN0SXRlbSIsIlNlbGVjdFRyaWdnZXIiLCJTZWxlY3RWYWx1ZSIsIlNsaWRlcnMiLCJXYXZlcyIsIk11c2ljIiwiVGltZXIiLCJHYXVnZSIsIkhlYWRwaG9uZXMiLCJTZXR0aW5ncyIsIlJvdGF0ZUNjdyIsIlBsYXkiLCJ1c2VFbmhhbmNlZEF1ZGlvRW5naW5lIiwiUHJlbWl1bUF1ZGlvQ29udHJvbHMiLCJpc09wZW4iLCJvbkNsb3NlIiwiZWZmZWN0cyIsInNldHRpbmdzIiwiYXBwbHlFUVByZXNldCIsInVwZGF0ZUJhc3NCb29zdCIsInNldFBsYXliYWNrU3BlZWQiLCJ2aXN1YWxpemVyRGF0YSIsInNsZWVwVGltZXIiLCJzZXRTbGVlcFRpbWVyIiwiY3VzdG9tRVFCYW5kcyIsInNldEN1c3RvbUVRQmFuZHMiLCJlcXVhbGl6ZXIiLCJiYW5kcyIsImhhbmRsZUVRQmFuZENoYW5nZSIsImJhbmRJbmRleCIsInZhbHVlIiwibmV3QmFuZHMiLCJlcUZyZXF1ZW5jaWVzIiwiZGl2IiwiY2xhc3NOYW1lIiwidmFyaWFudCIsInNpemUiLCJvbkNsaWNrIiwiZGVmYXVsdFZhbHVlIiwiaDMiLCJjaGVja2VkIiwiZW5hYmxlZCIsIm9uQ2hlY2tlZENoYW5nZSIsInNwYW4iLCJsYWJlbCIsIm1hcCIsInByZXNldCIsInByZXNldHMiLCJmcmVxIiwiaW5kZXgiLCJvcmllbnRhdGlvbiIsIm9uVmFsdWVDaGFuZ2UiLCJtYXgiLCJtaW4iLCJzdGVwIiwiYmFzc0Jvb3N0IiwibGV2ZWwiLCJ2aXJ0dWFsU3Vycm91bmQiLCJyZXZlcmIiLCJ0eXBlIiwid2V0bmVzcyIsInBsYXliYWNrU3BlZWQiLCJjcm9zc2ZhZGVEdXJhdGlvbiIsIm1pbnV0ZXMiLCJnYXBsZXNzUGxheWJhY2siLCJub3JtYWxpemVWb2x1bWUiLCJmYWRlSW5PdXQiLCJyZXBsYXlHYWluIiwiQXJyYXkiLCJmcm9tIiwibGVuZ3RoIiwiXyIsImkiLCJoZWlnaHQiLCJzdHlsZSIsIndpZHRoIiwiTWF0aCIsImRlZmF1bHRDaGVja2VkIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSxTQUFTQSxRQUFRLFFBQVEsUUFBUTtBQUNqQyxTQUFTQyxJQUFJLEVBQUVDLFdBQVcsRUFBRUMsVUFBVSxFQUFFQyxTQUFTLFFBQVEsdUJBQXVCO0FBQ2hGLFNBQVNDLE1BQU0sUUFBUSx5QkFBeUI7QUFDaEQsU0FBU0MsTUFBTSxRQUFRLHlCQUF5QjtBQUNoRCxTQUFTQyxNQUFNLFFBQVEseUJBQXlCO0FBRWhELFNBQVNDLElBQUksRUFBRUMsV0FBVyxFQUFFQyxRQUFRLEVBQUVDLFdBQVcsUUFBUSx1QkFBdUI7QUFDaEYsU0FBU0MsTUFBTSxFQUFFQyxhQUFhLEVBQUVDLFVBQVUsRUFBRUMsYUFBYSxFQUFFQyxXQUFXLFFBQVEseUJBQXlCO0FBQ3ZHLFNBQ0VDLE9BQU8sRUFFUEMsS0FBSyxFQUNMQyxLQUFLLEVBRUxDLEtBQUssRUFDTEMsS0FBSyxFQUNMQyxVQUFVLEVBQ1ZDLFFBQVEsRUFDUkMsU0FBUyxFQUNUQyxJQUFJLFFBQ0MsZUFBZTtBQUN0QixTQUFTQyxzQkFBc0IsUUFBUSxpQ0FBaUM7QUFPeEUsT0FBTyxNQUFNQyx1QkFBdUIsQ0FBQyxFQUFFQyxNQUFNLEVBQUVD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

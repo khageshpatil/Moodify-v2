@@ -1,0 +1,1176 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/EnhancedListenTogetherDialog.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"]; const useRef = __vite__cjsImport3_react["useRef"]; const useEffect = __vite__cjsImport3_react["useEffect"];
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "/src/components/ui/dialog.tsx";
+import { Button } from "/src/components/ui/button.tsx";
+import { Input } from "/src/components/ui/input.tsx";
+import { ScrollArea } from "/src/components/ui/scroll-area.tsx";
+import { Badge } from "/src/components/ui/badge.tsx";
+import { Switch } from "/src/components/ui/switch.tsx";
+import { Users, Copy, Check, Send, MessageCircle, Radio, Play, Pause, ExternalLink, Crown, Wifi, WifiOff, Clock } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { useToast } from "/src/hooks/use-toast.ts";
+import { IdentityAvatarSmall } from "/src/components/identity/IdentityAvatar.tsx";
+export const EnhancedListenTogetherDialog = ({ open, onOpenChange, onCreateRoom, onJoinRoom, roomCode, isConnected, isHost, connectedGuests, connectionStatus, liveStream, onDisconnect, messages, onSendMessage, onStartLiveStream, onStopLiveStream, onToggleGuestLiveMode })=>{
+    _s();
+    const [joinCode, setJoinCode] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [chatMessage, setChatMessage] = useState('');
+    const [showChat, setShowChat] = useState(false);
+    const [liveStreamUrl, setLiveStreamUrl] = useState('');
+    const [selectedPlatform, setSelectedPlatform] = useState('youtube');
+    const [guestLiveMode, setGuestLiveMode] = useState(false);
+    const { toast } = useToast();
+    const messagesEndRef = useRef(null);
+    useEffect(()=>{
+        messagesEndRef.current?.scrollIntoView({
+            behavior: 'smooth'
+        });
+    }, [
+        messages
+    ]);
+    useEffect(()=>{
+        if (isConnected && connectionStatus === 'connected') {
+            toast({
+                title: 'Connected!',
+                description: isHost ? `Room created with ${connectedGuests.length} guest${connectedGuests.length !== 1 ? 's' : ''}` : 'Successfully joined the room'
+            });
+        }
+    }, [
+        isConnected,
+        connectionStatus,
+        isHost,
+        connectedGuests.length,
+        toast
+    ]);
+    const handleCopyCode = ()=>{
+        if (roomCode) {
+            navigator.clipboard.writeText(roomCode);
+            setCopied(true);
+            setTimeout(()=>setCopied(false), 2000);
+            toast({
+                title: 'Room code copied!',
+                description: 'Share this code with your friends'
+            });
+        }
+    };
+    const handleJoin = ()=>{
+        if (joinCode.trim()) {
+            onJoinRoom(joinCode.trim());
+        } else {
+            toast({
+                title: 'Invalid room code',
+                description: 'Please enter a valid room code',
+                variant: 'destructive'
+            });
+        }
+    };
+    const handleSendMessage = ()=>{
+        if (chatMessage.trim()) {
+            onSendMessage(chatMessage.trim());
+            setChatMessage('');
+        }
+    };
+    const handleStartLiveStream = ()=>{
+        if (liveStreamUrl.trim()) {
+            onStartLiveStream(liveStreamUrl.trim(), selectedPlatform);
+            setLiveStreamUrl('');
+        } else {
+            toast({
+                title: 'Invalid stream URL',
+                description: 'Please enter a valid stream URL',
+                variant: 'destructive'
+            });
+        }
+    };
+    const detectPlatform = (url)=>{
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            return 'youtube';
+        } else if (url.includes('twitch.tv')) {
+            return 'twitch';
+        }
+        return 'custom';
+    };
+    const handleUrlChange = (url)=>{
+        setLiveStreamUrl(url);
+        if (url) {
+            setSelectedPlatform(detectPlatform(url));
+        }
+    };
+    const getConnectionIcon = ()=>{
+        switch(connectionStatus){
+            case 'connected':
+                return /*#__PURE__*/ _jsxDEV(Wifi, {
+                    className: "w-4 h-4 text-green-500"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                    lineNumber: 152,
+                    columnNumber: 16
+                }, this);
+            case 'connecting':
+                return /*#__PURE__*/ _jsxDEV(Clock, {
+                    className: "w-4 h-4 text-yellow-500 animate-spin"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                    lineNumber: 154,
+                    columnNumber: 16
+                }, this);
+            case 'error':
+                return /*#__PURE__*/ _jsxDEV(WifiOff, {
+                    className: "w-4 h-4 text-red-500"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                    lineNumber: 156,
+                    columnNumber: 16
+                }, this);
+            default:
+                return /*#__PURE__*/ _jsxDEV(WifiOff, {
+                    className: "w-4 h-4 text-gray-500"
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                    lineNumber: 158,
+                    columnNumber: 16
+                }, this);
+        }
+    };
+    return /*#__PURE__*/ _jsxDEV(Dialog, {
+        open: open,
+        onOpenChange: onOpenChange,
+        children: /*#__PURE__*/ _jsxDEV(DialogContent, {
+            className: "sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col",
+            children: [
+                /*#__PURE__*/ _jsxDEV(DialogHeader, {
+                    children: /*#__PURE__*/ _jsxDEV(DialogTitle, {
+                        className: "flex items-center gap-2",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Users, {
+                                className: "w-5 h-5"
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                lineNumber: 167,
+                                columnNumber: 13
+                            }, this),
+                            "Listen Together",
+                            getConnectionIcon(),
+                            isConnected && /*#__PURE__*/ _jsxDEV(Badge, {
+                                variant: isHost ? 'default' : 'secondary',
+                                children: isHost ? 'Host' : 'Guest'
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                lineNumber: 171,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                        lineNumber: 166,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                    lineNumber: 165,
+                    columnNumber: 9
+                }, this),
+                !isConnected ? /*#__PURE__*/ _jsxDEV("div", {
+                    className: "space-y-6",
+                    children: [
+                        connectionStatus === 'connecting' && /*#__PURE__*/ _jsxDEV("div", {
+                            className: "p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "flex items-center space-x-2",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(Clock, {
+                                        className: "w-4 h-4 animate-spin"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 184,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("span", {
+                                        className: "text-sm font-medium",
+                                        children: "Connecting..."
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 185,
+                                        columnNumber: 19
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                lineNumber: 183,
+                                columnNumber: 17
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 182,
+                            columnNumber: 15
+                        }, this),
+                        connectionStatus === 'error' && /*#__PURE__*/ _jsxDEV("div", {
+                            className: "p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "flex items-center space-x-2",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV(WifiOff, {
+                                        className: "w-4 h-4"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 193,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("span", {
+                                        className: "text-sm font-medium text-red-600 dark:text-red-400",
+                                        children: "Connection failed. Please try again."
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 194,
+                                        columnNumber: 19
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                lineNumber: 192,
+                                columnNumber: 17
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 191,
+                            columnNumber: 15
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "space-y-3",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("h3", {
+                                    className: "text-sm font-medium",
+                                    children: "Host a Session"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 203,
+                                    columnNumber: 15
+                                }, this),
+                                !roomCode ? /*#__PURE__*/ _jsxDEV(Button, {
+                                    onClick: onCreateRoom,
+                                    className: "w-full",
+                                    disabled: connectionStatus === 'connecting',
+                                    children: "Create Room"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 205,
+                                    columnNumber: 17
+                                }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "space-y-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("p", {
+                                            className: "text-sm text-muted-foreground",
+                                            children: "Share this code with your friends (up to 10 guests):"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 214,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex gap-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Input, {
+                                                    value: roomCode,
+                                                    readOnly: true,
+                                                    className: "font-mono text-lg"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 218,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    size: "icon",
+                                                    variant: "outline",
+                                                    onClick: handleCopyCode,
+                                                    children: copied ? /*#__PURE__*/ _jsxDEV(Check, {
+                                                        className: "w-4 h-4"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                        lineNumber: 229,
+                                                        columnNumber: 25
+                                                    }, this) : /*#__PURE__*/ _jsxDEV(Copy, {
+                                                        className: "w-4 h-4"
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                        lineNumber: 231,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 223,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 217,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("p", {
+                                            className: "text-xs text-muted-foreground",
+                                            children: "Waiting for guests to join..."
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 235,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 213,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 202,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "relative",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "absolute inset-0 flex items-center",
+                                    children: /*#__PURE__*/ _jsxDEV("span", {
+                                        className: "w-full border-t"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 244,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 243,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "relative flex justify-center text-xs uppercase",
+                                    children: /*#__PURE__*/ _jsxDEV("span", {
+                                        className: "bg-background px-2 text-muted-foreground",
+                                        children: "Or"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 247,
+                                        columnNumber: 17
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 246,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 242,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "space-y-3",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("h3", {
+                                    className: "text-sm font-medium",
+                                    children: "Join a Session"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 253,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex gap-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(Input, {
+                                            placeholder: "Enter room code",
+                                            value: joinCode,
+                                            onChange: (e)=>setJoinCode(e.target.value),
+                                            onKeyDown: (e)=>e.key === 'Enter' && handleJoin(),
+                                            disabled: connectionStatus === 'connecting'
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 255,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                            onClick: handleJoin,
+                                            disabled: connectionStatus === 'connecting',
+                                            children: "Join"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 262,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 254,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 252,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                    lineNumber: 179,
+                    columnNumber: 11
+                }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                    className: "space-y-4 flex-1 flex flex-col",
+                    children: [
+                        /*#__PURE__*/ _jsxDEV("div", {
+                            className: "rounded-lg bg-gradient-to-r from-primary/20 to-purple-500/20 p-4 border border-primary/20",
+                            children: /*#__PURE__*/ _jsxDEV("div", {
+                                className: "flex items-center justify-between",
+                                children: [
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center space-x-2",
+                                        children: [
+                                            /*#__PURE__*/ _jsxDEV(Users, {
+                                                className: "w-5 h-5 text-primary"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                lineNumber: 277,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ _jsxDEV("span", {
+                                                className: "text-sm font-medium",
+                                                children: isHost ? 'Hosting' : 'Connected'
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                lineNumber: 278,
+                                                columnNumber: 19
+                                            }, this),
+                                            isHost && /*#__PURE__*/ _jsxDEV(Crown, {
+                                                className: "w-4 h-4 text-yellow-500"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                lineNumber: 281,
+                                                columnNumber: 30
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 276,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "flex items-center space-x-2",
+                                        children: /*#__PURE__*/ _jsxDEV(Badge, {
+                                            variant: "secondary",
+                                            children: [
+                                                connectedGuests.length,
+                                                " guest",
+                                                connectedGuests.length !== 1 ? 's' : ''
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 284,
+                                            columnNumber: 19
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 283,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                lineNumber: 275,
+                                columnNumber: 15
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 274,
+                            columnNumber: 13
+                        }, this),
+                        connectedGuests.length > 0 && /*#__PURE__*/ _jsxDEV("div", {
+                            className: "space-y-2",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("h4", {
+                                    className: "text-sm font-medium",
+                                    children: "Connected Users"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 294,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                                    className: "max-h-24",
+                                    children: /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "space-y-1",
+                                        children: connectedGuests.map((guest)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                className: "flex items-center justify-between p-2 rounded-md bg-muted/50",
+                                                children: [
+                                                    /*#__PURE__*/ _jsxDEV("div", {
+                                                        className: "flex items-center space-x-2",
+                                                        children: [
+                                                            guest.identity ? /*#__PURE__*/ _jsxDEV(IdentityAvatarSmall, {
+                                                                seed: guest.identity.avatarSeed
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                lineNumber: 304,
+                                                                columnNumber: 29
+                                                            }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center",
+                                                                children: /*#__PURE__*/ _jsxDEV(Users, {
+                                                                    className: "w-4 h-4 text-white"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                    lineNumber: 307,
+                                                                    columnNumber: 31
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                lineNumber: 306,
+                                                                columnNumber: 29
+                                                            }, this),
+                                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "flex flex-col",
+                                                                children: [
+                                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                                        className: "text-sm font-medium",
+                                                                        children: guest.identity?.displayName || guest.username
+                                                                    }, void 0, false, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                        lineNumber: 311,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    guest.isLive && /*#__PURE__*/ _jsxDEV(Badge, {
+                                                                        variant: "destructive",
+                                                                        className: "text-xs w-fit mt-0.5",
+                                                                        children: [
+                                                                            /*#__PURE__*/ _jsxDEV(Radio, {
+                                                                                className: "w-3 h-3 mr-1"
+                                                                            }, void 0, false, {
+                                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                                lineNumber: 316,
+                                                                                columnNumber: 33
+                                                                            }, this),
+                                                                            "LIVE"
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                        lineNumber: 315,
+                                                                        columnNumber: 31
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                lineNumber: 310,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                        lineNumber: 302,
+                                                        columnNumber: 25
+                                                    }, this),
+                                                    /*#__PURE__*/ _jsxDEV("span", {
+                                                        className: "text-xs text-muted-foreground",
+                                                        children: new Date(guest.lastHeartbeat).toLocaleTimeString()
+                                                    }, void 0, false, {
+                                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                        lineNumber: 322,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                ]
+                                            }, guest.id, true, {
+                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                lineNumber: 298,
+                                                columnNumber: 23
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 296,
+                                        columnNumber: 19
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 295,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 293,
+                            columnNumber: 15
+                        }, this),
+                        isHost && /*#__PURE__*/ _jsxDEV("div", {
+                            className: "space-y-3 p-4 border rounded-lg bg-muted/30",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex items-center justify-between",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("h4", {
+                                            className: "text-sm font-medium flex items-center gap-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Radio, {
+                                                    className: "w-4 h-4"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 337,
+                                                    columnNumber: 21
+                                                }, this),
+                                                "Live Stream Broadcasting"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 336,
+                                            columnNumber: 19
+                                        }, this),
+                                        liveStream.isLive && /*#__PURE__*/ _jsxDEV(Badge, {
+                                            variant: "destructive",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Radio, {
+                                                    className: "w-3 h-3 mr-1"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 342,
+                                                    columnNumber: 23
+                                                }, this),
+                                                "LIVE"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 341,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 335,
+                                    columnNumber: 17
+                                }, this),
+                                !liveStream.isLive ? /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "space-y-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex gap-2",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(Input, {
+                                                    placeholder: "Paste YouTube, Twitch, or custom stream URL",
+                                                    value: liveStreamUrl,
+                                                    onChange: (e)=>handleUrlChange(e.target.value)
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 351,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    onClick: handleStartLiveStream,
+                                                    size: "sm",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Play, {
+                                                            className: "w-4 h-4 mr-2"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                            lineNumber: 357,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        "Start"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 356,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 350,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex items-center space-x-2 text-xs text-muted-foreground",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                    children: "Platform:"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 362,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Badge, {
+                                                    variant: "outline",
+                                                    children: selectedPlatform
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 363,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 361,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 349,
+                                    columnNumber: 19
+                                }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "space-y-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex items-center justify-between p-2 bg-red-50 dark:bg-red-900/20 rounded",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "flex items-center space-x-2",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "w-2 h-2 bg-red-500 rounded-full animate-pulse"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                            lineNumber: 370,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("span", {
+                                                            className: "text-sm",
+                                                            children: "Broadcasting to all guests"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                            lineNumber: 371,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 369,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(Button, {
+                                                    onClick: onStopLiveStream,
+                                                    size: "sm",
+                                                    variant: "destructive",
+                                                    children: [
+                                                        /*#__PURE__*/ _jsxDEV(Pause, {
+                                                            className: "w-4 h-4 mr-2"
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                            lineNumber: 374,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        "Stop"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 373,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 368,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "text-xs text-muted-foreground flex items-center space-x-1",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV(ExternalLink, {
+                                                    className: "w-3 h-3"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 379,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("span", {
+                                                    className: "truncate",
+                                                    children: liveStream.streamUrl
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 380,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 378,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 367,
+                                    columnNumber: 19
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 334,
+                            columnNumber: 15
+                        }, this),
+                        !isHost && /*#__PURE__*/ _jsxDEV("div", {
+                            className: "flex items-center justify-between p-3 border rounded-lg",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "text-sm font-medium",
+                                            children: "Live Mode"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 391,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "text-xs text-muted-foreground",
+                                            children: "Sync with host's live streams"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 392,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 390,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV(Switch, {
+                                    checked: guestLiveMode,
+                                    onCheckedChange: (checked)=>{
+                                        setGuestLiveMode(checked);
+                                        onToggleGuestLiveMode(checked);
+                                    }
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 396,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 389,
+                            columnNumber: 15
+                        }, this),
+                        !isHost && liveStream.isLive && guestLiveMode && /*#__PURE__*/ _jsxDEV("div", {
+                            className: "p-3 border rounded-lg bg-red-50 dark:bg-red-900/20",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex items-center space-x-2 mb-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(Radio, {
+                                            className: "w-4 h-4 text-red-500 animate-pulse"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 410,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("span", {
+                                            className: "text-sm font-medium",
+                                            children: "Host is Live!"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 411,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV(Badge, {
+                                            variant: "destructive",
+                                            children: liveStream.platform?.toUpperCase()
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 412,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 409,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "text-xs text-muted-foreground",
+                                    children: [
+                                        "Syncing with host's ",
+                                        liveStream.platform,
+                                        " stream"
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 416,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 408,
+                            columnNumber: 15
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(Button, {
+                            variant: "outline",
+                            onClick: ()=>setShowChat(!showChat),
+                            className: "w-full",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(MessageCircle, {
+                                    className: "h-4 w-4 mr-2"
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 428,
+                                    columnNumber: 15
+                                }, this),
+                                showChat ? 'Hide Chat' : 'Show Chat',
+                                messages.length > 0 && !showChat && /*#__PURE__*/ _jsxDEV(Badge, {
+                                    variant: "secondary",
+                                    className: "ml-2",
+                                    children: messages.length
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 431,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 423,
+                            columnNumber: 13
+                        }, this),
+                        showChat && /*#__PURE__*/ _jsxDEV("div", {
+                            className: "flex-1 flex flex-col space-y-2 min-h-[200px]",
+                            children: [
+                                /*#__PURE__*/ _jsxDEV(ScrollArea, {
+                                    className: "flex-1 border rounded-lg p-3 bg-background/50",
+                                    children: messages.length === 0 ? /*#__PURE__*/ _jsxDEV("p", {
+                                        className: "text-sm text-muted-foreground text-center py-8",
+                                        children: "No messages yet. Start chatting!"
+                                    }, void 0, false, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 442,
+                                        columnNumber: 21
+                                    }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                        className: "space-y-2",
+                                        children: [
+                                            messages.map((msg)=>/*#__PURE__*/ _jsxDEV("div", {
+                                                    className: `flex gap-2 ${msg.isOwn ? 'justify-end' : 'justify-start'}`,
+                                                    children: [
+                                                        !msg.isOwn && /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex-shrink-0 mt-1",
+                                                            children: msg.identity ? /*#__PURE__*/ _jsxDEV(IdentityAvatarSmall, {
+                                                                seed: msg.identity.avatarSeed
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                lineNumber: 455,
+                                                                columnNumber: 33
+                                                            }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center",
+                                                                children: /*#__PURE__*/ _jsxDEV(Users, {
+                                                                    className: "w-4 h-4 text-white"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                    lineNumber: 458,
+                                                                    columnNumber: 35
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                lineNumber: 457,
+                                                                columnNumber: 33
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                            lineNumber: 453,
+                                                            columnNumber: 29
+                                                        }, this),
+                                                        /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: `max-w-[70%] rounded-lg px-3 py-2 text-sm ${msg.isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`,
+                                                            children: [
+                                                                !msg.isOwn && (msg.identity?.displayName || msg.username) && /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "text-xs font-semibold opacity-80 mb-1",
+                                                                    children: msg.identity?.displayName || msg.username
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                    lineNumber: 471,
+                                                                    columnNumber: 31
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    children: msg.message
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                    lineNumber: 475,
+                                                                    columnNumber: 29
+                                                                }, this),
+                                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                                    className: "text-xs opacity-70 mt-1",
+                                                                    children: new Date(msg.timestamp).toLocaleTimeString([], {
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit'
+                                                                    })
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                    lineNumber: 476,
+                                                                    columnNumber: 29
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                            lineNumber: 463,
+                                                            columnNumber: 27
+                                                        }, this),
+                                                        msg.isOwn && /*#__PURE__*/ _jsxDEV("div", {
+                                                            className: "flex-shrink-0 mt-1",
+                                                            children: msg.identity ? /*#__PURE__*/ _jsxDEV(IdentityAvatarSmall, {
+                                                                seed: msg.identity.avatarSeed
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                lineNumber: 486,
+                                                                columnNumber: 33
+                                                            }, this) : /*#__PURE__*/ _jsxDEV("div", {
+                                                                className: "w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center",
+                                                                children: /*#__PURE__*/ _jsxDEV(Users, {
+                                                                    className: "w-4 h-4 text-white"
+                                                                }, void 0, false, {
+                                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                    lineNumber: 489,
+                                                                    columnNumber: 35
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                                lineNumber: 488,
+                                                                columnNumber: 33
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                            lineNumber: 484,
+                                                            columnNumber: 29
+                                                        }, this)
+                                                    ]
+                                                }, msg.id, true, {
+                                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                    lineNumber: 448,
+                                                    columnNumber: 25
+                                                }, this)),
+                                            /*#__PURE__*/ _jsxDEV("div", {
+                                                ref: messagesEndRef
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                lineNumber: 496,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                        lineNumber: 446,
+                                        columnNumber: 21
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 440,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex gap-2",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV(Input, {
+                                            placeholder: "Type a message...",
+                                            value: chatMessage,
+                                            onChange: (e)=>setChatMessage(e.target.value),
+                                            onKeyDown: (e)=>e.key === 'Enter' && handleSendMessage(),
+                                            className: "flex-1"
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 503,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV(Button, {
+                                            size: "icon",
+                                            onClick: handleSendMessage,
+                                            disabled: !chatMessage.trim(),
+                                            children: /*#__PURE__*/ _jsxDEV(Send, {
+                                                className: "h-4 w-4"
+                                            }, void 0, false, {
+                                                fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                                lineNumber: 515,
+                                                columnNumber: 21
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                            lineNumber: 510,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                                    lineNumber: 502,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 439,
+                            columnNumber: 15
+                        }, this),
+                        /*#__PURE__*/ _jsxDEV(Button, {
+                            variant: "destructive",
+                            onClick: onDisconnect,
+                            className: "w-full",
+                            children: "Disconnect"
+                        }, void 0, false, {
+                            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                            lineNumber: 521,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+                    lineNumber: 272,
+                    columnNumber: 11
+                }, this)
+            ]
+        }, void 0, true, {
+            fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+            lineNumber: 164,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx",
+        lineNumber: 163,
+        columnNumber: 5
+    }, this);
+};
+_s(EnhancedListenTogetherDialog, "oQAI4VpdWDyiefzuSyDuLKYjH8Q=", false, function() {
+    return [
+        useToast
+    ];
+});
+_c = EnhancedListenTogetherDialog;
+var _c;
+$RefreshReg$(_c, "EnhancedListenTogetherDialog");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/EnhancedListenTogetherDialog.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkVuaGFuY2VkTGlzdGVuVG9nZXRoZXJEaWFsb2cudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZVN0YXRlLCB1c2VSZWYsIHVzZUVmZmVjdCB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgRGlhbG9nLCBEaWFsb2dDb250ZW50LCBEaWFsb2dIZWFkZXIsIERpYWxvZ1RpdGxlIH0gZnJvbSAnQC9jb21wb25lbnRzL3VpL2RpYWxvZyc7XHJcbmltcG9ydCB7IEJ1dHRvbiB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9idXR0b24nO1xyXG5pbXBvcnQgeyBJbnB1dCB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9pbnB1dCc7XHJcbmltcG9ydCB7IFNjcm9sbEFyZWEgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvc2Nyb2xsLWFyZWEnO1xyXG5pbXBvcnQgeyBCYWRnZSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9iYWRnZSc7XHJcbmltcG9ydCB7IFN3aXRjaCB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9zd2l0Y2gnO1xyXG5pbXBvcnQgeyBcclxuICBVc2VycywgXHJcbiAgQ29weSwgXHJcbiAgQ2hlY2ssIFxyXG4gIFNlbmQsIFxyXG4gIE1lc3NhZ2VDaXJjbGUsIFxyXG4gIFJhZGlvLFxyXG4gIFBsYXksXHJcbiAgUGF1c2UsXHJcbiAgRXh0ZXJuYWxMaW5rLFxyXG4gIENyb3duLFxyXG4gIFdpZmksXHJcbiAgV2lmaU9mZixcclxuICBDbG9ja1xyXG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XHJcbmltcG9ydCB7IHVzZVRvYXN0IH0gZnJvbSAnQC9ob29rcy91c2UtdG9hc3QnO1xyXG5pbXBvcnQgeyBDaGF0TWVzc2FnZSwgQ29ubmVjdGVkR3Vlc3QsIExpdmVTdHJlYW1TdGF0ZSB9IGZyb20gJ0AvaG9va3MvdXNlRW5oYW5jZWRMaXN0ZW5Ub2dldGhlcic7XHJcbmltcG9ydCB7IElkZW50aXR5QXZhdGFyU21hbGwgfSBmcm9tICdAL2NvbXBvbmVudHMvaWRlbnRpdHkvSWRlbnRpdHlBdmF0YXInO1xyXG5cclxuaW50ZXJmYWNlIEVuaGFuY2VkTGlzdGVuVG9nZXRoZXJEaWFsb2dQcm9wcyB7XHJcbiAgb3BlbjogYm9vbGVhbjtcclxuICBvbk9wZW5DaGFuZ2U6IChvcGVuOiBib29sZWFuKSA9PiB2b2lkO1xyXG4gIG9uQ3JlYXRlUm9vbTogKCkgPT4gdm9pZDtcclxuICBvbkpvaW5Sb29tOiAoY29kZTogc3RyaW5nKSA9PiB2b2lkO1xyXG4gIHJvb21Db2RlOiBzdHJpbmcgfCBudWxsO1xyXG4gIGlzQ29ubmVjdGVkOiBib29sZWFuO1xyXG4gIGlzSG9zdDogYm9vbGVhbjtcclxuICBjb25uZWN0ZWRHdWVzdHM6IENvbm5lY3RlZEd1ZXN0W107XHJcbiAgY29ubmVjdGlvblN0YXR1czogJ2Rpc2Nvbm5lY3RlZCcgfCAnY29ubmVjdGluZycgfCAnY29ubmVjdGVkJyB8ICdlcnJvcic7XHJcbiAgbGl2ZVN0cmVhbTogTGl2ZVN0cmVhbVN0YXRlO1xyXG4gIG9uRGlzY29ubmVjdDogKCkgPT4gdm9pZDtcclxuICBtZXNzYWdlczogQ2hhdE1lc3NhZ2VbXTtcclxuICBvblNlbmRNZXNzYWdlOiAobWVzc2FnZTogc3RyaW5nKSA9PiB2b2lkO1xyXG4gIG9uU3RhcnRMaXZlU3RyZWFtOiAodXJsOiBzdHJpbmcsIHBsYXRmb3JtOiAneW91dHViZScgfCAndHdpdGNoJyB8ICdjdXN0b20nKSA9PiB2b2lkO1xyXG4gIG9uU3RvcExpdmVTdHJlYW06ICgpID0+IHZvaWQ7XHJcbiAgb25Ub2dnbGVHdWVzdExpdmVNb2RlOiAoaXNMaXZlOiBib29sZWFuKSA9PiB2b2lkO1xyXG59XHJcblxyXG5leHBvcnQgY29uc3QgRW5oYW5jZWRMaXN0ZW5Ub2dldGhlckRpYWxvZyA9ICh7XHJcbiAgb3BlbixcclxuICBvbk9wZW5DaGFuZ2UsXHJcbiAgb25DcmVhdGVSb29tLFxyXG4gIG9uSm9pblJvb20sXHJcbiAgcm9vbUNvZGUsXHJcbiAgaXNDb25uZWN0ZWQsXHJcbiAgaXNIb3N0LFxyXG4gIGNvbm5lY3RlZEd1ZXN0cyxcclxuICBjb25uZWN0aW9uU3RhdHVzLFxyXG4gIGxpdmVTdHJlYW0sXHJcbiAgb25EaXNjb25uZWN0LFxyXG4gIG1lc3NhZ2VzLFxyXG4gIG9uU2VuZE1lc3NhZ2UsXHJcbiAgb25TdGFydExpdmVTdHJlYW0sXHJcbiAgb25TdG9wTGl2ZVN0cmVhbSxcclxuICBvblRvZ2dsZUd1ZXN0TGl2ZU1vZGUsXHJcbn06IEVuaGFuY2VkTGlzdGVuVG9nZXRoZXJEaWFsb2dQcm9wcykgPT4ge1xyXG4gIGNvbnN0IFtqb2luQ29kZSwgc2V0Sm9pbkNvZGVdID0gdXNlU3RhdGUoJycpO1xyXG4gIGNvbnN0IFtjb3BpZWQsIHNldENvcGllZF0gPSB1c2VTdGF0ZShmYWxzZSk7XHJcbiAgY29uc3QgW2NoYXRNZXNzYWdlLCBzZXRDaGF0TWVzc2FnZV0gPSB1c2VTdGF0ZSgnJyk7XHJcbiAgY29uc3QgW3Nob3dDaGF0LCBzZXRTaG93Q2hhdF0gPSB1c2VTdGF0ZShmYWxzZSk7XHJcbiAgY29uc3QgW2xpdmVTdHJlYW1VcmwsIHNldExpdmVTdHJlYW1VcmxdID0gdXNlU3RhdGUoJycpO1xyXG4gIGNvbnN0IFtzZWxlY3RlZFBsYXRmb3JtLCBzZXRTZWxlY3RlZFBsYXRmb3JtXSA9IHVzZVN0YXRlPCd5b3V0dWJlJyB8ICd0d2l0Y2gnIHwgJ2N1c3RvbSc+KCd5b3V0dWJlJyk7XHJcbiAgY29uc3QgW2d1ZXN0TGl2ZU1vZGUsIHNldEd1ZXN0TGl2ZU1vZGVdID0gdXNlU3RhdGUoZmFsc2UpO1xyXG4gIGNvbnN0IHsgdG9hc3QgfSA9IHVzZVRvYXN0KCk7XHJcbiAgY29uc3QgbWVzc2FnZXNFbmRSZWYgPSB1c2VSZWY8SFRNTERpdkVsZW1lbnQ+KG51bGwpO1xyXG5cclxuICB1c2VFZmZlY3QoKCkgPT4ge1xyXG4gICAgbWVzc2FnZXNFbmRSZWYuY3VycmVudD8uc2Nyb2xsSW50b1ZpZXcoeyBiZWhhdmlvcjogJ3Ntb290aCcgfSk7XHJcbiAgfSwgW21lc3NhZ2VzXSk7XHJcblxyXG4gIHVzZUVmZmVjdCgoKSA9PiB7XHJcbiAgICBpZiAoaXNDb25uZWN0ZWQgJiYgY29ubmVjdGlvblN0YXR1cyA9PT0gJ2Nvbm5lY3RlZCcpIHtcclxuICAgICAgdG9hc3Qoe1xyXG4gICAgICAgIHRpdGxlOiAnQ29ubmVjdGVkIScsXHJcbiAgICAgICAgZGVzY3JpcHRpb246IGlzSG9zdCBcclxuICAgICAgICAgID8gYFJvb20gY3JlYXRlZCB3aXRoICR7Y29ubmVjdGVkR3Vlc3RzLmxlbmd0aH0gZ3Vlc3Qke2Nvbm5lY3RlZEd1ZXN0cy5sZW5ndGggIT09IDEgPyAncycgOiAnJ31gXHJcbiAgICAgICAgICA6ICdTdWNjZXNzZnVsbHkgam9pbmVkIHRoZSByb29tJyxcclxuICAgICAgfSk7XHJcbiAgICB9XHJcbiAgfSwgW2lzQ29ubmVjdGVkLCBjb25uZWN0aW9uU3RhdHVzLCBpc0hvc3QsIGNvbm5lY3RlZEd1ZXN0cy5sZW5ndGgsIHRvYXN0XSk7XHJcblxyXG4gIGNvbnN0IGhhbmRsZUNvcHlDb2RlID0gKCkgPT4ge1xyXG4gICAgaWYgKHJvb21Db2RlKSB7XHJcbiAgICAgIG5hdmlnYXRvci5jbGlwYm9hcmQud3JpdGVUZXh0KHJvb21Db2RlKTtcclxuICAgICAgc2V0Q29waWVkKHRydWUpO1xyXG4gICAgICBzZXRUaW1lb3V0KCgpID0+IHNldENvcGllZChmYWxzZSksIDIwMDApO1xyXG4gICAgICB0b2FzdCh7XHJcbiAgICAgICAgdGl0bGU6ICdSb29tIGNvZGUgY29waWVkIScsXHJcbiAgICAgICAgZGVzY3JpcHRpb246ICdTaGFyZSB0aGlzIGNvZGUgd2l0aCB5b3VyIGZyaWVuZHMnLFxyXG4gICAgICB9KTtcclxuICAgIH1cclxuICB9O1xyXG5cclxuICBjb25zdCBoYW5kbGVKb2luID0gKCkgPT4ge1xyXG4gICAgaWYgKGpvaW5Db2RlLnRyaW0oKSkge1xyXG4gICAgICBvbkpvaW5Sb29tKGpvaW5Db2RlLnRyaW0oKSk7XHJcbiAgICB9IGVsc2Uge1xyXG4gICAgICB0b2FzdCh7XHJcbiAgICAgICAgdGl0bGU6ICdJbnZhbGlkIHJvb20gY29kZScsXHJcbiAgICAgICAgZGVzY3JpcHRpb246ICdQbGVhc2UgZW50ZXIgYSB2YWxpZCByb29tIGNvZGUnLFxyXG4gICAgICAgIHZhcmlhbnQ6ICdkZXN0cnVjdGl2ZScsXHJcbiAgICAgIH0pO1xyXG4gICAgfVxyXG4gIH07XHJcblxyXG4gIGNvbnN0IGhhbmRsZVNlbmRNZXNzYWdlID0gKCkgPT4ge1xyXG4gICAgaWYgKGNoYXRNZXNzYWdlLnRyaW0oKSkge1xyXG4gICAgICBvblNlbmRNZXNzYWdlKGNoYXRNZXNzYWdlLnRyaW0oKSk7XHJcbiAgICAgIHNldENoYXRNZXNzYWdlKCcnKTtcclxuICAgIH1cclxuICB9O1xyXG5cclxuICBjb25zdCBoYW5kbGVTdGFydExpdmVTdHJlYW0gPSAoKSA9PiB7XHJcbiAgICBpZiAobGl2ZVN0cmVhbVVybC50cmltKCkpIHtcclxuICAgICAgb25TdGFydExpdmVTdHJlYW0obGl2ZVN0cmVhbVVybC50cmltKCksIHNlbGVjdGVkUGxhdGZvcm0pO1xyXG4gICAgICBzZXRMaXZlU3RyZWFtVXJsKCcnKTtcclxuICAgIH0gZWxzZSB7XHJcbiAgICAgIHRvYXN0KHtcclxuICAgICAgICB0aXRsZTogJ0ludmFsaWQgc3RyZWFtIFVSTCcsXHJcbiAgICAgICAgZGVzY3JpcHRpb246ICdQbGVhc2UgZW50ZXIgYSB2YWxpZCBzdHJlYW0gVVJMJyxcclxuICAgICAgICB2YXJpYW50OiAnZGVzdHJ1Y3RpdmUnLFxyXG4gICAgICB9KTtcclxuICAgIH1cclxuICB9O1xyXG5cclxuICBjb25zdCBkZXRlY3RQbGF0Zm9ybSA9ICh1cmw6IHN0cmluZyk6ICd5b3V0dWJlJyB8ICd0d2l0Y2gnIHwgJ2N1c3RvbScgPT4ge1xyXG4gICAgaWYgKHVybC5pbmNsdWRlcygneW91dHViZS5jb20nKSB8fCB1cmwuaW5jbHVkZXMoJ3lvdXR1LmJlJykpIHtcclxuICAgICAgcmV0dXJuICd5b3V0dWJlJztcclxuICAgIH0gZWxzZSBpZiAodXJsLmluY2x1ZGVzKCd0d2l0Y2gudHYnKSkge1xyXG4gICAgICByZXR1cm4gJ3R3aXRjaCc7XHJcbiAgICB9XHJcbiAgICByZXR1cm4gJ2N1c3RvbSc7XHJcbiAgfTtcclxuXHJcbiAgY29uc3QgaGFuZGxlVXJsQ2hhbmdlID0gKHVybDogc3RyaW5nKSA9PiB7XHJcbiAgICBzZXRMaXZlU3RyZWFtVXJsKHVybCk7XHJcbiAgICBpZiAodXJsKSB7XHJcbiAgICAgIHNldFNlbGVjdGVkUGxhdGZvcm0oZGV0ZWN0UGxhdGZvcm0odXJsKSk7XHJcbiAgICB9XHJcbiAgfTtcclxuXHJcbiAgY29uc3QgZ2V0Q29ubmVjdGlvbkljb24gPSAoKSA9PiB7XHJcbiAgICBzd2l0Y2ggKGNvbm5lY3Rpb25TdGF0dXMpIHtcclxuICAgICAgY2FzZSAnY29ubmVjdGVkJzpcclxuICAgICAgICByZXR1cm4gPFdpZmkgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LWdyZWVuLTUwMFwiIC8+O1xyXG4gICAgICBjYXNlICdjb25uZWN0aW5nJzpcclxuICAgICAgICByZXR1cm4gPENsb2NrIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC15ZWxsb3ctNTAwIGFuaW1hdGUtc3BpblwiIC8+O1xyXG4gICAgICBjYXNlICdlcnJvcic6XHJcbiAgICAgICAgcmV0dXJuIDxXaWZpT2ZmIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1yZWQtNTAwXCIgLz47XHJcbiAgICAgIGRlZmF1bHQ6XHJcbiAgICAgICAgcmV0dXJuIDxXaWZpT2ZmIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1ncmF5LTUwMFwiIC8+O1xyXG4gICAgfVxyXG4gIH07XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8RGlhbG9nIG9wZW49e29wZW59IG9uT3BlbkNoYW5nZT17b25PcGVuQ2hhbmdlfT5cclxuICAgICAgPERpYWxvZ0NvbnRlbnQgY2xhc3NOYW1lPVwic206bWF4LXctMnhsIG1heC1oLVs5MHZoXSBvdmVyZmxvdy1oaWRkZW4gZmxleCBmbGV4LWNvbFwiPlxyXG4gICAgICAgIDxEaWFsb2dIZWFkZXI+XHJcbiAgICAgICAgICA8RGlhbG9nVGl0bGUgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cclxuICAgICAgICAgICAgPFVzZXJzIGNsYXNzTmFtZT1cInctNSBoLTVcIiAvPlxyXG4gICAgICAgICAgICBMaXN0ZW4gVG9nZXRoZXJcclxuICAgICAgICAgICAge2dldENvbm5lY3Rpb25JY29uKCl9XHJcbiAgICAgICAgICAgIHtpc0Nvbm5lY3RlZCAmJiAoXHJcbiAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9e2lzSG9zdCA/ICdkZWZhdWx0JyA6ICdzZWNvbmRhcnknfT5cclxuICAgICAgICAgICAgICAgIHtpc0hvc3QgPyAnSG9zdCcgOiAnR3Vlc3QnfVxyXG4gICAgICAgICAgICAgIDwvQmFkZ2U+XHJcbiAgICAgICAgICAgICl9XHJcbiAgICAgICAgICA8L0RpYWxvZ1RpdGxlPlxyXG4gICAgICAgIDwvRGlhbG9nSGVhZGVyPlxyXG5cclxuICAgICAgICB7IWlzQ29ubmVjdGVkID8gKFxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTZcIj5cclxuICAgICAgICAgICAgey8qIENvbm5lY3Rpb24gU3RhdHVzICovfVxyXG4gICAgICAgICAgICB7Y29ubmVjdGlvblN0YXR1cyA9PT0gJ2Nvbm5lY3RpbmcnICYmIChcclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtNCBiZy1ibHVlLTUwIGRhcms6YmctYmx1ZS05MDAvMjAgcm91bmRlZC1sZyBib3JkZXIgYm9yZGVyLWJsdWUtMjAwIGRhcms6Ym9yZGVyLWJsdWUtODAwXCI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIHNwYWNlLXgtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8Q2xvY2sgY2xhc3NOYW1lPVwidy00IGgtNCBhbmltYXRlLXNwaW5cIiAvPlxyXG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtXCI+Q29ubmVjdGluZy4uLjwvc3Bhbj5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICApfVxyXG5cclxuICAgICAgICAgICAge2Nvbm5lY3Rpb25TdGF0dXMgPT09ICdlcnJvcicgJiYgKFxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC00IGJnLXJlZC01MCBkYXJrOmJnLXJlZC05MDAvMjAgcm91bmRlZC1sZyBib3JkZXIgYm9yZGVyLXJlZC0yMDAgZGFyazpib3JkZXItcmVkLTgwMFwiPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTJcIj5cclxuICAgICAgICAgICAgICAgICAgPFdpZmlPZmYgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1tZWRpdW0gdGV4dC1yZWQtNjAwIGRhcms6dGV4dC1yZWQtNDAwXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgQ29ubmVjdGlvbiBmYWlsZWQuIFBsZWFzZSB0cnkgYWdhaW4uXHJcbiAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICApfVxyXG5cclxuICAgICAgICAgICAgey8qIEhvc3QgU2VjdGlvbiAqL31cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTNcIj5cclxuICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LW1lZGl1bVwiPkhvc3QgYSBTZXNzaW9uPC9oMz5cclxuICAgICAgICAgICAgICB7IXJvb21Db2RlID8gKFxyXG4gICAgICAgICAgICAgICAgPEJ1dHRvbiBcclxuICAgICAgICAgICAgICAgICAgb25DbGljaz17b25DcmVhdGVSb29tfSBcclxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsXCJcclxuICAgICAgICAgICAgICAgICAgZGlzYWJsZWQ9e2Nvbm5lY3Rpb25TdGF0dXMgPT09ICdjb25uZWN0aW5nJ31cclxuICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgQ3JlYXRlIFJvb21cclxuICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgICkgOiAoXHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIFNoYXJlIHRoaXMgY29kZSB3aXRoIHlvdXIgZnJpZW5kcyAodXAgdG8gMTAgZ3Vlc3RzKTpcclxuICAgICAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgICA8SW5wdXRcclxuICAgICAgICAgICAgICAgICAgICAgIHZhbHVlPXtyb29tQ29kZX1cclxuICAgICAgICAgICAgICAgICAgICAgIHJlYWRPbmx5XHJcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmb250LW1vbm8gdGV4dC1sZ1wiXHJcbiAgICAgICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgICAgICA8QnV0dG9uXHJcbiAgICAgICAgICAgICAgICAgICAgICBzaXplPVwiaWNvblwiXHJcbiAgICAgICAgICAgICAgICAgICAgICB2YXJpYW50PVwib3V0bGluZVwiXHJcbiAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVDb3B5Q29kZX1cclxuICAgICAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgICAgICB7Y29waWVkID8gKFxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8Q2hlY2sgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8Q29weSBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIFdhaXRpbmcgZm9yIGd1ZXN0cyB0byBqb2luLi4uXHJcbiAgICAgICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZVwiPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgaW5zZXQtMCBmbGV4IGl0ZW1zLWNlbnRlclwiPlxyXG4gICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidy1mdWxsIGJvcmRlci10XCIgLz5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInJlbGF0aXZlIGZsZXgganVzdGlmeS1jZW50ZXIgdGV4dC14cyB1cHBlcmNhc2VcIj5cclxuICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImJnLWJhY2tncm91bmQgcHgtMiB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5Pcjwvc3Bhbj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICB7LyogSm9pbiBTZWN0aW9uICovfVxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktM1wiPlxyXG4gICAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtXCI+Sm9pbiBhIFNlc3Npb248L2gzPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgPElucHV0XHJcbiAgICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwiRW50ZXIgcm9vbSBjb2RlXCJcclxuICAgICAgICAgICAgICAgICAgdmFsdWU9e2pvaW5Db2RlfVxyXG4gICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldEpvaW5Db2RlKGUudGFyZ2V0LnZhbHVlKX1cclxuICAgICAgICAgICAgICAgICAgb25LZXlEb3duPXsoZSkgPT4gZS5rZXkgPT09ICdFbnRlcicgJiYgaGFuZGxlSm9pbigpfVxyXG4gICAgICAgICAgICAgICAgICBkaXNhYmxlZD17Y29ubmVjdGlvblN0YXR1cyA9PT0gJ2Nvbm5lY3RpbmcnfVxyXG4gICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgIDxCdXR0b24gXHJcbiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9e2hhbmRsZUpvaW59XHJcbiAgICAgICAgICAgICAgICAgIGRpc2FibGVkPXtjb25uZWN0aW9uU3RhdHVzID09PSAnY29ubmVjdGluZyd9XHJcbiAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgIEpvaW5cclxuICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICkgOiAoXHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNCBmbGV4LTEgZmxleCBmbGV4LWNvbFwiPlxyXG4gICAgICAgICAgICB7LyogQ29ubmVjdGlvbiBTdGF0dXMgKi99XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicm91bmRlZC1sZyBiZy1ncmFkaWVudC10by1yIGZyb20tcHJpbWFyeS8yMCB0by1wdXJwbGUtNTAwLzIwIHAtNCBib3JkZXIgYm9yZGVyLXByaW1hcnkvMjBcIj5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTJcIj5cclxuICAgICAgICAgICAgICAgICAgPFVzZXJzIGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC1wcmltYXJ5XCIgLz5cclxuICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LW1lZGl1bVwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHtpc0hvc3QgPyAnSG9zdGluZycgOiAnQ29ubmVjdGVkJ31cclxuICAgICAgICAgICAgICAgICAgPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICB7aXNIb3N0ICYmIDxDcm93biBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQteWVsbG93LTUwMFwiIC8+fVxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIHNwYWNlLXgtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cInNlY29uZGFyeVwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHtjb25uZWN0ZWRHdWVzdHMubGVuZ3RofSBndWVzdHtjb25uZWN0ZWRHdWVzdHMubGVuZ3RoICE9PSAxID8gJ3MnIDogJyd9XHJcbiAgICAgICAgICAgICAgICAgIDwvQmFkZ2U+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICB7LyogQ29ubmVjdGVkIEd1ZXN0cyBMaXN0ICovfVxyXG4gICAgICAgICAgICB7Y29ubmVjdGVkR3Vlc3RzLmxlbmd0aCA+IDAgJiYgKFxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XHJcbiAgICAgICAgICAgICAgICA8aDQgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LW1lZGl1bVwiPkNvbm5lY3RlZCBVc2VyczwvaDQ+XHJcbiAgICAgICAgICAgICAgICA8U2Nyb2xsQXJlYSBjbGFzc05hbWU9XCJtYXgtaC0yNFwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHtjb25uZWN0ZWRHdWVzdHMubWFwKChndWVzdCkgPT4gKFxyXG4gICAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAgICBrZXk9e2d1ZXN0LmlkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcC0yIHJvdW5kZWQtbWQgYmctbXV0ZWQvNTBcIlxyXG4gICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIHNwYWNlLXgtMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHtndWVzdC5pZGVudGl0eSA/IChcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxJZGVudGl0eUF2YXRhclNtYWxsIHNlZWQ9e2d1ZXN0LmlkZW50aXR5LmF2YXRhclNlZWR9IC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy04IGgtOCByb3VuZGVkLWZ1bGwgYmctZ3JhZGllbnQtdG8tYnIgZnJvbS1wdXJwbGUtNTAwIHRvLXBpbmstNTAwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxVc2VycyBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtd2hpdGVcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC1jb2xcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1tZWRpdW1cIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge2d1ZXN0LmlkZW50aXR5Py5kaXNwbGF5TmFtZSB8fCBndWVzdC51c2VybmFtZX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIHtndWVzdC5pc0xpdmUgJiYgKFxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cImRlc3RydWN0aXZlXCIgY2xhc3NOYW1lPVwidGV4dC14cyB3LWZpdCBtdC0wLjVcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8UmFkaW8gY2xhc3NOYW1lPVwidy0zIGgtMyBtci0xXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBMSVZFXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvQmFkZ2U+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmRcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7bmV3IERhdGUoZ3Vlc3QubGFzdEhlYXJ0YmVhdCkudG9Mb2NhbGVUaW1lU3RyaW5nKCl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDwvU2Nyb2xsQXJlYT5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgKX1cclxuXHJcbiAgICAgICAgICAgIHsvKiBMaXZlIFN0cmVhbSBDb250cm9scyAqL31cclxuICAgICAgICAgICAge2lzSG9zdCAmJiAoXHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTMgcC00IGJvcmRlciByb3VuZGVkLWxnIGJnLW11dGVkLzMwXCI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxyXG4gICAgICAgICAgICAgICAgICA8aDQgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LW1lZGl1bSBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxSYWRpbyBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cclxuICAgICAgICAgICAgICAgICAgICBMaXZlIFN0cmVhbSBCcm9hZGNhc3RpbmdcclxuICAgICAgICAgICAgICAgICAgPC9oND5cclxuICAgICAgICAgICAgICAgICAge2xpdmVTdHJlYW0uaXNMaXZlICYmIChcclxuICAgICAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cImRlc3RydWN0aXZlXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8UmFkaW8gY2xhc3NOYW1lPVwidy0zIGgtMyBtci0xXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgIExJVkVcclxuICAgICAgICAgICAgICAgICAgICA8L0JhZGdlPlxyXG4gICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICBcclxuICAgICAgICAgICAgICAgIHshbGl2ZVN0cmVhbS5pc0xpdmUgPyAoXHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8SW5wdXRcclxuICAgICAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJQYXN0ZSBZb3VUdWJlLCBUd2l0Y2gsIG9yIGN1c3RvbSBzdHJlYW0gVVJMXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgdmFsdWU9e2xpdmVTdHJlYW1Vcmx9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gaGFuZGxlVXJsQ2hhbmdlKGUudGFyZ2V0LnZhbHVlKX1cclxuICAgICAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uIG9uQ2xpY2s9e2hhbmRsZVN0YXJ0TGl2ZVN0cmVhbX0gc2l6ZT1cInNtXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxQbGF5IGNsYXNzTmFtZT1cInctNCBoLTQgbXItMlwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIFN0YXJ0XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIHNwYWNlLXgtMiB0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+UGxhdGZvcm06PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9XCJvdXRsaW5lXCI+e3NlbGVjdGVkUGxhdGZvcm19PC9CYWRnZT5cclxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHAtMiBiZy1yZWQtNTAgZGFyazpiZy1yZWQtOTAwLzIwIHJvdW5kZWRcIj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy0yIGgtMiBiZy1yZWQtNTAwIHJvdW5kZWQtZnVsbCBhbmltYXRlLXB1bHNlXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbVwiPkJyb2FkY2FzdGluZyB0byBhbGwgZ3Vlc3RzPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8QnV0dG9uIG9uQ2xpY2s9e29uU3RvcExpdmVTdHJlYW19IHNpemU9XCJzbVwiIHZhcmlhbnQ9XCJkZXN0cnVjdGl2ZVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8UGF1c2UgY2xhc3NOYW1lPVwidy00IGgtNCBtci0yXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgU3RvcFxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9CdXR0b24+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCBmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxFeHRlcm5hbExpbmsgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0cnVuY2F0ZVwiPntsaXZlU3RyZWFtLnN0cmVhbVVybH08L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgKX1cclxuXHJcbiAgICAgICAgICAgIHsvKiBHdWVzdCBMaXZlIE1vZGUgVG9nZ2xlICovfVxyXG4gICAgICAgICAgICB7IWlzSG9zdCAmJiAoXHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcC0zIGJvcmRlciByb3VuZGVkLWxnXCI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1tZWRpdW1cIj5MaXZlIE1vZGU8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZFwiPlxyXG4gICAgICAgICAgICAgICAgICAgIFN5bmMgd2l0aCBob3N0J3MgbGl2ZSBzdHJlYW1zXHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8U3dpdGNoXHJcbiAgICAgICAgICAgICAgICAgIGNoZWNrZWQ9e2d1ZXN0TGl2ZU1vZGV9XHJcbiAgICAgICAgICAgICAgICAgIG9uQ2hlY2tlZENoYW5nZT17KGNoZWNrZWQpID0+IHtcclxuICAgICAgICAgICAgICAgICAgICBzZXRHdWVzdExpdmVNb2RlKGNoZWNrZWQpO1xyXG4gICAgICAgICAgICAgICAgICAgIG9uVG9nZ2xlR3Vlc3RMaXZlTW9kZShjaGVja2VkKTtcclxuICAgICAgICAgICAgICAgICAgfX1cclxuICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICl9XHJcblxyXG4gICAgICAgICAgICB7LyogTGl2ZSBTdHJlYW0gU3RhdHVzIGZvciBHdWVzdHMgKi99XHJcbiAgICAgICAgICAgIHshaXNIb3N0ICYmIGxpdmVTdHJlYW0uaXNMaXZlICYmIGd1ZXN0TGl2ZU1vZGUgJiYgKFxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC0zIGJvcmRlciByb3VuZGVkLWxnIGJnLXJlZC01MCBkYXJrOmJnLXJlZC05MDAvMjBcIj5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0yIG1iLTJcIj5cclxuICAgICAgICAgICAgICAgICAgPFJhZGlvIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1yZWQtNTAwIGFuaW1hdGUtcHVsc2VcIiAvPlxyXG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtXCI+SG9zdCBpcyBMaXZlITwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgPEJhZGdlIHZhcmlhbnQ9XCJkZXN0cnVjdGl2ZVwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHtsaXZlU3RyZWFtLnBsYXRmb3JtPy50b1VwcGVyQ2FzZSgpfVxyXG4gICAgICAgICAgICAgICAgICA8L0JhZGdlPlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kXCI+XHJcbiAgICAgICAgICAgICAgICAgIFN5bmNpbmcgd2l0aCBob3N0J3Mge2xpdmVTdHJlYW0ucGxhdGZvcm19IHN0cmVhbVxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICl9XHJcblxyXG4gICAgICAgICAgICB7LyogQ2hhdCBUb2dnbGUgKi99XHJcbiAgICAgICAgICAgIDxCdXR0b25cclxuICAgICAgICAgICAgICB2YXJpYW50PVwib3V0bGluZVwiXHJcbiAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0U2hvd0NoYXQoIXNob3dDaGF0KX1cclxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGxcIlxyXG4gICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgPE1lc3NhZ2VDaXJjbGUgY2xhc3NOYW1lPVwiaC00IHctNCBtci0yXCIgLz5cclxuICAgICAgICAgICAgICB7c2hvd0NoYXQgPyAnSGlkZSBDaGF0JyA6ICdTaG93IENoYXQnfVxyXG4gICAgICAgICAgICAgIHttZXNzYWdlcy5sZW5ndGggPiAwICYmICFzaG93Q2hhdCAmJiAoXHJcbiAgICAgICAgICAgICAgICA8QmFkZ2UgdmFyaWFudD1cInNlY29uZGFyeVwiIGNsYXNzTmFtZT1cIm1sLTJcIj5cclxuICAgICAgICAgICAgICAgICAge21lc3NhZ2VzLmxlbmd0aH1cclxuICAgICAgICAgICAgICAgIDwvQmFkZ2U+XHJcbiAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgPC9CdXR0b24+XHJcblxyXG4gICAgICAgICAgICB7LyogQ2hhdCBTZWN0aW9uICovfVxyXG4gICAgICAgICAgICB7c2hvd0NoYXQgJiYgKFxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIGZsZXggZmxleC1jb2wgc3BhY2UteS0yIG1pbi1oLVsyMDBweF1cIj5cclxuICAgICAgICAgICAgICAgIDxTY3JvbGxBcmVhIGNsYXNzTmFtZT1cImZsZXgtMSBib3JkZXIgcm91bmRlZC1sZyBwLTMgYmctYmFja2dyb3VuZC81MFwiPlxyXG4gICAgICAgICAgICAgICAgICB7bWVzc2FnZXMubGVuZ3RoID09PSAwID8gKFxyXG4gICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIHRleHQtY2VudGVyIHB5LThcIj5cclxuICAgICAgICAgICAgICAgICAgICAgIE5vIG1lc3NhZ2VzIHlldC4gU3RhcnQgY2hhdHRpbmchXHJcbiAgICAgICAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICB7bWVzc2FnZXMubWFwKChtc2cpID0+IChcclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGtleT17bXNnLmlkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17YGZsZXggZ2FwLTIgJHttc2cuaXNPd24gPyAnanVzdGlmeS1lbmQnIDogJ2p1c3RpZnktc3RhcnQnfWB9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7IW1zZy5pc093biAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtc2hyaW5rLTAgbXQtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7bXNnLmlkZW50aXR5ID8gKFxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxJZGVudGl0eUF2YXRhclNtYWxsIHNlZWQ9e21zZy5pZGVudGl0eS5hdmF0YXJTZWVkfSAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy04IGgtOCByb3VuZGVkLWZ1bGwgYmctZ3JhZGllbnQtdG8tYnIgZnJvbS1wdXJwbGUtNTAwIHRvLXBpbmstNTAwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8VXNlcnMgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LXdoaXRlXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgbWF4LXctWzcwJV0gcm91bmRlZC1sZyBweC0zIHB5LTIgdGV4dC1zbSAke1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICBtc2cuaXNPd25cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA/ICdiZy1wcmltYXJ5IHRleHQtcHJpbWFyeS1mb3JlZ3JvdW5kJ1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDogJ2JnLW11dGVkJ1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgfWB9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgeyFtc2cuaXNPd24gJiYgKG1zZy5pZGVudGl0eT8uZGlzcGxheU5hbWUgfHwgbXNnLnVzZXJuYW1lKSAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1zZW1pYm9sZCBvcGFjaXR5LTgwIG1iLTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7bXNnLmlkZW50aXR5Py5kaXNwbGF5TmFtZSB8fCBtc2cudXNlcm5hbWV9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8cD57bXNnLm1lc3NhZ2V9PC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyBvcGFjaXR5LTcwIG10LTFcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge25ldyBEYXRlKG1zZy50aW1lc3RhbXApLnRvTG9jYWxlVGltZVN0cmluZyhbXSwge1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGhvdXI6ICcyLWRpZ2l0JyxcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBtaW51dGU6ICcyLWRpZ2l0JyxcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfSl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAge21zZy5pc093biAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtc2hyaW5rLTAgbXQtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7bXNnLmlkZW50aXR5ID8gKFxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxJZGVudGl0eUF2YXRhclNtYWxsIHNlZWQ9e21zZy5pZGVudGl0eS5hdmF0YXJTZWVkfSAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy04IGgtOCByb3VuZGVkLWZ1bGwgYmctZ3JhZGllbnQtdG8tYnIgZnJvbS1waW5rLTUwMCB0by1wdXJwbGUtNTAwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8VXNlcnMgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LXdoaXRlXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgKSl9XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IHJlZj17bWVzc2FnZXNFbmRSZWZ9IC8+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICA8L1Njcm9sbEFyZWE+XHJcblxyXG4gICAgICAgICAgICAgICAgey8qIE1lc3NhZ2UgSW5wdXQgKi99XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgPElucHV0XHJcbiAgICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJUeXBlIGEgbWVzc2FnZS4uLlwiXHJcbiAgICAgICAgICAgICAgICAgICAgdmFsdWU9e2NoYXRNZXNzYWdlfVxyXG4gICAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0Q2hhdE1lc3NhZ2UoZS50YXJnZXQudmFsdWUpfVxyXG4gICAgICAgICAgICAgICAgICAgIG9uS2V5RG93bj17KGUpID0+IGUua2V5ID09PSAnRW50ZXInICYmIGhhbmRsZVNlbmRNZXNzYWdlKCl9XHJcbiAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZmxleC0xXCJcclxuICAgICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgIHNpemU9XCJpY29uXCJcclxuICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVTZW5kTWVzc2FnZX1cclxuICAgICAgICAgICAgICAgICAgICBkaXNhYmxlZD17IWNoYXRNZXNzYWdlLnRyaW0oKX1cclxuICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgIDxTZW5kIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICApfVxyXG5cclxuICAgICAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgICAgIHZhcmlhbnQ9XCJkZXN0cnVjdGl2ZVwiXHJcbiAgICAgICAgICAgICAgb25DbGljaz17b25EaXNjb25uZWN0fVxyXG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbFwiXHJcbiAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICBEaXNjb25uZWN0XHJcbiAgICAgICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgKX1cclxuICAgICAgPC9EaWFsb2dDb250ZW50PlxyXG4gICAgPC9EaWFsb2c+XHJcbiAgKTtcclxufTsiXSwibmFtZXMiOlsidXNlU3RhdGUiLCJ1c2VSZWYiLCJ1c2VFZmZlY3QiLCJEaWFsb2ciLCJEaWFsb2dDb250ZW50IiwiRGlhbG9nSGVhZGVyIiwiRGlhbG9nVGl0bGUiLCJCdXR0b24iLCJJbnB1dCIsIlNjcm9sbEFyZWEiLCJCYWRnZSIsIlN3aXRjaCIsIlVzZXJzIiwiQ29weSIsIkNoZWNrIiwiU2VuZCIsIk1lc3NhZ2VDaXJjbGUiLCJSYWRpbyIsIlBsYXkiLCJQYXVzZSIsIkV4dGVybmFsTGluayIsIkNyb3duIiwiV2lmaSIsIldpZmlPZmYiLCJDbG9jayIsInVzZVRvYXN0IiwiSWRlbnRpdHlBdmF0YXJTbWFsbCIsIkVuaGFuY2VkTGlzdGVuVG9nZXRoZXJEaWFsb2ciLCJvcGVuIiwib25PcGVuQ2hhbmdlIiwib25DcmVhdGVSb29tIiwib25Kb2luUm9vbSIsInJvb21Db2RlIiwiaXNDb25uZWN0ZWQiLCJpc0hvc3QiLCJjb25uZWN0ZWRHdWVzdHMiLCJjb25uZWN0aW9uU3RhdHVzIiwibGl2ZVN0cmVhbSIsIm9uRGlzY29ubmVjdCIsIm1lc3NhZ2VzIiwib25TZW5kTWVzc2FnZSIsIm9uU3RhcnRMaXZlU3RyZWFtIiwib25TdG9wTGl2ZVN0cmVhbSIsIm9uVG9nZ2xlR3Vlc3RMaXZlTW9kZSIsImpvaW5Db2RlIiwic2V0Sm9pbkNvZGUiLCJjb3BpZWQiLCJzZXRDb3BpZWQiLCJjaGF0TWVzc2FnZSIsInNldENoYXRNZXNzYWdlIiwic2hvd0NoYXQiLCJzZXRTaG93Q2hhdCIsImxpdmVTdHJlYW1VcmwiLCJzZXRMaXZlU3RyZWFtVXJsIiwic2VsZWN0ZWRQbGF0Zm9ybSIsInNldFNlbGVjdGVkUGxhdGZvcm0iLCJndWVzdExpdmVNb2RlIiwic2V0R3Vlc3RMaXZlTW9kZSIsInRvYXN0IiwibWVzc2FnZXNFbmRSZWYiLCJjdXJyZW50Iiwic2Nyb2xsSW50b1ZpZXciLCJiZWhhdmlvciIsInRpdGxlIiwiZGVzY3JpcHRpb24iLCJsZW5ndGgiLCJoYW5kbGVDb3B5Q29kZSIsIm5hdmlnYXRvciIsImNsaXBib2FyZCIsIndyaXRlVGV4dCIsInNldFRpbWVvdXQiLCJoYW5kbGVKb2luIiwidHJpbSIsInZhcmlhbnQiLCJoYW5kbGVTZW5kTWVzc2FnZSIsImhhbmRsZVN0YXJ0TGl2ZVN0cmVhbSIsImRldGVjdFBsYXRmb3JtIiwidXJsIiwiaW5jbHVkZXMiLCJoYW5kbGVVcmxDaGFuZ2UiLCJnZXRDb25uZWN0aW9uSWNvbiIsImNsYXNzTmFtZSIsImRpdiIsInNwYW4iLCJoMyIsIm9uQ2xpY2siLCJkaXNhYmxlZCIsInAiLCJ2YWx1ZSIsInJlYWRPbmx5Iiwic2l6ZSIsInBsYWNlaG9sZGVyIiwib25DaGFuZ2UiLCJlIiwidGFyZ2V0Iiwib25LZXlEb3duIiwia2V5IiwiaDQiLCJtYXAiLCJndWVzdCIsImlkZW50aXR5Iiwic2VlZCIsImF2YXRhclNlZWQiLCJkaXNwbGF5TmFtZSIsInVzZXJuYW1lIiwiaXNMaXZlIiwiRGF0ZSIsImxhc3RIZWFydGJlYXQiLCJ0b0xvY2FsZVRpbWVTdHJpbmciLCJpZCIsInN0cmVhbVVybCIsImNoZWNrZWQiLCJvbkNoZWNrZWRDaGFuZ2UiLCJwbGF0Zm9ybSIsInRvVXBwZXJDYXNlIiwibXNnIiwiaXNPd24iLCJtZXNzYWdlIiwidGltZXN0YW1wIiwiaG91ciIsIm1pbnV0ZSIsInJlZiJdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsU0FBU0EsUUFBUSxFQUFFQyxNQUFNLEVBQUVDLFNBQVMsUUFBUSxRQUFRO0FBQ3BELFNBQVNDLE1BQU0sRUFBRUMsYUFBYSxFQUFFQyxZQUFZLEVBQUVDLFdBQVcsUUFBUSx5QkFBeUI7QUFDMUYsU0FBU0MsTUFBTSxRQUFRLHlCQUF5QjtBQUNoRCxTQUFTQyxLQUFLLFFBQVEsd0JBQXdCO0FBQzlDLFNBQVNDLFVBQVUsUUFBUSw4QkFBOEI7QUFDekQsU0FBU0MsS0FBSyxRQUFRLHdCQUF3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

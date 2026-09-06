@@ -1,0 +1,292 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/SearchBar.tsx");import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+let prevRefreshReg;
+let prevRefreshSig;
+
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react-swc can't detect preamble. Something is wrong."
+    );
+  }
+
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/Projects/Moodify/src/components/SearchBar.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+
+import __vite__cjsImport2_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=a0704df4"; const _jsxDEV = __vite__cjsImport2_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=a0704df4"; const useState = __vite__cjsImport3_react["useState"];
+import { Search } from "/node_modules/.vite/deps/lucide-react.js?v=a0704df4";
+import { searchSongs } from "/src/services/jiosaavn.ts";
+import { AddToPlaylistButton } from "/src/components/AddToPlaylistButton.tsx";
+export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreatePlaylist })=>{
+    _s();
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const handleSearch = async ()=>{
+        if (!query.trim()) return;
+        setIsSearching(true);
+        try {
+            const tracks = await searchSongs(query, 10);
+            setResults(tracks);
+        } catch (error) {
+            console.error('Search failed:', error);
+        } finally{
+            setIsSearching(false);
+        }
+    };
+    const handleKeyPress = (e)=>{
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+    return /*#__PURE__*/ _jsxDEV("div", {
+        className: "max-w-4xl mx-auto space-y-8 fade-in",
+        children: [
+            /*#__PURE__*/ _jsxDEV("div", {
+                className: "flex gap-3 items-center",
+                children: [
+                    /*#__PURE__*/ _jsxDEV("div", {
+                        className: "relative flex-1",
+                        children: [
+                            /*#__PURE__*/ _jsxDEV(Search, {
+                                className: "absolute left-6 top-1/2 transform -translate-y-1/2 h-5 w-5",
+                                style: {
+                                    color: 'var(--text-tertiary)'
+                                }
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                lineNumber: 45,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ _jsxDEV("input", {
+                                type: "text",
+                                placeholder: "Search for songs, artists, albums...",
+                                value: query,
+                                onChange: (e)=>setQuery(e.target.value),
+                                onKeyPress: handleKeyPress,
+                                className: "search-input w-full pl-14 pr-6",
+                                style: {
+                                    fontSize: '1rem'
+                                }
+                            }, void 0, false, {
+                                fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                lineNumber: 49,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                        lineNumber: 44,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV("button", {
+                        onClick: handleSearch,
+                        disabled: isSearching,
+                        className: "btn-primary whitespace-nowrap",
+                        style: {
+                            opacity: isSearching ? 0.6 : 1,
+                            cursor: isSearching ? 'wait' : 'pointer'
+                        },
+                        children: isSearching ? 'Searching...' : 'Search'
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                        lineNumber: 61,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                lineNumber: 43,
+                columnNumber: 7
+            }, this),
+            results.length > 0 && /*#__PURE__*/ _jsxDEV("div", {
+                className: "space-y-4 scale-in",
+                children: [
+                    /*#__PURE__*/ _jsxDEV("h3", {
+                        className: "text-sm uppercase tracking-wide",
+                        style: {
+                            color: 'var(--text-tertiary)',
+                            fontWeight: 500,
+                            letterSpacing: '0.5px'
+                        },
+                        children: "Search Results"
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                        lineNumber: 77,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ _jsxDEV("div", {
+                        className: "space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar",
+                        children: results.map((track, index)=>/*#__PURE__*/ _jsxDEV("div", {
+                                className: "list-item group",
+                                style: {
+                                    animationDelay: `${index * 0.03}s`
+                                },
+                                children: /*#__PURE__*/ _jsxDEV("div", {
+                                    className: "flex items-center gap-4",
+                                    children: [
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "relative flex-shrink-0",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("img", {
+                                                    src: track.albumArt || 'https://picsum.photos/60/60?random=' + track.id,
+                                                    alt: track.title,
+                                                    className: "w-16 h-16 rounded-xl object-cover",
+                                                    style: {
+                                                        border: '1px solid var(--stroke-subtle)'
+                                                    }
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                                    lineNumber: 100,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("div", {
+                                                    className: "absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                                                    style: {
+                                                        background: 'radial-gradient(circle, var(--accent-glow), transparent 70%)',
+                                                        pointerEvents: 'none'
+                                                    }
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                                    lineNumber: 108,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                            lineNumber: 99,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex-1 min-w-0",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                    className: "font-medium truncate mb-1",
+                                                    style: {
+                                                        color: 'var(--text-primary)',
+                                                        fontWeight: 400
+                                                    },
+                                                    children: track.title
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                                    lineNumber: 119,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                    className: "text-sm truncate mb-0.5",
+                                                    style: {
+                                                        color: 'var(--text-secondary)',
+                                                        fontWeight: 300
+                                                    },
+                                                    children: track.artist
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                                    lineNumber: 128,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV("p", {
+                                                    className: "text-xs truncate",
+                                                    style: {
+                                                        color: 'var(--text-tertiary)',
+                                                        fontWeight: 300
+                                                    },
+                                                    children: track.album
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                                    lineNumber: 137,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                            lineNumber: 118,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ _jsxDEV("div", {
+                                            className: "flex gap-2 flex-shrink-0",
+                                            children: [
+                                                /*#__PURE__*/ _jsxDEV("button", {
+                                                    onClick: ()=>onTrackSelect(track),
+                                                    className: "btn-primary px-5 py-2 text-sm",
+                                                    children: "Play"
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                                    lineNumber: 150,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ _jsxDEV(AddToPlaylistButton, {
+                                                    track: track,
+                                                    variant: "icon",
+                                                    playlists: playlists,
+                                                    onAddToPlaylist: onAddToPlaylist,
+                                                    onCreatePlaylist: onCreatePlaylist
+                                                }, void 0, false, {
+                                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                                    lineNumber: 156,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                            lineNumber: 149,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                    lineNumber: 97,
+                                    columnNumber: 17
+                                }, this)
+                            }, track.id, false, {
+                                fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                                lineNumber: 90,
+                                columnNumber: 15
+                            }, this))
+                    }, void 0, false, {
+                        fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                        lineNumber: 88,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+                lineNumber: 76,
+                columnNumber: 9
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "D:/Projects/Moodify/src/components/SearchBar.tsx",
+        lineNumber: 41,
+        columnNumber: 5
+    }, this);
+};
+_s(SearchBar, "5WW7yQnw8uUxcrFFHtg0ucXWXx4=");
+_c = SearchBar;
+var _c;
+$RefreshReg$(_c, "SearchBar");
+
+
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+
+
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/Projects/Moodify/src/components/SearchBar.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/Projects/Moodify/src/components/SearchBar.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIlNlYXJjaEJhci50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBTZWFyY2ggfSBmcm9tICdsdWNpZGUtcmVhY3QnO1xuaW1wb3J0IHsgc2VhcmNoU29uZ3MgfSBmcm9tICdAL3NlcnZpY2VzL2ppb3NhYXZuJztcbmltcG9ydCB7IFRyYWNrIH0gZnJvbSAnQC9kYXRhL21vY2tNdXNpYyc7XG5pbXBvcnQgeyBQbGF5bGlzdCB9IGZyb20gJ0AvaG9va3MvdXNlTXVzaWNQbGF5ZXInO1xuaW1wb3J0IHsgQWRkVG9QbGF5bGlzdEJ1dHRvbiB9IGZyb20gJy4vQWRkVG9QbGF5bGlzdEJ1dHRvbic7XG5cbmludGVyZmFjZSBTZWFyY2hCYXJQcm9wcyB7XG4gIG9uVHJhY2tTZWxlY3Q6ICh0cmFjazogVHJhY2spID0+IHZvaWQ7XG4gIHBsYXlsaXN0czogUGxheWxpc3RbXTtcbiAgb25BZGRUb1BsYXlsaXN0OiAocGxheWxpc3RJZDogc3RyaW5nLCB0cmFjazogVHJhY2spID0+IHZvaWQ7XG4gIG9uQ3JlYXRlUGxheWxpc3Q6IChuYW1lOiBzdHJpbmcpID0+IHZvaWQ7XG59XG5cbmV4cG9ydCBjb25zdCBTZWFyY2hCYXIgPSAoeyBvblRyYWNrU2VsZWN0LCBwbGF5bGlzdHMsIG9uQWRkVG9QbGF5bGlzdCwgb25DcmVhdGVQbGF5bGlzdCB9OiBTZWFyY2hCYXJQcm9wcykgPT4ge1xuICBjb25zdCBbcXVlcnksIHNldFF1ZXJ5XSA9IHVzZVN0YXRlKCcnKTtcbiAgY29uc3QgW3Jlc3VsdHMsIHNldFJlc3VsdHNdID0gdXNlU3RhdGU8VHJhY2tbXT4oW10pO1xuICBjb25zdCBbaXNTZWFyY2hpbmcsIHNldElzU2VhcmNoaW5nXSA9IHVzZVN0YXRlKGZhbHNlKTtcblxuICBjb25zdCBoYW5kbGVTZWFyY2ggPSBhc3luYyAoKSA9PiB7XG4gICAgaWYgKCFxdWVyeS50cmltKCkpIHJldHVybjtcbiAgICBcbiAgICBzZXRJc1NlYXJjaGluZyh0cnVlKTtcbiAgICB0cnkge1xuICAgICAgY29uc3QgdHJhY2tzID0gYXdhaXQgc2VhcmNoU29uZ3MocXVlcnksIDEwKTtcbiAgICAgIHNldFJlc3VsdHModHJhY2tzKTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgY29uc29sZS5lcnJvcignU2VhcmNoIGZhaWxlZDonLCBlcnJvcik7XG4gICAgfSBmaW5hbGx5IHtcbiAgICAgIHNldElzU2VhcmNoaW5nKGZhbHNlKTtcbiAgICB9XG4gIH07XG5cbiAgY29uc3QgaGFuZGxlS2V5UHJlc3MgPSAoZTogUmVhY3QuS2V5Ym9hcmRFdmVudCkgPT4ge1xuICAgIGlmIChlLmtleSA9PT0gJ0VudGVyJykge1xuICAgICAgaGFuZGxlU2VhcmNoKCk7XG4gICAgfVxuICB9O1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJtYXgtdy00eGwgbXgtYXV0byBzcGFjZS15LTggZmFkZS1pblwiPlxuICAgICAgey8qIEZsb2F0aW5nIFBpbGwgU2VhcmNoIEJhciAqL31cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMyBpdGVtcy1jZW50ZXJcIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZSBmbGV4LTFcIj5cbiAgICAgICAgICA8U2VhcmNoIFxuICAgICAgICAgICAgY2xhc3NOYW1lPVwiYWJzb2x1dGUgbGVmdC02IHRvcC0xLzIgdHJhbnNmb3JtIC10cmFuc2xhdGUteS0xLzIgaC01IHctNVwiIFxuICAgICAgICAgICAgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS10ZXh0LXRlcnRpYXJ5KScgfX1cbiAgICAgICAgICAvPlxuICAgICAgICAgIDxpbnB1dFxuICAgICAgICAgICAgdHlwZT1cInRleHRcIlxuICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJTZWFyY2ggZm9yIHNvbmdzLCBhcnRpc3RzLCBhbGJ1bXMuLi5cIlxuICAgICAgICAgICAgdmFsdWU9e3F1ZXJ5fVxuICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRRdWVyeShlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICBvbktleVByZXNzPXtoYW5kbGVLZXlQcmVzc31cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInNlYXJjaC1pbnB1dCB3LWZ1bGwgcGwtMTQgcHItNlwiXG4gICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICBmb250U2l6ZTogJzFyZW0nXG4gICAgICAgICAgICB9fVxuICAgICAgICAgIC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgb25DbGljaz17aGFuZGxlU2VhcmNofVxuICAgICAgICAgIGRpc2FibGVkPXtpc1NlYXJjaGluZ31cbiAgICAgICAgICBjbGFzc05hbWU9XCJidG4tcHJpbWFyeSB3aGl0ZXNwYWNlLW5vd3JhcFwiXG4gICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgIG9wYWNpdHk6IGlzU2VhcmNoaW5nID8gMC42IDogMSxcbiAgICAgICAgICAgIGN1cnNvcjogaXNTZWFyY2hpbmcgPyAnd2FpdCcgOiAncG9pbnRlcidcbiAgICAgICAgICB9fVxuICAgICAgICA+XG4gICAgICAgICAge2lzU2VhcmNoaW5nID8gJ1NlYXJjaGluZy4uLicgOiAnU2VhcmNoJ31cbiAgICAgICAgPC9idXR0b24+XG4gICAgICA8L2Rpdj5cblxuICAgICAgey8qIFByZW1pdW0gU2VhcmNoIFJlc3VsdHMgKi99XG4gICAgICB7cmVzdWx0cy5sZW5ndGggPiAwICYmIChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTQgc2NhbGUtaW5cIj5cbiAgICAgICAgICA8aDMgXG4gICAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LXNtIHVwcGVyY2FzZSB0cmFja2luZy13aWRlXCJcbiAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgIGNvbG9yOiAndmFyKC0tdGV4dC10ZXJ0aWFyeSknLFxuICAgICAgICAgICAgICBmb250V2VpZ2h0OiA1MDAsXG4gICAgICAgICAgICAgIGxldHRlclNwYWNpbmc6ICcwLjVweCdcbiAgICAgICAgICAgIH19XG4gICAgICAgICAgPlxuICAgICAgICAgICAgU2VhcmNoIFJlc3VsdHNcbiAgICAgICAgICA8L2gzPlxuICAgICAgICAgIFxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0zIG1heC1oLVs2MDBweF0gb3ZlcmZsb3cteS1hdXRvIHByLTIgY3VzdG9tLXNjcm9sbGJhclwiPlxuICAgICAgICAgICAge3Jlc3VsdHMubWFwKCh0cmFjaywgaW5kZXgpID0+IChcbiAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgIGtleT17dHJhY2suaWR9XG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwibGlzdC1pdGVtIGdyb3VwXCJcbiAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgYW5pbWF0aW9uRGVsYXk6IGAke2luZGV4ICogMC4wM31zYFxuICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC00XCI+XG4gICAgICAgICAgICAgICAgICB7LyogQWxidW0gQXJ0IHdpdGggR2xvdyAqL31cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVsYXRpdmUgZmxleC1zaHJpbmstMFwiPlxuICAgICAgICAgICAgICAgICAgICA8aW1nXG4gICAgICAgICAgICAgICAgICAgICAgc3JjPXt0cmFjay5hbGJ1bUFydCB8fCAnaHR0cHM6Ly9waWNzdW0ucGhvdG9zLzYwLzYwP3JhbmRvbT0nICsgdHJhY2suaWR9XG4gICAgICAgICAgICAgICAgICAgIGFsdD17dHJhY2sudGl0bGV9XG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy0xNiBoLTE2IHJvdW5kZWQteGwgb2JqZWN0LWNvdmVyXCJcbiAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgYm9yZGVyOiAnMXB4IHNvbGlkIHZhcigtLXN0cm9rZS1zdWJ0bGUpJ1xuICAgICAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgICAgIDxkaXYgXG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiYWJzb2x1dGUgaW5zZXQtMCByb3VuZGVkLXhsIG9wYWNpdHktMCBncm91cC1ob3ZlcjpvcGFjaXR5LTEwMCB0cmFuc2l0aW9uLW9wYWNpdHkgZHVyYXRpb24tMzAwXCJcbiAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgYmFja2dyb3VuZDogJ3JhZGlhbC1ncmFkaWVudChjaXJjbGUsIHZhcigtLWFjY2VudC1nbG93KSwgdHJhbnNwYXJlbnQgNzAlKScsXG4gICAgICAgICAgICAgICAgICAgICAgICBwb2ludGVyRXZlbnRzOiAnbm9uZSdcbiAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgIHsvKiBUcmFjayBJbmZvICovfVxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4LTEgbWluLXctMFwiPlxuICAgICAgICAgICAgICAgICAgICA8cCBcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmb250LW1lZGl1bSB0cnVuY2F0ZSBtYi0xXCJcbiAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgY29sb3I6ICd2YXIoLS10ZXh0LXByaW1hcnkpJyxcbiAgICAgICAgICAgICAgICAgICAgICAgIGZvbnRXZWlnaHQ6IDQwMFxuICAgICAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICB7dHJhY2sudGl0bGV9XG4gICAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICAgICAgPHAgXG4gICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidGV4dC1zbSB0cnVuY2F0ZSBtYi0wLjVcIlxuICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgICAgICAgICBjb2xvcjogJ3ZhcigtLXRleHQtc2Vjb25kYXJ5KScsXG4gICAgICAgICAgICAgICAgICAgICAgICBmb250V2VpZ2h0OiAzMDBcbiAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAge3RyYWNrLmFydGlzdH1cbiAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgICA8cCBcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRydW5jYXRlXCJcbiAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgY29sb3I6ICd2YXIoLS10ZXh0LXRlcnRpYXJ5KScsXG4gICAgICAgICAgICAgICAgICAgICAgICBmb250V2VpZ2h0OiAzMDBcbiAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAge3RyYWNrLmFsYnVtfVxuICAgICAgICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICAgICAgey8qIEFjdGlvbiBCdXR0b25zICovfVxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yIGZsZXgtc2hyaW5rLTBcIj5cbiAgICAgICAgICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uVHJhY2tTZWxlY3QodHJhY2spfVxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImJ0bi1wcmltYXJ5IHB4LTUgcHktMiB0ZXh0LXNtXCJcbiAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgIFBsYXlcbiAgICAgICAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICAgICAgICAgIDxBZGRUb1BsYXlsaXN0QnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgdHJhY2s9e3RyYWNrfVxuICAgICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJpY29uXCJcbiAgICAgICAgICAgICAgICAgICAgICBwbGF5bGlzdHM9e3BsYXlsaXN0c31cbiAgICAgICAgICAgICAgICAgICAgICBvbkFkZFRvUGxheWxpc3Q9e29uQWRkVG9QbGF5bGlzdH1cbiAgICAgICAgICAgICAgICAgICAgICBvbkNyZWF0ZVBsYXlsaXN0PXtvbkNyZWF0ZVBsYXlsaXN0fVxuICAgICAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICkpfVxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2Rpdj5cbiAgICAgICl9XG4gICAgPC9kaXY+XG4gICk7XG59OyJdLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsIlNlYXJjaCIsInNlYXJjaFNvbmdzIiwiQWRkVG9QbGF5bGlzdEJ1dHRvbiIsIlNlYXJjaEJhciIsIm9uVHJhY2tTZWxlY3QiLCJwbGF5bGlzdHMiLCJvbkFkZFRvUGxheWxpc3QiLCJvbkNyZWF0ZVBsYXlsaXN0IiwicXVlcnkiLCJzZXRRdWVyeSIsInJlc3VsdHMiLCJzZXRSZXN1bHRzIiwiaXNTZWFyY2hpbmciLCJzZXRJc1NlYXJjaGluZyIsImhhbmRsZVNlYXJjaCIsInRyaW0iLCJ0cmFja3MiLCJlcnJvciIsImNvbnNvbGUiLCJoYW5kbGVLZXlQcmVzcyIsImUiLCJrZXkiLCJkaXYiLCJjbGFzc05hbWUiLCJzdHlsZSIsImNvbG9yIiwiaW5wdXQiLCJ0eXBlIiwicGxhY2Vob2xkZXIiLCJ2YWx1ZSIsIm9uQ2hhbmdlIiwidGFyZ2V0Iiwib25LZXlQcmVzcyIsImZvbnRTaXplIiwiYnV0dG9uIiwib25DbGljayIsImRpc2FibGVkIiwib3BhY2l0eSIsImN1cnNvciIsImxlbmd0aCIsImgzIiwiZm9udFdlaWdodCIsImxldHRlclNwYWNpbmciLCJtYXAiLCJ0cmFjayIsImluZGV4IiwiYW5pbWF0aW9uRGVsYXkiLCJpbWciLCJzcmMiLCJhbGJ1bUFydCIsImlkIiwiYWx0IiwidGl0bGUiLCJib3JkZXIiLCJiYWNrZ3JvdW5kIiwicG9pbnRlckV2ZW50cyIsInAiLCJhcnRpc3QiLCJhbGJ1bSIsInZhcmlhbnQiXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLFNBQVNBLFFBQVEsUUFBUSxRQUFRO0FBQ2pDLFNBQVNDLE1BQU0sUUFBUSxlQUFlO0FBQ3RDLFNBQVNDLFdBQVcsUUFBUSxzQkFBc0I7QUFHbEQsU0FBU0MsbUJBQW1CLFFBQVEsd0JBQXdCO0FBUzVELE9BQU8sTUFBTUMsWUFBWSxDQUFDLEVBQUVDLGFBQWEsRUFBRUMsU0FBUyxFQUFFQyxlQUFlLEVBQUVDLGdCQUFnQixFQUFrQjs7SUFDdkcsTUFBTSxDQUFDQyxPQUFPQyxTQUFTLEdBQUdWLFNBQVM7SUFDbkMsTUFBTSxDQUFDVyxTQUFTQyxXQUFXLEdBQUdaLFNBQWtCLEVBQUU7SUFDbEQsTUFBTSxDQUFDYSxhQUFhQyxlQUFlLEdBQUdkLFNBQVM7SUFFL0MsTUFBTWUsZUFBZTtRQUNuQixJQUFJLENBQUNOLE1BQU1PLElBQUksSUFBSTtRQUVuQkYsZUFBZTtRQUNmLElBQUk7WUFDRixNQUFNRyxTQUFTLE1BQU1mLFlBQVlPLE9BQU87WUFDeENHLFdBQVdLO1FBQ2IsRUFBRSxPQUFPQyxPQUFP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

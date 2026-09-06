@@ -1,0 +1,211 @@
+// Mock music data for demo purposes
+// In a real app, this would come from the JioSaavn API or similar service
+// Generate placeholder album art URLs
+const generateAlbumArt = (seed)=>`https://picsum.photos/seed/${seed}/400/400`;
+export const mockPlaylists = {
+    chill: {
+        id: 'chill-playlist',
+        name: 'Cherry Blossom Dreams',
+        description: 'Peaceful melodies for serene moments',
+        moodId: 'chill',
+        tracks: [
+            {
+                id: 'chill-1',
+                title: 'Sakura Whispers',
+                artist: 'Ambient Collective',
+                album: 'Spring Reverie',
+                albumArt: generateAlbumArt('chill1'),
+                duration: 245
+            },
+            {
+                id: 'chill-2',
+                title: 'Mountain Breeze',
+                artist: 'Zen Garden',
+                album: 'Nature\'s Symphony',
+                albumArt: generateAlbumArt('chill2'),
+                duration: 198
+            },
+            {
+                id: 'chill-3',
+                title: 'Moonlit Path',
+                artist: 'Nocturne',
+                album: 'Midnight Reflections',
+                albumArt: generateAlbumArt('chill3'),
+                duration: 267
+            },
+            {
+                id: 'chill-4',
+                title: 'Gentle Rain',
+                artist: 'Atmospheric',
+                album: 'Weather Sounds',
+                albumArt: generateAlbumArt('chill4'),
+                duration: 312
+            }
+        ]
+    },
+    melancholy: {
+        id: 'melancholy-playlist',
+        name: 'Rainy Day Reflections',
+        description: 'Contemplative tunes for thoughtful moments',
+        moodId: 'melancholy',
+        tracks: [
+            {
+                id: 'melancholy-1',
+                title: 'Empty Streets',
+                artist: 'Solitude',
+                album: 'Urban Soliloquy',
+                albumArt: generateAlbumArt('melancholy1'),
+                duration: 223
+            },
+            {
+                id: 'melancholy-2',
+                title: 'Fading Memories',
+                artist: 'Nostalgia',
+                album: 'Yesterday\'s Echo',
+                albumArt: generateAlbumArt('melancholy2'),
+                duration: 189
+            },
+            {
+                id: 'melancholy-3',
+                title: 'Window Panes',
+                artist: 'Introspection',
+                album: 'Inner Dialogues',
+                albumArt: generateAlbumArt('melancholy3'),
+                duration: 256
+            }
+        ]
+    },
+    workout: {
+        id: 'workout-playlist',
+        name: 'Fire & Fury',
+        description: 'High-energy beats to fuel your passion',
+        moodId: 'workout',
+        tracks: [
+            {
+                id: 'workout-1',
+                title: 'Unstoppable Force',
+                artist: 'Power Drive',
+                album: 'Maximum Energy',
+                albumArt: generateAlbumArt('workout1'),
+                duration: 203
+            },
+            {
+                id: 'workout-2',
+                title: 'Burning Desire',
+                artist: 'Adrenaline Rush',
+                album: 'Beast Mode',
+                albumArt: generateAlbumArt('workout2'),
+                duration: 187
+            },
+            {
+                id: 'workout-3',
+                title: 'Thunder Strike',
+                artist: 'Lightning Bolt',
+                album: 'Storm Chaser',
+                albumArt: generateAlbumArt('workout3'),
+                duration: 195
+            }
+        ]
+    },
+    focus: {
+        id: 'focus-playlist',
+        name: 'Deep Work Flow',
+        description: 'Concentration-enhancing soundscapes',
+        moodId: 'focus',
+        tracks: [
+            {
+                id: 'focus-1',
+                title: 'Neural Pathways',
+                artist: 'Cognitive',
+                album: 'Mind Palace',
+                albumArt: generateAlbumArt('focus1'),
+                duration: 432
+            },
+            {
+                id: 'focus-2',
+                title: 'Binary Dreams',
+                artist: 'Algorithm',
+                album: 'Code Symphony',
+                albumArt: generateAlbumArt('focus2'),
+                duration: 378
+            },
+            {
+                id: 'focus-3',
+                title: 'Quantum Leap',
+                artist: 'Particle Physics',
+                album: 'String Theory',
+                albumArt: generateAlbumArt('focus3'),
+                duration: 423
+            }
+        ]
+    },
+    love: {
+        id: 'love-playlist',
+        name: 'Starlit Romance',
+        description: 'Heartfelt melodies for tender moments',
+        moodId: 'love',
+        tracks: [
+            {
+                id: 'love-1',
+                title: 'Eternal Embrace',
+                artist: 'Romantic Soul',
+                album: 'Love Letters',
+                albumArt: generateAlbumArt('love1'),
+                duration: 278
+            },
+            {
+                id: 'love-2',
+                title: 'Dancing Stars',
+                artist: 'Celestial Love',
+                album: 'Cosmic Romance',
+                albumArt: generateAlbumArt('love2'),
+                duration: 234
+            },
+            {
+                id: 'love-3',
+                title: 'Whispered Promises',
+                artist: 'Tender Hearts',
+                album: 'Sweet Serenades',
+                albumArt: generateAlbumArt('love3'),
+                duration: 289
+            }
+        ]
+    },
+    party: {
+        id: 'party-playlist',
+        name: 'Gentle Celebration',
+        description: 'Uplifting vibes for joyful moments',
+        moodId: 'party',
+        tracks: [
+            {
+                id: 'party-1',
+                title: 'Sparkling Nights',
+                artist: 'Celebration',
+                album: 'Joy Unlimited',
+                albumArt: generateAlbumArt('party1'),
+                duration: 212
+            },
+            {
+                id: 'party-2',
+                title: 'Golden Hour',
+                artist: 'Sunshine Collective',
+                album: 'Happy Days',
+                albumArt: generateAlbumArt('party2'),
+                duration: 198
+            },
+            {
+                id: 'party-3',
+                title: 'Confetti Dreams',
+                artist: 'Festive Spirit',
+                album: 'Good Vibes Only',
+                albumArt: generateAlbumArt('party3'),
+                duration: 223
+            }
+        ]
+    }
+};
+export const getAllTracks = ()=>{
+    return Object.values(mockPlaylists).flatMap((playlist)=>playlist.tracks);
+};
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIm1vY2tNdXNpYy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvLyBNb2NrIG11c2ljIGRhdGEgZm9yIGRlbW8gcHVycG9zZXNcbi8vIEluIGEgcmVhbCBhcHAsIHRoaXMgd291bGQgY29tZSBmcm9tIHRoZSBKaW9TYWF2biBBUEkgb3Igc2ltaWxhciBzZXJ2aWNlXG5cbmV4cG9ydCBpbnRlcmZhY2UgVHJhY2sge1xuICBpZDogc3RyaW5nO1xuICB0aXRsZTogc3RyaW5nO1xuICBhcnRpc3Q6IHN0cmluZztcbiAgYWxidW06IHN0cmluZztcbiAgYWxidW1BcnQ6IHN0cmluZztcbiAgZHVyYXRpb246IG51bWJlcjtcbiAgdXJsPzogc3RyaW5nO1xuICBwcm92aWRlcj86IHN0cmluZztcbiAgcHJvdmlkZXJJZD86IHN0cmluZztcbn1cblxuZXhwb3J0IGludGVyZmFjZSBQbGF5bGlzdCB7XG4gIGlkOiBzdHJpbmc7XG4gIG5hbWU6IHN0cmluZztcbiAgZGVzY3JpcHRpb246IHN0cmluZztcbiAgdHJhY2tzOiBUcmFja1tdO1xuICBtb29kSWQ6IHN0cmluZztcbn1cblxuLy8gR2VuZXJhdGUgcGxhY2Vob2xkZXIgYWxidW0gYXJ0IFVSTHNcbmNvbnN0IGdlbmVyYXRlQWxidW1BcnQgPSAoc2VlZDogc3RyaW5nKSA9PiBcbiAgYGh0dHBzOi8vcGljc3VtLnBob3Rvcy9zZWVkLyR7c2VlZH0vNDAwLzQwMGA7XG5cbmV4cG9ydCBjb25zdCBtb2NrUGxheWxpc3RzOiBSZWNvcmQ8c3RyaW5nLCBQbGF5bGlzdD4gPSB7XG4gIGNoaWxsOiB7XG4gICAgaWQ6ICdjaGlsbC1wbGF5bGlzdCcsXG4gICAgbmFtZTogJ0NoZXJyeSBCbG9zc29tIERyZWFtcycsXG4gICAgZGVzY3JpcHRpb246ICdQZWFjZWZ1bCBtZWxvZGllcyBmb3Igc2VyZW5lIG1vbWVudHMnLFxuICAgIG1vb2RJZDogJ2NoaWxsJyxcbiAgICB0cmFja3M6IFtcbiAgICAgIHtcbiAgICAgICAgaWQ6ICdjaGlsbC0xJyxcbiAgICAgICAgdGl0bGU6ICdTYWt1cmEgV2hpc3BlcnMnLFxuICAgICAgICBhcnRpc3Q6ICdBbWJpZW50IENvbGxlY3RpdmUnLFxuICAgICAgICBhbGJ1bTogJ1NwcmluZyBSZXZlcmllJyxcbiAgICAgICAgYWxidW1BcnQ6IGdlbmVyYXRlQWxidW1BcnQoJ2NoaWxsMScpLFxuICAgICAgICBkdXJhdGlvbjogMjQ1LFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgaWQ6ICdjaGlsbC0yJyxcbiAgICAgICAgdGl0bGU6ICdNb3VudGFpbiBCcmVlemUnLFxuICAgICAgICBhcnRpc3Q6ICdaZW4gR2FyZGVuJyxcbiAgICAgICAgYWxidW06ICdOYXR1cmVcXCdzIFN5bXBob255JyxcbiAgICAgICAgYWxidW1BcnQ6IGdlbmVyYXRlQWxidW1BcnQoJ2NoaWxsMicpLFxuICAgICAgICBkdXJhdGlvbjogMTk4LFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgaWQ6ICdjaGlsbC0zJyxcbiAgICAgICAgdGl0bGU6ICdNb29ubGl0IFBhdGgnLFxuICAgICAgICBhcnRpc3Q6ICdOb2N0dXJuZScsXG4gICAgICAgIGFsYnVtOiAnTWlkbmlnaHQgUmVmbGVjdGlvbnMnLFxuICAgICAgICBhbGJ1bUFydDogZ2VuZXJhdGVBbGJ1bUFydCgnY2hpbGwzJyksXG4gICAgICAgIGR1cmF0aW9uOiAyNjcsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBpZDogJ2NoaWxsLTQnLFxuICAgICAgICB0aXRsZTogJ0dlbnRsZSBSYWluJyxcbiAgICAgICAgYXJ0aXN0OiAnQXRtb3NwaGVyaWMnLFxuICAgICAgICBhbGJ1bTogJ1dlYXRoZXIgU291bmRzJyxcbiAgICAgICAgYWxidW1BcnQ6IGdlbmVyYXRlQWxidW1BcnQoJ2NoaWxsNCcpLFxuICAgICAgICBkdXJhdGlvbjogMzEyLFxuICAgICAgfSxcbiAgICBdLFxuICB9LFxuICBtZWxhbmNob2x5OiB7XG4gICAgaWQ6ICdtZWxhbmNob2x5LXBsYXlsaXN0JyxcbiAgICBuYW1lOiAnUmFpbnkgRGF5IFJlZmxlY3Rpb25zJyxcbiAgICBkZXNjcmlwdGlvbjogJ0NvbnRlbXBsYXRpdmUgdHVuZXMgZm9yIHRob3VnaHRmdWwgbW9tZW50cycsXG4gICAgbW9vZElkOiAnbWVsYW5jaG9seScsXG4gICAgdHJhY2tzOiBbXG4gICAgICB7XG4gICAgICAgIGlkOiAnbWVsYW5jaG9seS0xJyxcbiAgICAgICAgdGl0bGU6ICdFbXB0eSBTdHJlZXRzJyxcbiAgICAgICAgYXJ0aXN0OiAnU29saXR1ZGUnLFxuICAgICAgICBhbGJ1bTogJ1VyYmFuIFNvbGlsb3F1eScsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCdtZWxhbmNob2x5MScpLFxuICAgICAgICBkdXJhdGlvbjogMjIzLFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgaWQ6ICdtZWxhbmNob2x5LTInLFxuICAgICAgICB0aXRsZTogJ0ZhZGluZyBNZW1vcmllcycsXG4gICAgICAgIGFydGlzdDogJ05vc3RhbGdpYScsXG4gICAgICAgIGFsYnVtOiAnWWVzdGVyZGF5XFwncyBFY2hvJyxcbiAgICAgICAgYWxidW1BcnQ6IGdlbmVyYXRlQWxidW1BcnQoJ21lbGFuY2hvbHkyJyksXG4gICAgICAgIGR1cmF0aW9uOiAxODksXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBpZDogJ21lbGFuY2hvbHktMycsXG4gICAgICAgIHRpdGxlOiAnV2luZG93IFBhbmVzJyxcbiAgICAgICAgYXJ0aXN0OiAnSW50cm9zcGVjdGlvbicsXG4gICAgICAgIGFsYnVtOiAnSW5uZXIgRGlhbG9ndWVzJyxcbiAgICAgICAgYWxidW1BcnQ6IGdlbmVyYXRlQWxidW1BcnQoJ21lbGFuY2hvbHkzJyksXG4gICAgICAgIGR1cmF0aW9uOiAyNTYsXG4gICAgICB9LFxuICAgIF0sXG4gIH0sXG4gIHdvcmtvdXQ6IHtcbiAgICBpZDogJ3dvcmtvdXQtcGxheWxpc3QnLFxuICAgIG5hbWU6ICdGaXJlICYgRnVyeScsXG4gICAgZGVzY3JpcHRpb246ICdIaWdoLWVuZXJneSBiZWF0cyB0byBmdWVsIHlvdXIgcGFzc2lvbicsXG4gICAgbW9vZElkOiAnd29ya291dCcsXG4gICAgdHJhY2tzOiBbXG4gICAgICB7XG4gICAgICAgIGlkOiAnd29ya291dC0xJyxcbiAgICAgICAgdGl0bGU6ICdVbnN0b3BwYWJsZSBGb3JjZScsXG4gICAgICAgIGFydGlzdDogJ1Bvd2VyIERyaXZlJyxcbiAgICAgICAgYWxidW06ICdNYXhpbXVtIEVuZXJneScsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCd3b3Jrb3V0MScpLFxuICAgICAgICBkdXJhdGlvbjogMjAzLFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgaWQ6ICd3b3Jrb3V0LTInLFxuICAgICAgICB0aXRsZTogJ0J1cm5pbmcgRGVzaXJlJyxcbiAgICAgICAgYXJ0aXN0OiAnQWRyZW5hbGluZSBSdXNoJyxcbiAgICAgICAgYWxidW06ICdCZWFzdCBNb2RlJyxcbiAgICAgICAgYWxidW1BcnQ6IGdlbmVyYXRlQWxidW1BcnQoJ3dvcmtvdXQyJyksXG4gICAgICAgIGR1cmF0aW9uOiAxODcsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBpZDogJ3dvcmtvdXQtMycsXG4gICAgICAgIHRpdGxlOiAnVGh1bmRlciBTdHJpa2UnLFxuICAgICAgICBhcnRpc3Q6ICdMaWdodG5pbmcgQm9sdCcsXG4gICAgICAgIGFsYnVtOiAnU3Rvcm0gQ2hhc2VyJyxcbiAgICAgICAgYWxidW1BcnQ6IGdlbmVyYXRlQWxidW1BcnQoJ3dvcmtvdXQzJyksXG4gICAgICAgIGR1cmF0aW9uOiAxOTUsXG4gICAgICB9LFxuICAgIF0sXG4gIH0sXG4gIGZvY3VzOiB7XG4gICAgaWQ6ICdmb2N1cy1wbGF5bGlzdCcsXG4gICAgbmFtZTogJ0RlZXAgV29yayBGbG93JyxcbiAgICBkZXNjcmlwdGlvbjogJ0NvbmNlbnRyYXRpb24tZW5oYW5jaW5nIHNvdW5kc2NhcGVzJyxcbiAgICBtb29kSWQ6ICdmb2N1cycsXG4gICAgdHJhY2tzOiBbXG4gICAgICB7XG4gICAgICAgIGlkOiAnZm9jdXMtMScsXG4gICAgICAgIHRpdGxlOiAnTmV1cmFsIFBhdGh3YXlzJyxcbiAgICAgICAgYXJ0aXN0OiAnQ29nbml0aXZlJyxcbiAgICAgICAgYWxidW06ICdNaW5kIFBhbGFjZScsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCdmb2N1czEnKSxcbiAgICAgICAgZHVyYXRpb246IDQzMixcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGlkOiAnZm9jdXMtMicsXG4gICAgICAgIHRpdGxlOiAnQmluYXJ5IERyZWFtcycsXG4gICAgICAgIGFydGlzdDogJ0FsZ29yaXRobScsXG4gICAgICAgIGFsYnVtOiAnQ29kZSBTeW1waG9ueScsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCdmb2N1czInKSxcbiAgICAgICAgZHVyYXRpb246IDM3OCxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGlkOiAnZm9jdXMtMycsXG4gICAgICAgIHRpdGxlOiAnUXVhbnR1bSBMZWFwJyxcbiAgICAgICAgYXJ0aXN0OiAnUGFydGljbGUgUGh5c2ljcycsXG4gICAgICAgIGFsYnVtOiAnU3RyaW5nIFRoZW9yeScsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCdmb2N1czMnKSxcbiAgICAgICAgZHVyYXRpb246IDQyMyxcbiAgICAgIH0sXG4gICAgXSxcbiAgfSxcbiAgbG92ZToge1xuICAgIGlkOiAnbG92ZS1wbGF5bGlzdCcsXG4gICAgbmFtZTogJ1N0YXJsaXQgUm9tYW5jZScsXG4gICAgZGVzY3JpcHRpb246ICdIZWFydGZlbHQgbWVsb2RpZXMgZm9yIHRlbmRlciBtb21lbnRzJyxcbiAgICBtb29kSWQ6ICdsb3ZlJyxcbiAgICB0cmFja3M6IFtcbiAgICAgIHtcbiAgICAgICAgaWQ6ICdsb3ZlLTEnLFxuICAgICAgICB0aXRsZTogJ0V0ZXJuYWwgRW1icmFjZScsXG4gICAgICAgIGFydGlzdDogJ1JvbWFudGljIFNvdWwnLFxuICAgICAgICBhbGJ1bTogJ0xvdmUgTGV0dGVycycsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCdsb3ZlMScpLFxuICAgICAgICBkdXJhdGlvbjogMjc4LFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgaWQ6ICdsb3ZlLTInLFxuICAgICAgICB0aXRsZTogJ0RhbmNpbmcgU3RhcnMnLFxuICAgICAgICBhcnRpc3Q6ICdDZWxlc3RpYWwgTG92ZScsXG4gICAgICAgIGFsYnVtOiAnQ29zbWljIFJvbWFuY2UnLFxuICAgICAgICBhbGJ1bUFydDogZ2VuZXJhdGVBbGJ1bUFydCgnbG92ZTInKSxcbiAgICAgICAgZHVyYXRpb246IDIzNCxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGlkOiAnbG92ZS0zJyxcbiAgICAgICAgdGl0bGU6ICdXaGlzcGVyZWQgUHJvbWlzZXMnLFxuICAgICAgICBhcnRpc3Q6ICdUZW5kZXIgSGVhcnRzJyxcbiAgICAgICAgYWxidW06ICdTd2VldCBTZXJlbmFkZXMnLFxuICAgICAgICBhbGJ1bUFydDogZ2VuZXJhdGVBbGJ1bUFydCgnbG92ZTMnKSxcbiAgICAgICAgZHVyYXRpb246IDI4OSxcbiAgICAgIH0sXG4gICAgXSxcbiAgfSxcbiAgcGFydHk6IHtcbiAgICBpZDogJ3BhcnR5LXBsYXlsaXN0JyxcbiAgICBuYW1lOiAnR2VudGxlIENlbGVicmF0aW9uJyxcbiAgICBkZXNjcmlwdGlvbjogJ1VwbGlmdGluZyB2aWJlcyBmb3Igam95ZnVsIG1vbWVudHMnLFxuICAgIG1vb2RJZDogJ3BhcnR5JyxcbiAgICB0cmFja3M6IFtcbiAgICAgIHtcbiAgICAgICAgaWQ6ICdwYXJ0eS0xJyxcbiAgICAgICAgdGl0bGU6ICdTcGFya2xpbmcgTmlnaHRzJyxcbiAgICAgICAgYXJ0aXN0OiAnQ2VsZWJyYXRpb24nLFxuICAgICAgICBhbGJ1bTogJ0pveSBVbmxpbWl0ZWQnLFxuICAgICAgICBhbGJ1bUFydDogZ2VuZXJhdGVBbGJ1bUFydCgncGFydHkxJyksXG4gICAgICAgIGR1cmF0aW9uOiAyMTIsXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBpZDogJ3BhcnR5LTInLFxuICAgICAgICB0aXRsZTogJ0dvbGRlbiBIb3VyJyxcbiAgICAgICAgYXJ0aXN0OiAnU3Vuc2hpbmUgQ29sbGVjdGl2ZScsXG4gICAgICAgIGFsYnVtOiAnSGFwcHkgRGF5cycsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCdwYXJ0eTInKSxcbiAgICAgICAgZHVyYXRpb246IDE5OCxcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGlkOiAncGFydHktMycsXG4gICAgICAgIHRpdGxlOiAnQ29uZmV0dGkgRHJlYW1zJyxcbiAgICAgICAgYXJ0aXN0OiAnRmVzdGl2ZSBTcGlyaXQnLFxuICAgICAgICBhbGJ1bTogJ0dvb2QgVmliZXMgT25seScsXG4gICAgICAgIGFsYnVtQXJ0OiBnZW5lcmF0ZUFsYnVtQXJ0KCdwYXJ0eTMnKSxcbiAgICAgICAgZHVyYXRpb246IDIyMyxcbiAgICAgIH0sXG4gICAgXSxcbiAgfSxcbn07XG5cbmV4cG9ydCBjb25zdCBnZXRBbGxUcmFja3MgPSAoKTogVHJhY2tbXSA9PiB7XG4gIHJldHVybiBPYmplY3QudmFsdWVzKG1vY2tQbGF5bGlzdHMpLmZsYXRNYXAocGxheWxpc3QgPT4gcGxheWxpc3QudHJhY2tzKTtcbn07XG4iXSwibmFtZXMiOlsiZ2VuZXJhdGVBbGJ1bUFydCIsInNlZWQiLCJtb2NrUGxheWxpc3RzIiwiY2hpbGwiLCJpZCIsIm5hbWUiLCJkZXNjcmlwdGlvbiIsIm1vb2RJZCIsInRyYWNrcyIsInRpdGxlIiwiYXJ0aXN0IiwiYWxidW0iLCJhbGJ1bUFydCIsImR1cmF0aW9uIiwibWVsYW5jaG9seSIsIndvcmtvdXQiLCJmb2N1cyIsImxvdmUiLCJwYXJ0eSIsImdldEFsbFRyYWNrcyIsIk9iamVjdCIsInZhbHVlcyIs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
