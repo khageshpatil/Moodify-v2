@@ -1,0 +1,12 @@
+name = "moodify-worker"
+main = "src/index.mjs"
+compatibility_date = "2024-09-02"
+compatibility_flags = ["nodejs_compat"]
+
+# unsafe.eval enables new Function() which youtubei.js needs to
+# decipher YouTube player signatures for stream URL resolution
+[unsafe]
+eval = true
+
+[vars]
+NODE_ENV = "production"
