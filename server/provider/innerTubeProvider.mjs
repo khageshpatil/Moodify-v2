@@ -289,10 +289,7 @@ export class InnerTubeProviderAdapter {
   }
 
   async getClient() {
-    this.innertubePromise ||= Innertube.create({
-      generate_session_locally: true,
-      client_type: 'ANDROID',
-    });
+    this.innertubePromise ||= Innertube.create({ generate_session_locally: true });
     return this.innertubePromise;
   }
 
