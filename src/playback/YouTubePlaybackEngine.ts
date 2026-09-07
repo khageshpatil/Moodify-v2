@@ -124,20 +124,17 @@ export class YouTubePlaybackEngine {
     if (!container) {
       container = document.createElement('div');
       container.id = this.playerElementId;
-      // Position floating mini player card in DOM, fully compliant with YouTube embedded player API & browser autoplay rules
+      // Position YouTube IFrame player off-screen in DOM so Moodify functions strictly as a pure audio player UI
       Object.assign(container.style, {
         position: 'fixed',
-        bottom: '88px',
-        right: '20px',
-        width: '240px',
-        height: '135px',
-        zIndex: '45',
-        borderRadius: '12px',
+        bottom: '-9999px',
+        right: '-9999px',
+        width: '200px',
+        height: '200px',
+        zIndex: '-9999',
+        opacity: '0.001',
+        pointerEvents: 'none',
         overflow: 'hidden',
-        boxShadow: '0 12px 30px rgba(0,0,0,0.6)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        backgroundColor: '#09090b',
-        transition: 'transform 0.3s ease, opacity 0.3s ease',
       });
       const inner = document.createElement('div');
       inner.id = 'moodify-yt-player-iframe';
