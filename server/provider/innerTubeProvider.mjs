@@ -430,28 +430,12 @@ export class InnerTubeProviderAdapter {
     return track;
   }
 
-  async resolvePlayback(id, force = false) {
-    const existing = this.sourceSessions.get(id);
-    if (!force && existing && existing.expiresAt - Date.now() > sourceSafetyWindowMs) return existing;
-    const yt = await this.getClient();
-    const info = await this.withRetry(() => this.withTimeout(yt.music.getInfo(id)));
-    if (info.playability_status?.status !== 'OK') throw Object.assign(new Error(info.playability_status?.reason || 'Track is not playable'), { code: 'SOURCE_RESOLUTION_FAILED' });
-    const format = info.chooseFormat({ type: 'video+audio', format: 'mp4', quality: 'best' });
-    const url = await this.withTimeout(format.decipher(yt.session.player));
-    if (!url) throw Object.assign(new Error('Provider returned no playback URL'), { code: 'SOURCE_RESOLUTION_FAILED' });
-    const parsed = new URL(url);
-    const expiresAt = Number(parsed.searchParams.get('expire')) * 1000;
-    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) throw Object.assign(new Error('Provider returned an expired playback URL'), { code: 'SOURCE_EXPIRED' });
-    const source = {
-      url,
-      expiresAt,
-      mimeType: format.mime_type || 'audio/mp4',
-      bitrate: format.bitrate || format.average_bitrate || undefined,
-      durationMs: format.approx_duration_ms || undefined,
-      contentLength: format.content_length || Number(parsed.searchParams.get('clen')) || undefined,
+  async resolvePlayback(id) {
+    if (!id) throw Object.assign(new Error('Track id is required'), { code: 'INVALID_ID', status: 400 });
+    return {
+      videoId: id,
+      provider: 'youtube-music',
     };
-    this.sourceSessions.set(id, source);
-    return source;
   }
 
   stats() {

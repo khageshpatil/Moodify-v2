@@ -317,16 +317,8 @@ const server = http.createServer(async (request, response) => {
     }
     const mediaMatch = /^\/api\/media\/([^/]+)$/.exec(url.pathname);
     if (request.method === 'GET' && mediaMatch) {
-      // Resolve the signed YouTube URL server-side (InnerTube works from any IP)
-      // then redirect the browser to fetch the audio directly from YouTube CDN.
-      // This bypasses the datacenter IP block that prevents server-side stream relay.
-      const source = await provider.resolvePlayback(decodeURIComponent(mediaMatch[1]));
-      response.writeHead(302, {
-        'Location': source.url,
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-store',
-      });
-      response.end();
+      const videoId = decodeURIComponent(mediaMatch[1]);
+      sendJson(response, 200, { ok: true, videoId, provider: 'youtube-music' });
       return;
     }
     sendJson(response, 404, { error: 'Not found' });
