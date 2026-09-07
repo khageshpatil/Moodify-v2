@@ -110,12 +110,39 @@ export class YouTubePlaybackEngine {
   private timeUpdateInterval: ReturnType<typeof setInterval> | null = null;
   private containerEl: HTMLDivElement | null = null;
   private playerElementId = 'moodify-yt-player-container';
+  private keepAliveAudio: HTMLAudioElement | null = null;
 
   constructor(private readonly resolveSource?: PlaybackSourceResolver) {
     if (import.meta.env?.DEV) {
       window.__moodifyYouTubeEngine = this;
     }
     this.ensureContainer();
+    this.ensureKeepAliveAudio();
+  }
+
+  private ensureKeepAliveAudio() {
+    if (typeof document === 'undefined') return;
+    if (!this.keepAliveAudio) {
+      this.keepAliveAudio = document.createElement('audio');
+      this.keepAliveAudio.setAttribute('aria-hidden', 'true');
+      this.keepAliveAudio.loop = true;
+      // Silent 1-second WAV audio data URI to register tab as active audio-playing tab in browser
+      this.keepAliveAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+      this.keepAliveAudio.volume = 0.001;
+    }
+  }
+
+  private startKeepAlive() {
+    this.ensureKeepAliveAudio();
+    if (this.keepAliveAudio) {
+      this.keepAliveAudio.play().catch(() => {});
+    }
+  }
+
+  private stopKeepAlive() {
+    if (this.keepAliveAudio) {
+      this.keepAliveAudio.pause();
+    }
   }
 
   private ensureContainer(): HTMLElement {
@@ -373,6 +400,7 @@ export class YouTubePlaybackEngine {
   destroy() {
     this.requestId++;
     this.stopProgressTimer();
+    this.stopKeepAlive();
     if (this.player && this.isPlayerReady) {
       try {
         this.player.destroy();
@@ -392,6 +420,7 @@ export class YouTubePlaybackEngine {
 
   private fail(error: PlaybackError) {
     this.stopProgressTimer();
+    this.stopKeepAlive();
     this.update({ status: 'failed', error });
   }
 
@@ -403,13 +432,16 @@ export class YouTubePlaybackEngine {
       const duration = this.player?.getDuration() || this.snapshot.duration;
       this.update({ status: 'playing', duration: Number.isFinite(duration) ? duration : 0, error: null });
       this.startProgressTimer();
+      this.startKeepAlive();
     } else if (state === PlayerState.PAUSED) {
       this.stopProgressTimer();
+      this.stopKeepAlive();
       if (this.snapshot.status !== 'ended' && this.snapshot.status !== 'failed') {
         this.update({ status: 'paused' });
       }
     } else if (state === PlayerState.ENDED) {
       this.stopProgressTimer();
+      this.stopKeepAlive();
       const duration = this.snapshot.duration || (this.player?.getDuration() || 0);
       this.update({ status: 'ended', currentTime: duration });
       this.endedListener?.();
