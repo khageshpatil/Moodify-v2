@@ -48,7 +48,7 @@ const persistDiscoverySnapshot = async (snapshot) => {
 // ─── Worker fetch handler ─────────────────────────────────────────────────────
 
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
 
@@ -158,22 +158,23 @@ export default {
         return jsonResponse(200, { track });
       }
 
+      // ── /api/diagnose/:id ───────────────────────────────────────────────
+      const diagnoseMatch = /^\/api\/diagnose\/([^/]+)$/.exec(pathname);
+      if (request.method === 'GET' && diagnoseMatch) {
+        const report = await provider.diagnosePlayback(decodeURIComponent(diagnoseMatch[1]));
+        return jsonResponse(200, report);
+      }
+
       // ── /api/media/:id ───────────────────────────────────────────────────
-      // Resolves the signed YouTube URL server-side (InnerTube works from any IP),
-      // then redirects the browser to fetch audio directly from YouTube CDN.
-      // The browser's residential IP is never blocked by YouTube — only datacenter IPs are.
+      // Under the official YouTube IFrame Player architecture, the backend does
+      // NOT proxy, decipher, or redirect YouTube media streams. It returns the
+      // videoId metadata for the frontend YouTube IFrame player.
       const mediaMatch = /^\/api\/media\/([^/]+)$/.exec(pathname);
       if (request.method === 'GET' && mediaMatch) {
-        const source = await provider.resolvePlayback(decodeURIComponent(mediaMatch[1]));
-        return new Response(null, {
-          status: 302,
-          headers: {
-            'Location': source.url,
-            'Cache-Control': 'no-store',
-            ...CORS_HEADERS,
-          },
-        });
+        const videoId = decodeURIComponent(mediaMatch[1]);
+        return jsonResponse(200, { ok: true, videoId, provider: 'youtube-music' });
       }
+
 
       return jsonResponse(404, { error: 'Not found' });
 

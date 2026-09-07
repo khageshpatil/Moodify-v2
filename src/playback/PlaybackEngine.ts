@@ -152,13 +152,15 @@ export class PlaybackEngine {
   };
 }
 
-let canonicalEngine: PlaybackEngine | null = null;
+import { YouTubePlaybackEngine } from './YouTubePlaybackEngine';
+
+let canonicalEngine: YouTubePlaybackEngine | null = null;
 export const getCanonicalPlaybackEngine = (resolveSource?: PlaybackSourceResolver) => {
   if (!canonicalEngine) {
-    if (!resolveSource) throw new Error('The canonical playback engine requires a source resolver on first use');
-    canonicalEngine = new PlaybackEngine(resolveSource);
+    canonicalEngine = new YouTubePlaybackEngine(resolveSource);
   }
-  return canonicalEngine;
+  return canonicalEngine as unknown as PlaybackEngine;
 };
 
 export const resetCanonicalPlaybackEngine = () => { canonicalEngine?.destroy(); canonicalEngine = null; };
+
