@@ -111,6 +111,7 @@ export class YouTubePlaybackEngine {
   private containerEl: HTMLDivElement | null = null;
   private playerElementId = 'moodify-yt-player-container';
   private keepAliveAudio: HTMLAudioElement | null = null;
+  private isUserIntendedPause = false;
 
   constructor(private readonly resolveSource?: PlaybackSourceResolver) {
     if (import.meta.env?.DEV) {
@@ -287,6 +288,7 @@ export class YouTubePlaybackEngine {
   }
 
   async load(track: PlaybackTrack, autoplay = true) {
+    if (autoplay) this.startKeepAlive();
     const requestId = ++this.requestId;
     this.update({
       status: 'loading',
@@ -351,6 +353,8 @@ export class YouTubePlaybackEngine {
   }
 
   async play() {
+    this.isUserIntendedPause = false;
+    this.startKeepAlive();
     if (this.player && this.isPlayerReady) {
       try {
         this.player.playVideo();
@@ -361,6 +365,7 @@ export class YouTubePlaybackEngine {
   }
 
   pause() {
+    this.isUserIntendedPause = true;
     if (this.player && this.isPlayerReady) {
       try {
         this.player.pauseVideo();
@@ -379,6 +384,7 @@ export class YouTubePlaybackEngine {
       this.pause();
       return Promise.resolve();
     }
+    this.startKeepAlive();
     return this.play();
   }
 
@@ -467,6 +473,16 @@ export class YouTubePlaybackEngine {
       this.startKeepAlive();
     } else if (state === PlayerState.PAUSED) {
       this.stopProgressTimer();
+      
+      // Defeat Android Chrome's auto-pause when backgrounded
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && !this.isUserIntendedPause) {
+        try {
+          this.player?.playVideo();
+          return;
+        } catch {}
+      }
+      
+      this.isUserIntendedPause = false;
       this.stopKeepAlive();
       if (this.snapshot.status !== 'ended' && this.snapshot.status !== 'failed') {
         this.update({ status: 'paused' });
