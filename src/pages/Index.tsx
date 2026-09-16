@@ -114,6 +114,7 @@ const Index = () => {
     homeModel,
     listeningCollector,
     listeningSignals,
+    playbackStatus,
   } = useMusicPlayer();
   const { related, upNext } = useDiscoverySidecar(currentTrack);
 
@@ -368,9 +369,11 @@ const Index = () => {
           world={vibeWorld}
           currentTrack={currentTrack}
           isPlaying={isPlaying}
+          playbackStatus={playbackStatus}
           saved={saved}
           onBack={() => navigate('/')}
           onPlay={(track, tracks) => playVibeTracks(track, tracks, vibeWorld.id)}
+          onTogglePause={handlePlayPauseWithSync}
           onToggleFavorite={toggleFavorite}
           isFavorite={isFavorite}
           onSave={(tracks) => {
@@ -546,7 +549,7 @@ const Index = () => {
       );
     }
 
-    return <ListeningHome recentlyPlayed={recentlyPlayed} favorites={favorites} history={history} currentTrack={currentTrack} isPlaying={isPlaying} signals={listeningSignals} onIntent={handleIntent} onVibeSelect={(vibeId) => navigate(`/vibes/${vibeId}`)} onPlay={playTrackWithSync} onQueue={addToQueue} homeModel={homeModel} playlists={playlists} />;
+    return <ListeningHome recentlyPlayed={recentlyPlayed} favorites={favorites} history={history} currentTrack={currentTrack} isPlaying={isPlaying} playbackStatus={playbackStatus} signals={listeningSignals} onIntent={handleIntent} onVibeSelect={(vibeId) => navigate(`/vibes/${vibeId}`)} onPlay={playTrackWithSync} onQueue={addToQueue} homeModel={homeModel} playlists={playlists} />;
   };
 
   return (

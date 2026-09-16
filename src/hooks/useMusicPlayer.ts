@@ -82,6 +82,7 @@ export const useMusicPlayer = () => {
   const playStartTimeRef = useRef<number>(0);
   const saveTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
   const stateRef = useRef(state);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const resolvePlaybackSource = useCallback(async (track: PlaybackTrack, signal: AbortSignal) => {
     const serverBase = (import.meta.env.VITE_MOODIFY_SERVER_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
@@ -126,7 +127,7 @@ export const useMusicPlayer = () => {
 
   // Initialize audio element
   useEffect(() => {
-    audioRef.current = getCanonicalPlaybackEngine().getAudioElement();
+    audioRef.current = playbackEngineRef.current?.getAudioElement() || null;
     
     const audio = audioRef.current;
     if (audio) {

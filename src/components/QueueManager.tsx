@@ -79,7 +79,16 @@ export const QueueManager = ({
                   className={`glass-card p-4 flex items-center gap-4 transition-all hover:bg-white/10 group cursor-pointer ${
                     index === currentTrackIndex ? 'ring-2 ring-accent' : ''
                   }`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Play ${shown?.title || track.title}`}
                   onClick={() => onTrackSelect(track, index)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onTrackSelect(track, index);
+                    }
+                  }}
                 >
                   <div className="flex-shrink-0 w-8 text-center">
                     {index === currentTrackIndex ? (
@@ -115,6 +124,7 @@ export const QueueManager = ({
                         e.stopPropagation();
                         onRemoveFromQueue(index);
                       }}
+                      aria-label={`Remove ${shown?.title || track.title} from queue`}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-white/60 hover:text-white"
                     >
                       <X className="h-4 w-4" />
