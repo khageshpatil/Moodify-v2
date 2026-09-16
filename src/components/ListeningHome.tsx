@@ -87,14 +87,7 @@ export const ListeningHome = ({
 
   return (
     <div className="home-experience">
-      <section className="night-signal-hero" aria-labelledby="moodify-hero-heading" style={{ backgroundImage: `linear-gradient(90deg, rgba(8, 11, 17, .95) 0%, rgba(8, 11, 17, .67) 54%, rgba(8, 11, 17, .18) 100%), url(${homeAtmosphere})` }}>
-        <div className="hero-copy">
-          <span className="hero-eyebrow"><span className="signal-pulse" aria-hidden="true" /> MOODIFY / NIGHT SIGNAL</span>
-          <h1 id="moodify-hero-heading">Your soundtrack<br /><em>has a world.</em></h1>
-          <p>Music for the feeling you cannot quite name. Enter a scene, and let the next song find you.</p>
-        </div>
-        <div className="hero-meta"><span>{greeting()}</span><span className="home-date">{new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).format(new Date())}</span></div>
-      </section>
+
       <IntentComposer onSubmit={onIntent} />
 
       <section className="home-section session-section world-section" aria-labelledby="vibe-heading">

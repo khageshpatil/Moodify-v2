@@ -10,6 +10,15 @@ const suggestions = ['Something for deep focus', 'A calm reset', 'Surprise me', 
 
 export const IntentComposer = ({ onSubmit, isLoading = false }: IntentComposerProps) => {
   const [value, setValue] = useState('');
+  
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 5) return 'Still awake';
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   const submit = (intent = value) => {
     if (intent.trim() && !isLoading) {
       onSubmit(intent.trim());
@@ -18,8 +27,13 @@ export const IntentComposer = ({ onSubmit, isLoading = false }: IntentComposerPr
   };
 
   return (
-    <section className="intent-composer" aria-labelledby="intent-heading">
-      <div className="intent-kicker"><Sparkles size={14} aria-hidden="true" /> set the scene</div>
+    <>
+      <div className="intent-meta">
+        <span className="intent-greeting">{greeting()}</span>
+        <span className="intent-date">{new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).format(new Date())}</span>
+      </div>
+      <section className="intent-composer" aria-labelledby="intent-heading">
+        <div className="intent-kicker"><Sparkles size={14} aria-hidden="true" /> set the scene</div>
       <h2 id="intent-heading">Where are we going?</h2>
       <p>Give us a moment, a place, or a little feeling. We’ll start the soundtrack.</p>
       <form onSubmit={(event) => { event.preventDefault(); submit(); }} className="intent-form">
@@ -43,5 +57,6 @@ export const IntentComposer = ({ onSubmit, isLoading = false }: IntentComposerPr
         ))}
       </div>
     </section>
+    </>
   );
 };
