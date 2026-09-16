@@ -120,13 +120,17 @@ export class YouTubePlaybackEngine {
     this.ensureKeepAliveAudio();
   }
 
+  private audioCtx: AudioContext | null = null;
+  private gainNode: GainNode | null = null;
+  private oscillatorNode: OscillatorNode | null = null;
+
   private ensureKeepAliveAudio() {
     if (typeof document === 'undefined') return;
     if (!this.keepAliveAudio) {
       this.keepAliveAudio = document.createElement('audio');
       this.keepAliveAudio.setAttribute('aria-hidden', 'true');
       this.keepAliveAudio.loop = true;
-      // Silent 1-second WAV audio data URI to register tab as active audio-playing tab in browser
+      // Silent WAV data URI — keeps tab classified as "audio-playing" by the browser
       this.keepAliveAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
       this.keepAliveAudio.volume = 0.001;
     }
@@ -137,11 +141,36 @@ export class YouTubePlaybackEngine {
     if (this.keepAliveAudio) {
       this.keepAliveAudio.play().catch(() => {});
     }
+    // Web Audio API oscillator at 0 gain — prevents browser from suspending the AudioContext
+    // when tab is backgrounded, which also keeps the tab in the "audio-playing" category.
+    try {
+      if (!this.audioCtx) {
+        this.audioCtx = new AudioContext();
+        this.gainNode = this.audioCtx.createGain();
+        this.gainNode.gain.value = 0; // completely silent
+        this.gainNode.connect(this.audioCtx.destination);
+        this.oscillatorNode = this.audioCtx.createOscillator();
+        this.oscillatorNode.connect(this.gainNode);
+        this.oscillatorNode.start();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume().catch(() => {});
+      }
+    } catch {
+      /* AudioContext not available */
+    }
   }
 
   private stopKeepAlive() {
     if (this.keepAliveAudio) {
       this.keepAliveAudio.pause();
+    }
+    try {
+      if (this.audioCtx && this.audioCtx.state === 'running') {
+        this.audioCtx.suspend().catch(() => {});
+      }
+    } catch {
+      /* ignore */
     }
   }
 
@@ -151,17 +180,20 @@ export class YouTubePlaybackEngine {
     if (!container) {
       container = document.createElement('div');
       container.id = this.playerElementId;
-      // Position YouTube IFrame player off-screen in DOM so Moodify functions strictly as a pure audio player UI
+      // The YouTube IFrame MUST remain visible to Chrome (even at 1×1px) to avoid
+      // background tab throttling that pauses video/iframe elements. Clip-path hides
+      // the video visually while the element stays in the viewport.
       Object.assign(container.style, {
         position: 'fixed',
-        bottom: '-9999px',
-        right: '-9999px',
-        width: '200px',
-        height: '200px',
-        zIndex: '-9999',
-        opacity: '0.001',
+        bottom: '80px',   // sits just inside the player bar viewport area
+        right: '0px',
+        width: '1px',
+        height: '1px',
+        zIndex: '1',
+        opacity: '1',
         pointerEvents: 'none',
         overflow: 'hidden',
+        clipPath: 'inset(0px 0px 0px 0px)',
       });
       const inner = document.createElement('div');
       inner.id = 'moodify-yt-player-iframe';
@@ -185,8 +217,8 @@ export class YouTubePlaybackEngine {
       }
 
       this.player = new window.YT.Player(targetElement, {
-        width: '240',
-        height: '135',
+        width: '1',
+        height: '1',
         playerVars: {
           autoplay: 1,
           controls: 0,
