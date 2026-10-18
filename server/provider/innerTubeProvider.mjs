@@ -449,25 +449,26 @@ export class InnerTubeProviderAdapter {
 
     let url;
     let bestFormat;
-    let playabilityChecked = false;
+    let lastPlaybackError;
 
     for (const client of clientsToTry) {
       let info;
       try {
         info = await this.withRetry(() => this.withTimeout(yt.getBasicInfo(id, { client })));
-      } catch {
+      } catch (error) {
+        lastPlaybackError = error;
         continue;
       }
 
-      // Check playability once (from first successful response)
-      if (!playabilityChecked) {
-        playabilityChecked = true;
-        if (info.playability_status?.status && info.playability_status.status !== 'OK') {
-          throw Object.assign(
-            new Error(info.playability_status.reason || 'Video is not playable'),
-            { code: 'PLAYBACK_RESTRICTED', status: 403 },
-          );
-        }
+      // A client can be rejected by YouTube while another client still
+      // provides usable audio. Record the failure and continue through the
+      // fallback chain instead of aborting on the first client.
+      if (info.playability_status?.status && info.playability_status.status !== 'OK') {
+        lastPlaybackError = Object.assign(
+          new Error(info.playability_status.reason || 'Video is not playable'),
+          { code: 'PLAYBACK_RESTRICTED', status: 403 },
+        );
+        continue;
       }
 
       const allFormats = [
@@ -513,7 +514,7 @@ export class InnerTubeProviderAdapter {
     }
 
     if (!url) {
-      throw Object.assign(new Error('Could not resolve audio stream URL'), { code: 'DECIPHER_FAILED', status: 502 });
+      throw lastPlaybackError || Object.assign(new Error('Could not resolve audio stream URL'), { code: 'DECIPHER_FAILED', status: 502 });
     }
 
     const source = {

@@ -175,6 +175,53 @@ export default {
         return jsonResponse(200, { ok: true, videoId, provider: 'youtube-music' });
       }
 
+      // ── /api/stream/:id ──────────────────────────────────────────────────
+      // Returns a direct audio stream URL for native clients (Android ExoPlayer).
+      // Uses the ANDROID InnerTube client which returns pre-deciphered stream URLs.
+      const streamMatch = /^\/api\/stream\/([^/]+)$/.exec(pathname);
+      if (request.method === 'GET' && streamMatch) {
+        const videoId = decodeURIComponent(streamMatch[1]);
+        if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+          return jsonResponse(400, { error: 'Invalid video ID' });
+        }
+        try {
+          const info = await provider.getTrackInfo(videoId);
+          if (info.playability_status?.status && info.playability_status.status !== 'OK') {
+            return jsonResponse(403, {
+              error: 'PLAYBACK_RESTRICTED',
+              reason: info.playability_status.reason || 'This video cannot be played',
+            });
+          }
+          // Prefer audio-only adaptive formats (itag 140 = m4a 128kbps, 251 = opus 160kbps)
+          const formats = info.streaming_data?.adaptive_formats || info.streaming_data?.formats || [];
+          const audioFormats = formats.filter((f) => f.mime_type?.startsWith('audio/') && f.url);
+          // Sort: prefer higher bitrate, prefer mp4/m4a for Android compatibility
+          const sorted = [...audioFormats].sort((a, b) => {
+            const aPreferred = a.mime_type?.includes('mp4') || a.mime_type?.includes('m4a') ? 1 : 0;
+            const bPreferred = b.mime_type?.includes('mp4') || b.mime_type?.includes('m4a') ? 1 : 0;
+            if (aPreferred !== bPreferred) return bPreferred - aPreferred;
+            return (b.bitrate || 0) - (a.bitrate || 0);
+          });
+          const best = sorted[0];
+          if (!best?.url) {
+            return jsonResponse(502, { error: 'NO_STREAM_URL', message: 'No audio stream URL available for this track' });
+          }
+          return jsonResponse(200, {
+            ok: true,
+            videoId,
+            url: best.url,
+            mimeType: best.mime_type,
+            bitrate: best.bitrate,
+            durationMs: info.basic_info?.duration ? info.basic_info.duration * 1000 : undefined,
+          });
+        } catch (streamError) {
+          return jsonResponse(502, {
+            error: 'STREAM_RESOLUTION_FAILED',
+            message: streamError?.message || 'Could not resolve audio stream',
+          });
+        }
+      }
+
 
       return jsonResponse(404, { error: 'Not found' });
 
