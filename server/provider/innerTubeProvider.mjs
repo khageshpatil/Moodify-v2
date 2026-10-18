@@ -445,16 +445,22 @@ export class InnerTubeProviderAdapter {
     // 1. IOS client — returns direct CDN URLs (no decipher needed, most reliable for server-side)
     // 2. MWEB client — decipher() works correctly on this client
     // 3. ANDROID client — fallback (decipher often fails on server IPs)
-    const clientsToTry = ['IOS', 'MWEB', 'ANDROID'];
+    const playbackAttempts = [
+      { name: 'YTMUSIC', load: () => yt.music.getInfo(id) },
+      { name: 'IOS', load: () => yt.getBasicInfo(id, { client: 'IOS' }) },
+      { name: 'MWEB', load: () => yt.getBasicInfo(id, { client: 'MWEB' }) },
+      { name: 'ANDROID', load: () => yt.getBasicInfo(id, { client: 'ANDROID' }) },
+      { name: 'WEB', load: () => yt.getBasicInfo(id, { client: 'WEB' }) },
+    ];
 
     let url;
     let bestFormat;
     let lastPlaybackError;
 
-    for (const client of clientsToTry) {
+    for (const attempt of playbackAttempts) {
       let info;
       try {
-        info = await this.withRetry(() => this.withTimeout(yt.getBasicInfo(id, { client })));
+        info = await this.withRetry(() => this.withTimeout(attempt.load()));
       } catch (error) {
         lastPlaybackError = error;
         continue;
