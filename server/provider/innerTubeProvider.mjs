@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { Innertube, Platform } from 'youtubei.js/web';
+import { Constants, Innertube, Platform } from 'youtubei.js/web';
+import { buildSabrFormat } from 'googlevideo/utils';
+import { getPoToken } from './poToken.mjs';
 import {
   EDGE_TYPES,
   NODE_TYPES,
@@ -299,17 +301,22 @@ export class InnerTubeProviderAdapter {
         const target = new URL(request.url);
         const isYouTubeInnerTube =
           (target.hostname === 'www.youtube.com' || target.hostname === 'music.youtube.com') &&
-          target.pathname.startsWith('/youtubei/');
+          target.pathname.startsWith('/youtubei/') &&
+          !target.pathname.includes('/att/');
 
         if (isYouTubeInnerTube) {
           // Render's shared egress is challenged by www.youtube.com. The
           // same InnerTube request is accepted by the Google API hostname;
           // keep the library's client context and deciphering unchanged.
           target.hostname = 'youtubei.googleapis.com';
-          const headers = new Headers({
-            'content-type': request.headers.get('content-type') || 'application/json',
-            'user-agent': request.headers.get('user-agent') || 'Mozilla/5.0',
-          });
+          // Preserve the client identity headers. BotGuard/attestation and
+          // SABR depend on the exact InnerTube client context; reducing this
+          // to content-type and user-agent yields a challenge without a WebPO
+          // minter and silently limits playback to the cold-start window.
+          const headers = new Headers(request.headers);
+          headers.set('content-type', request.headers.get('content-type') || 'application/json');
+          headers.set('user-agent', request.headers.get('user-agent') || 'Mozilla/5.0');
+          headers.delete('host');
           const requestInit = {
             method: request.method,
             headers,
@@ -567,6 +574,62 @@ export class InnerTubeProviderAdapter {
     // Cache for 5 minutes (YouTube CDN URLs typically last ~6 hours)
     this.sourceSessions.set(id, { source, expiresAt: Date.now() + 5 * 60 * 1000 });
     return source;
+  }
+
+  async resolveSabrPlayback(id) {
+    if (!id) throw Object.assign(new Error('Track id is required'), { code: 'INVALID_ID', status: 400 });
+
+    const yt = await this.getClient();
+    const info = await this.withRetry(() => this.withTimeout(yt.music.getInfo(id)));
+    if (info.playability_status?.status && info.playability_status.status !== 'OK') {
+      throw Object.assign(
+        new Error(info.playability_status.reason || 'Video is not playable'),
+        { code: 'PLAYBACK_RESTRICTED', status: 403 },
+      );
+    }
+
+    const streaming = info.streaming_data;
+    const rawStreamingUrl = streaming?.server_abr_streaming_url;
+    const ustreamerConfig = info.player_config?.media_common_config
+      ?.media_ustreamer_request_config?.video_playback_ustreamer_config;
+    if (!rawStreamingUrl || !ustreamerConfig) {
+      throw Object.assign(new Error('YouTube did not return SABR playback data'), { code: 'SABR_UNAVAILABLE', status: 502 });
+    }
+
+    // server_abr_streaming_url contains an undeciphered `n` parameter. Sending
+    // it unchanged produces the misleading 403 we previously saw from CDN.
+    const serverAbrStreamingUrl = await yt.session.player?.decipher(rawStreamingUrl);
+    if (!serverAbrStreamingUrl) {
+      throw Object.assign(new Error('Could not decipher YouTube SABR URL'), { code: 'SABR_DECIPHER_FAILED', status: 502 });
+    }
+
+    const client = yt.session.context.client;
+    const clientName = Constants.CLIENT_NAME_IDS[client.clientName];
+    const clientInfo = {
+      clientName: parseInt(clientName || '67', 10),
+      clientVersion: client.clientVersion,
+      osName: client.osName,
+      osVersion: client.osVersion,
+      screenWidthPoints: client.screenWidthPoints,
+      screenHeightPoints: client.screenHeightPoints,
+      screenPixelDensity: client.screenPixelDensity,
+      screenDensityFloat: client.screenDensityFloat,
+      utcOffsetMinutes: String(client.utcOffsetMinutes),
+      timeZone: client.timeZone,
+    };
+    const poToken = await this.withTimeout(getPoToken(yt, id), 30_000);
+
+    return {
+      serverAbrStreamingUrl,
+      ustreamerConfig,
+      clientInfo,
+      poToken,
+      userAgent: client.userAgent || 'Mozilla/5.0',
+      formats: (streaming.adaptive_formats || []).map(buildSabrFormat),
+      durationMs: Number(info.basic_info?.duration || 0) * 1000,
+      title: info.basic_info?.title || id,
+      mimeType: 'audio/mp4',
+    };
   }
 
   stats() {

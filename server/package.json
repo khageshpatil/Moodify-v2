@@ -9,7 +9,9 @@
     "test": "node --test provider/*.test.mjs discovery/*.test.mjs"
   },
   "dependencies": {
+    "bgutils-js": "^4.0.3",
     "googlevideo": "^4.1.1",
+    "jsdom": "^26.1.0",
     "youtubei.js": "18.0.0"
   }
 }

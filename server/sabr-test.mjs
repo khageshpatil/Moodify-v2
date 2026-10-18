@@ -1,6 +1,7 @@
-import { Innertube, Platform } from 'youtubei.js/web';
+import { Constants, Innertube, Platform } from 'youtubei.js/web';
 import { SabrStream } from 'googlevideo/sabr-stream';
-import { EnabledTrackTypes, buildSabrFormat } from 'googlevideo/utils';
+import { EnabledTrackTypes, buildSabrFormat, FormatKeyUtils } from 'googlevideo/utils';
+import { getPoToken } from './provider/poToken.mjs';
 
 Platform.shim.eval = async (data) => new Function(data.output)();
 
@@ -10,18 +11,46 @@ const info = await yt.music.getInfo(id);
 const streaming = info.streaming_data;
 const config = info.player_config?.media_common_config?.media_ustreamer_request_config?.video_playback_ustreamer_config;
 const formats = (streaming?.adaptive_formats || []).map(buildSabrFormat);
+const serverAbrStreamingUrl = await yt.session.player.decipher(streaming?.server_abr_streaming_url);
+const poToken = await getPoToken(yt, id);
+const startMs = Number(process.env.START_MS || 0);
+const audioFormat = formats.find((format) => format.itag === 140) || formats.find((format) => format.mimeType?.includes('audio/mp4'));
+const videoFormat = formats.find((format) => format.width) || formats[0];
+const seekState = startMs > 0 ? {
+  durationMs: Number(info.basic_info?.duration || 0) * 1000,
+  requestNumber: 0,
+  activeSabrContexts: [],
+  sabrContextUpdates: [],
+  formatToDiscard: FormatKeyUtils.fromFormat(videoFormat),
+  cachedBufferedRanges: [],
+  initializedFormats: [audioFormat, videoFormat].map((format) => ({
+    formatKey: FormatKeyUtils.fromFormat(format),
+    formatInitializationMetadata: {},
+    downloadedSegments: [[1, { durationMs: String(startMs) }]],
+    lastMediaHeaders: [],
+  })),
+  playerTimeMs: String(startMs),
+} : undefined;
 
 const sabrFetch = async (input, init) => {
-  const response = await fetch(input, init);
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      ...(init?.headers || {}),
+      'user-agent': yt.session.context.client.userAgent || 'com.google.android.youtube/21.03.36 (Linux; U; Android 16; en_US) gzip',
+      'origin': 'https://music.youtube.com',
+      'referer': 'https://music.youtube.com/',
+    },
+  });
   console.log(JSON.stringify({ event: 'sabr-http', method: init?.method || 'GET', url: new URL(input).pathname, queryKeys: [...new URL(input).searchParams.keys()].sort(), status: response.status, contentType: response.headers.get('content-type'), contentLength: response.headers.get('content-length') }));
   return response;
 };
 
 const stream = new SabrStream({
-  serverAbrStreamingUrl: streaming.server_abr_streaming_url,
+  serverAbrStreamingUrl,
   videoPlaybackUstreamerConfig: config,
   clientInfo: {
-    clientName: 67,
+    clientName: parseInt(Constants.CLIENT_NAME_IDS[yt.session.context.client.clientName] || '67', 10),
     clientVersion: yt.session.context.client.clientVersion,
     osName: yt.session.context.client.osName,
     osVersion: yt.session.context.client.osVersion,
@@ -32,6 +61,7 @@ const stream = new SabrStream({
     utcOffsetMinutes: String(yt.session.context.client.utcOffsetMinutes),
     timeZone: yt.session.context.client.timeZone,
   },
+  poToken,
   durationMs: Number(info.basic_info?.duration || 0) * 1000,
   formats,
   fetch: sabrFetch,
@@ -42,7 +72,7 @@ stream.on('streamProtectionStatusUpdate', (event) => console.log(JSON.stringify(
 stream.on('reloadPlayerResponse', (event) => console.log(JSON.stringify({ event: 'reloadPlayerResponse', value: event })));
 
 try {
-  const started = await stream.start({ audioFormat: (available) => available.find((format) => format.itag === 140) || available[0], enabledTrackTypes: EnabledTrackTypes.AUDIO_ONLY, maxRetries: 2, stallDetectionMs: 15000 });
+  const started = await stream.start({ audioFormat: () => audioFormat, videoFormat: () => videoFormat, state: seekState, enabledTrackTypes: EnabledTrackTypes.AUDIO_ONLY, maxRetries: 2, stallDetectionMs: 15000 });
   console.log(JSON.stringify({ event: 'started', selected: started.selectedFormats }));
   const reader = started.audioStream.getReader();
   let total = 0;

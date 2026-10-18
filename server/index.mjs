@@ -1,5 +1,8 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { once } from 'node:events';
+import { SabrStream } from 'googlevideo/sabr-stream';
+import { EnabledTrackTypes } from 'googlevideo/utils';
 import { provider } from './provider/innerTubeProvider.mjs';
 import { discoveryGraphStore } from './discovery/DiscoveryGraphStore.mjs';
 
@@ -8,6 +11,7 @@ const port = Number(process.env.PORT || process.env.MOODIFY_SERVER_PORT || 8787)
 const requestTimeoutMs = 20000;
 const maxAttempts = 2;
 const defaultRelayChunkBytes = 1024 * 1024;
+const sabrInitializationCache = new Map();
 
 const smokeHtml = await readFile(new URL('./smoke.html', import.meta.url), 'utf8');
 
@@ -101,7 +105,7 @@ const persistDiscoverySnapshot = async (snapshot) => {
 
 const relay = async (request, response, id) => {
   try {
-    await streamMedia(request, response, id);
+    await streamSabrMedia(request, response, id, request.url ? new URL(request.url, `http://${request.headers.host || 'localhost'}`).searchParams.get('startMs') : null);
   } catch (error) {
     diagnostics('relay.failed', { id, code: error.code, error: error.message, headersSent: response.headersSent });
     if (response.headersSent) {
@@ -109,6 +113,104 @@ const relay = async (request, response, id) => {
       return;
     }
     throw error;
+  }
+};
+
+const streamSabrMedia = async (request, response, id, requestedStartMs) => {
+  if (request.headers.range) {
+    throw Object.assign(new Error('SABR relay does not support byte ranges'), { code: 'RANGE_NOT_SUPPORTED', status: 416 });
+  }
+
+  diagnostics('sabr.resolve', { id });
+  const playback = await provider.resolveSabrPlayback(id);
+  const audioFormat = playback.formats
+    .filter((format) => format.mimeType?.includes('audio/mp4'))
+    .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0]
+    || playback.formats.find((format) => format.mimeType?.startsWith('audio/'));
+  const videoFormat = playback.formats.find((format) => format.width) || playback.formats[0];
+  const parsedStartMs = Number(requestedStartMs || 0);
+  const startMs = Number.isFinite(parsedStartMs) && parsedStartMs > 0
+    ? Math.min(parsedStartMs, Math.max(0, playback.durationMs - 1))
+    : 0;
+  const sabrFetch = async (input, init) => fetch(input, {
+    ...init,
+    headers: {
+      ...(init?.headers || {}),
+      'user-agent': playback.userAgent,
+      'origin': 'https://music.youtube.com',
+      'referer': 'https://music.youtube.com/',
+    },
+  });
+  const createStream = () => new SabrStream({
+    serverAbrStreamingUrl: playback.serverAbrStreamingUrl,
+    videoPlaybackUstreamerConfig: playback.ustreamerConfig,
+    clientInfo: playback.clientInfo,
+    poToken: playback.poToken,
+    durationMs: playback.durationMs,
+    formats: playback.formats,
+    fetch: sabrFetch,
+  });
+  const stream = createStream();
+
+  let closed = false;
+  response.on('close', () => {
+    closed = true;
+    stream.abort();
+  });
+
+  const started = await stream.start({
+    audioFormat: () => audioFormat,
+    videoFormat: () => videoFormat,
+    enabledTrackTypes: EnabledTrackTypes.AUDIO_ONLY,
+    maxRetries: 3,
+    stallDetectionMs: 20_000,
+  });
+
+  const selectedAudioFormat = started.selectedFormats.audioFormat;
+  response.writeHead(200, {
+    'content-type': selectedAudioFormat?.mimeType || playback.mimeType,
+    'cache-control': 'no-store',
+    'accept-ranges': 'none',
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'Content-Type, Accept-Ranges',
+  });
+
+  try {
+    const initKey = `${id}:${selectedAudioFormat?.itag || ''}:${selectedAudioFormat?.xtags || ''}`;
+    let initialization = sabrInitializationCache.get(initKey);
+    let emittedMedia = startMs <= 0;
+    for await (const chunk of started.audioStream) {
+      if (closed || response.destroyed) break;
+
+      // The first SABR audio chunk is the MP4 initialization segment. Keep it
+      // separate so a time-based seek can begin with a valid MP4 stream while
+      // discarding media segments before the requested timestamp.
+      if (!initialization) {
+        initialization = chunk;
+        sabrInitializationCache.set(initKey, initialization);
+        if (!emittedMedia && startMs > 0) continue;
+      }
+
+      if (!emittedMedia) {
+        let downloadedMs = 0;
+        try {
+          downloadedMs = Number(stream.getState().playerTimeMs || 0);
+        } catch {
+          downloadedMs = 0;
+        }
+        if (downloadedMs < startMs) continue;
+        if (initialization && !closed && !response.destroyed) {
+          response.write(Buffer.from(initialization));
+        }
+        emittedMedia = true;
+      }
+
+      if (!response.write(Buffer.from(chunk))) await once(response, 'drain');
+    }
+    if (!response.writableEnded && !response.destroyed) response.end();
+    diagnostics('sabr.completed', { id });
+  } finally {
+    stream.abort();
   }
 };
 
