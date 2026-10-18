@@ -289,7 +289,41 @@ export class InnerTubeProviderAdapter {
   }
 
   async getClient() {
-    this.innertubePromise ||= Innertube.create({ generate_session_locally: true });
+    this.innertubePromise ||= Innertube.create({
+      generate_session_locally: true,
+      fetch: async (input, init) => {
+        // youtubei.js supplies its adjusted request body through `init`.
+        // Reconstructing from `input` alone would reuse the unprocessed body
+        // and drop the selected client context.
+        const request = new Request(input, init);
+        const target = new URL(request.url);
+        const isYouTubeInnerTube =
+          (target.hostname === 'www.youtube.com' || target.hostname === 'music.youtube.com') &&
+          target.pathname.startsWith('/youtubei/');
+
+        if (isYouTubeInnerTube) {
+          // Render's shared egress is challenged by www.youtube.com. The
+          // same InnerTube request is accepted by the Google API hostname;
+          // keep the library's client context and deciphering unchanged.
+          target.hostname = 'youtubei.googleapis.com';
+          const headers = new Headers({
+            'content-type': request.headers.get('content-type') || 'application/json',
+            'user-agent': request.headers.get('user-agent') || 'Mozilla/5.0',
+          });
+          const requestInit = {
+            method: request.method,
+            headers,
+            redirect: request.redirect,
+          };
+          if (request.method !== 'GET' && request.method !== 'HEAD') {
+            requestInit.body = await request.clone().text();
+          }
+          return globalThis.fetch(new Request(target, requestInit));
+        }
+
+        return globalThis.fetch(request);
+      },
+    });
     return this.innertubePromise;
   }
 
