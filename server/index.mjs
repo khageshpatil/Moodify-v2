@@ -318,7 +318,11 @@ const server = http.createServer(async (request, response) => {
     const mediaMatch = /^\/api\/media\/([^/]+)$/.exec(url.pathname);
     if (request.method === 'GET' && mediaMatch) {
       const videoId = decodeURIComponent(mediaMatch[1]);
-      sendJson(response, 200, { ok: true, videoId, provider: 'youtube-music' });
+      if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        sendJson(response, 400, { error: 'Invalid video ID' });
+        return;
+      }
+      await relay(request, response, videoId);
       return;
     }
     // ── /api/stream/:id — returns direct audio CDN URL as JSON ───────────
