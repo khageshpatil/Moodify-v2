@@ -430,12 +430,102 @@ export class InnerTubeProviderAdapter {
     return track;
   }
 
-  async resolvePlayback(id) {
+  async resolvePlayback(id, forceRefresh = false) {
     if (!id) throw Object.assign(new Error('Track id is required'), { code: 'INVALID_ID', status: 400 });
-    return {
-      videoId: id,
-      provider: 'youtube-music',
+
+    // Return cached source if still fresh (YouTube CDN URLs last ~6 hours but we cache 5 min to be safe)
+    const cached = this.sourceSessions.get(id);
+    if (!forceRefresh && cached && Date.now() < cached.expiresAt) {
+      return cached.source;
+    }
+
+    const yt = await this.getClient();
+
+    // Strategy:
+    // 1. IOS client — returns direct CDN URLs (no decipher needed, most reliable for server-side)
+    // 2. MWEB client — decipher() works correctly on this client
+    // 3. ANDROID client — fallback (decipher often fails on server IPs)
+    const clientsToTry = ['IOS', 'MWEB', 'ANDROID'];
+
+    let url;
+    let bestFormat;
+    let playabilityChecked = false;
+
+    for (const client of clientsToTry) {
+      let info;
+      try {
+        info = await this.withRetry(() => this.withTimeout(yt.getBasicInfo(id, { client })));
+      } catch {
+        continue;
+      }
+
+      // Check playability once (from first successful response)
+      if (!playabilityChecked) {
+        playabilityChecked = true;
+        if (info.playability_status?.status && info.playability_status.status !== 'OK') {
+          throw Object.assign(
+            new Error(info.playability_status.reason || 'Video is not playable'),
+            { code: 'PLAYBACK_RESTRICTED', status: 403 },
+          );
+        }
+      }
+
+      const allFormats = [
+        ...(info.streaming_data?.adaptive_formats || []),
+        ...(info.streaming_data?.formats || []),
+      ];
+
+      // Audio-only, prefer AAC/m4a for widest Android ExoPlayer compat, then highest bitrate
+      const audioFormats = allFormats.filter((f) => f.has_audio && !f.has_video);
+      if (!audioFormats.length) continue;
+
+      audioFormats.sort((a, b) => {
+        const aM4a = (a.mime_type || '').includes('mp4') || (a.mime_type || '').includes('m4a') ? 1 : 0;
+        const bM4a = (b.mime_type || '').includes('mp4') || (b.mime_type || '').includes('m4a') ? 1 : 0;
+        if (aM4a !== bM4a) return bM4a - aM4a;
+        return (b.bitrate || 0) - (a.bitrate || 0);
+      });
+
+      // Try direct URL first (IOS client provides these)
+      for (const fmt of audioFormats) {
+        if (fmt.url) {
+          url = fmt.url;
+          bestFormat = fmt;
+          break;
+        }
+      }
+      if (url) break;
+
+      // Try deciphering (MWEB / ANDROID)
+      for (const fmt of audioFormats) {
+        try {
+          const deciphered = await fmt.decipher(yt.session.player);
+          if (deciphered) {
+            url = deciphered;
+            bestFormat = fmt;
+            break;
+          }
+        } catch {
+          // Try next format
+        }
+      }
+      if (url) break;
+    }
+
+    if (!url) {
+      throw Object.assign(new Error('Could not resolve audio stream URL'), { code: 'DECIPHER_FAILED', status: 502 });
+    }
+
+    const source = {
+      url,
+      mimeType: bestFormat?.mime_type || 'audio/mp4',
+      contentLength: bestFormat?.content_length ? Number(bestFormat.content_length) : undefined,
+      bitrate: bestFormat?.bitrate,
     };
+
+    // Cache for 5 minutes (YouTube CDN URLs typically last ~6 hours)
+    this.sourceSessions.set(id, { source, expiresAt: Date.now() + 5 * 60 * 1000 });
+    return source;
   }
 
   stats() {

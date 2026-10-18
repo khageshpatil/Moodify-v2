@@ -321,6 +321,39 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, { ok: true, videoId, provider: 'youtube-music' });
       return;
     }
+    // ── /api/stream/:id — returns direct audio CDN URL as JSON ───────────
+    // Used by Android ExoPlayer to get the stream URL without the server
+    // proxying the bytes.  resolvePlayback() already uses the ANDROID
+    // InnerTube client which returns pre-deciphered CDN URLs.
+    const streamMatch = /^\/api\/stream\/([^/]+)$/.exec(url.pathname);
+    if (request.method === 'GET' && streamMatch) {
+      const videoId = decodeURIComponent(streamMatch[1]);
+      if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        sendJson(response, 400, { error: 'Invalid video ID' });
+        return;
+      }
+      try {
+        const source = await provider.resolvePlayback(videoId);
+        if (!source?.url) {
+          sendJson(response, 502, { error: 'NO_STREAM_URL', message: 'No audio stream URL available' });
+          return;
+        }
+        sendJson(response, 200, {
+          ok: true,
+          videoId,
+          url: source.url,
+          mimeType: source.mimeType,
+          contentLength: source.contentLength,
+        });
+      } catch (streamError) {
+        diagnostics('stream.resolve.failed', { videoId, error: streamError.message });
+        sendJson(response, 502, {
+          error: 'STREAM_RESOLUTION_FAILED',
+          message: streamError?.message || 'Could not resolve audio stream',
+        });
+      }
+      return;
+    }
     sendJson(response, 404, { error: 'Not found' });
   } catch (error) {
     diagnostics('request.failed', { path: url.pathname, code: error.code, error: error.message });
