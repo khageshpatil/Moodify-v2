@@ -284,16 +284,23 @@ class ContinuationRegistry {
 export class InnerTubeProviderAdapter {
   constructor() {
     this.innertubePromise = null;
+    this.innertubePromises = new Map();
     this.sourceSessions = new Map();
     this.trackCache = new Map();
     this.infoCache = new Map();
     this.continuations = new ContinuationRegistry();
   }
 
-  async getClient() {
-    this.innertubePromise ||= Innertube.create({
-      generate_session_locally: true,
-      fetch: async (input, init) => {
+  async getClient(clientType = null) {
+    // Music.getInfo() supplies the YTMUSIC request client itself. Reuse the
+    // default session so its visitor/session state also matches the PO token.
+    if (clientType === 'YTMUSIC') return this.getClient();
+    const cacheKey = clientType || 'DEFAULT';
+    if (!this.innertubePromises.has(cacheKey)) {
+      const promise = Innertube.create({
+        ...(clientType ? { client_type: clientType } : {}),
+        generate_session_locally: true,
+        fetch: async (input, init) => {
         // youtubei.js supplies its adjusted request body through `init`.
         // Reconstructing from `input` alone would reuse the unprocessed body
         // and drop the selected client context.
@@ -328,10 +335,13 @@ export class InnerTubeProviderAdapter {
           return globalThis.fetch(new Request(target, requestInit));
         }
 
-        return globalThis.fetch(request);
-      },
-    });
-    return this.innertubePromise;
+          return globalThis.fetch(request);
+        },
+      });
+      this.innertubePromises.set(cacheKey, promise);
+      if (!clientType) this.innertubePromise = promise;
+    }
+    return this.innertubePromises.get(cacheKey);
   }
 
   async withTimeout(promise, timeoutMs = requestTimeoutMs) {
@@ -480,28 +490,30 @@ export class InnerTubeProviderAdapter {
       return cached.source;
     }
 
-    const yt = await this.getClient();
-
-    // Strategy:
-    // 1. IOS client — returns direct CDN URLs (no decipher needed, most reliable for server-side)
-    // 2. MWEB client — decipher() works correctly on this client
-    // 3. ANDROID client — fallback (decipher often fails on server IPs)
+    // Resolve a normal signed audio format. SABR is intentionally not used
+    // here: cloud-hosted requests can receive an attestation-pending response
+    // and stall after the initialization segment. This is the same bounded
+    // format flow used by native InnerTube clients.
     const playbackAttempts = [
-      { name: 'YTMUSIC', load: () => yt.music.getInfo(id) },
-      { name: 'IOS', load: () => yt.getBasicInfo(id, { client: 'IOS' }) },
-      { name: 'MWEB', load: () => yt.getBasicInfo(id, { client: 'MWEB' }) },
-      { name: 'ANDROID', load: () => yt.getBasicInfo(id, { client: 'ANDROID' }) },
-      { name: 'WEB', load: () => yt.getBasicInfo(id, { client: 'WEB' }) },
+      { name: 'MWEB', load: (client) => client.getBasicInfo(id) },
+      { name: 'WEB', load: (client) => client.getBasicInfo(id) },
+      { name: 'ANDROID', load: (client) => client.getBasicInfo(id) },
+      { name: 'YTMUSIC', load: (client) => client.music.getInfo(id) },
+      { name: 'DEFAULT_IOS', clientType: null, load: (client) => client.getBasicInfo(id, { client: 'IOS' }) },
     ];
 
     let url;
     let bestFormat;
+    let selectedClient;
+    let selectedClientName;
     let lastPlaybackError;
 
     for (const attempt of playbackAttempts) {
       let info;
+      let candidateClient;
       try {
-        info = await this.withRetry(() => this.withTimeout(attempt.load()));
+        candidateClient = await this.getClient(attempt.clientType === undefined ? attempt.name : attempt.clientType);
+        info = await this.withRetry(() => this.withTimeout(attempt.load(candidateClient)));
       } catch (error) {
         lastPlaybackError = error;
         continue;
@@ -534,30 +546,27 @@ export class InnerTubeProviderAdapter {
         return (b.bitrate || 0) - (a.bitrate || 0);
       });
 
-      // Try direct URL first (IOS client provides these)
+      const player = candidateClient.session.player;
       for (const fmt of audioFormats) {
-        if (fmt.url) {
-          url = fmt.url;
-          bestFormat = fmt;
-          break;
+        try {
+          // Formats from MWEB/WEB/ANDROID commonly contain signatureCipher
+          // rather than url. Calling Player.decipher explicitly handles both
+          // forms and also transforms YouTube's n parameter.
+          const deciphered = fmt.url || await player?.decipher(fmt.url, fmt.signature_cipher, fmt.cipher);
+          if (deciphered) {
+            url = deciphered;
+            bestFormat = fmt;
+            selectedClient = candidateClient;
+            selectedClientName = attempt.name;
+            break;
+          }
+        } catch {
+          // Try the next audio format/client.
         }
       }
       if (url) break;
 
-      // Try deciphering (MWEB / ANDROID)
-      for (const fmt of audioFormats) {
-        try {
-          const deciphered = await fmt.decipher(yt.session.player);
-          if (deciphered) {
-            url = deciphered;
-            bestFormat = fmt;
-            break;
-          }
-        } catch {
-          // Try next format
-        }
-      }
-      if (url) break;
+      lastPlaybackError = Object.assign(new Error(`${attempt.name} returned no decipherable audio format`), { code: 'DECIPHER_FAILED', status: 502 });
     }
 
     if (!url) {
@@ -569,6 +578,11 @@ export class InnerTubeProviderAdapter {
       mimeType: bestFormat?.mime_type || 'audio/mp4',
       contentLength: bestFormat?.content_length ? Number(bestFormat.content_length) : undefined,
       bitrate: bestFormat?.bitrate,
+      userAgent: selectedClient?.session.context.client.userAgent
+        || Constants.CLIENTS[selectedClientName]?.USER_AGENT
+        || 'Mozilla/5.0',
+      referer: selectedClientName === 'YTMUSIC' ? 'https://music.youtube.com/' : 'https://www.youtube.com/',
+      clientType: selectedClientName,
     };
 
     // Cache for 5 minutes (YouTube CDN URLs typically last ~6 hours)
@@ -579,37 +593,88 @@ export class InnerTubeProviderAdapter {
   async resolveSabrPlayback(id) {
     if (!id) throw Object.assign(new Error('Track id is required'), { code: 'INVALID_ID', status: 400 });
 
-    const yt = await this.getClient();
-    const info = await this.withRetry(() => this.withTimeout(yt.music.getInfo(id)));
-    if (info.playability_status?.status && info.playability_status.status !== 'OK') {
-      throw Object.assign(
-        new Error(info.playability_status.reason || 'Video is not playable'),
-        { code: 'PLAYBACK_RESTRICTED', status: 403 },
-      );
+    const tokenClient = await this.getClient();
+    let poToken;
+    try {
+      poToken = await this.withTimeout(getPoToken(tokenClient, id), 30_000);
+    } catch (error) {
+      // A BotGuard challenge can be temporarily unavailable from a cloud
+      // egress. Keep trying playback clients; YTMUSIC and some fallback
+      // clients can still return usable SABR data without a PO token.
+      poToken = undefined;
+    }
+    const loadBasicInfo = (client) => client.getBasicInfo(id, poToken ? { po_token: poToken } : undefined);
+    const playbackAttempts = [
+      { name: 'YTMUSIC', load: (client) => client.music.getInfo(id) },
+      { name: 'ANDROID', load: loadBasicInfo },
+      { name: 'MWEB', load: loadBasicInfo },
+      { name: 'WEB', load: loadBasicInfo },
+    ];
+
+    let info;
+    let selectedClient = 'YTMUSIC';
+    let playbackClient;
+    let lastPlaybackError;
+    for (const attempt of playbackAttempts) {
+      try {
+        const candidateClient = await this.getClient(attempt.name);
+        const candidate = await this.withRetry(() => this.withTimeout(attempt.load(candidateClient)));
+        if (candidate.playability_status?.status && candidate.playability_status.status !== 'OK') {
+          lastPlaybackError = Object.assign(
+            new Error(candidate.playability_status.reason || `${attempt.name} client rejected playback`),
+            { code: 'PLAYBACK_RESTRICTED', status: 403 },
+          );
+          continue;
+        }
+        const candidateStreaming = candidate.streaming_data;
+        const candidateUstreamerConfig = candidate.player_config?.media_common_config
+          ?.media_ustreamer_request_config?.video_playback_ustreamer_config;
+        if (!candidateStreaming?.server_abr_streaming_url || !candidateUstreamerConfig) {
+          lastPlaybackError = Object.assign(
+            new Error(`${attempt.name} client did not return SABR playback data`),
+            { code: 'SABR_UNAVAILABLE', status: 502 },
+          );
+          continue;
+        }
+        info = candidate;
+        selectedClient = attempt.name;
+        playbackClient = candidateClient;
+        break;
+      } catch (error) {
+        lastPlaybackError = error;
+      }
     }
 
+    if (!info) throw lastPlaybackError || Object.assign(new Error('YouTube did not return playable media'), { code: 'PLAYBACK_RESTRICTED', status: 403 });
+
     const streaming = info.streaming_data;
-    const rawStreamingUrl = streaming?.server_abr_streaming_url;
-    const ustreamerConfig = info.player_config?.media_common_config
-      ?.media_ustreamer_request_config?.video_playback_ustreamer_config;
+    const rawStreamingUrl = streaming.server_abr_streaming_url;
+    const ustreamerConfig = info.player_config.media_common_config
+      .media_ustreamer_request_config.video_playback_ustreamer_config;
     if (!rawStreamingUrl || !ustreamerConfig) {
       throw Object.assign(new Error('YouTube did not return SABR playback data'), { code: 'SABR_UNAVAILABLE', status: 502 });
     }
 
     // server_abr_streaming_url contains an undeciphered `n` parameter. Sending
     // it unchanged produces the misleading 403 we previously saw from CDN.
-    const serverAbrStreamingUrl = await yt.session.player?.decipher(rawStreamingUrl);
+    const serverAbrStreamingUrl = await playbackClient.session.player?.decipher(rawStreamingUrl);
     if (!serverAbrStreamingUrl) {
       throw Object.assign(new Error('Could not decipher YouTube SABR URL'), { code: 'SABR_DECIPHER_FAILED', status: 502 });
     }
 
-    const client = yt.session.context.client;
-    const clientName = Constants.CLIENT_NAME_IDS[client.clientName];
+    const client = playbackClient.session.context.client;
+    const clientProfile = Constants.CLIENTS[selectedClient] || Constants.CLIENTS.YTMUSIC;
+    const clientName = Constants.CLIENT_NAME_IDS[clientProfile.NAME] || Constants.CLIENT_NAME_IDS[client.clientName];
     const clientInfo = {
       clientName: parseInt(clientName || '67', 10),
-      clientVersion: client.clientVersion,
-      osName: client.osName,
-      osVersion: client.osVersion,
+      clientVersion: client.clientVersion || clientProfile.VERSION,
+      osName: client.osName || clientProfile.OS_NAME || (selectedClient === 'ANDROID' ? 'Android' : undefined),
+      osVersion: client.osVersion || clientProfile.OS_VERSION || (selectedClient === 'ANDROID' ? '13' : undefined),
+      deviceMake: client.deviceMake,
+      deviceModel: client.deviceModel,
+      acceptLanguage: client.hl,
+      acceptRegion: client.gl,
+      androidSdkVersion: client.androidSdkVersion,
       screenWidthPoints: client.screenWidthPoints,
       screenHeightPoints: client.screenHeightPoints,
       screenPixelDensity: client.screenPixelDensity,
@@ -617,14 +682,13 @@ export class InnerTubeProviderAdapter {
       utcOffsetMinutes: String(client.utcOffsetMinutes),
       timeZone: client.timeZone,
     };
-    const poToken = await this.withTimeout(getPoToken(yt, id), 30_000);
-
     return {
+      clientType: selectedClient,
       serverAbrStreamingUrl,
       ustreamerConfig,
       clientInfo,
       poToken,
-      userAgent: client.userAgent || 'Mozilla/5.0',
+      userAgent: client.userAgent || clientProfile.USER_AGENT || 'Mozilla/5.0',
       formats: (streaming.adaptive_formats || []).map(buildSabrFormat),
       durationMs: Number(info.basic_info?.duration || 0) * 1000,
       title: info.basic_info?.title || id,

@@ -137,8 +137,8 @@ const streamSabrMedia = async (request, response, id, requestedStartMs) => {
     headers: {
       ...(init?.headers || {}),
       'user-agent': playback.userAgent,
-      'origin': 'https://music.youtube.com',
-      'referer': 'https://music.youtube.com/',
+      'origin': playback.clientType === 'YTMUSIC' ? 'https://music.youtube.com' : 'https://www.youtube.com',
+      'referer': playback.clientType === 'YTMUSIC' ? 'https://music.youtube.com/' : 'https://www.youtube.com/',
     },
   });
   const createStream = () => new SabrStream({
@@ -150,7 +150,9 @@ const streamSabrMedia = async (request, response, id, requestedStartMs) => {
     formats: playback.formats,
     fetch: sabrFetch,
   });
+  diagnostics('sabr.client', { id, client: playback.clientType, clientName: playback.clientInfo?.clientName });
   const stream = createStream();
+  stream.on('streamProtectionStatusUpdate', (event) => diagnostics('sabr.protection', { id, status: event?.status, maxRetries: event?.maxRetries }));
 
   let closed = false;
   response.on('close', () => {
