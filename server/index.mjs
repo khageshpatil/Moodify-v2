@@ -484,6 +484,12 @@ const server = http.createServer(async (request, response) => {
           url: source.url,
           mimeType: source.mimeType,
           contentLength: source.contentLength,
+          bitrate: source.bitrate,
+          itag: source.itag,
+          userAgent: source.userAgent,
+          referer: source.referer,
+          clientType: source.clientType,
+          expiresAt: source.expiresAt,
         });
       } catch (streamError) {
         diagnostics('stream.resolve.failed', { videoId, error: streamError.message });
@@ -492,6 +498,17 @@ const server = http.createServer(async (request, response) => {
           message: streamError?.message || 'Could not resolve audio stream',
         });
       }
+      return;
+    }
+    // ── /api/decipher — transforms only a device-resolved CDN URL ───────────
+    // Android calls YouTube directly so the media request uses the device IP.
+    // This endpoint never fetches or proxies the media bytes.
+    if (request.method === 'GET' && url.pathname === '/api/decipher') {
+      const rawUrl = url.searchParams.get('url') || '';
+      const signatureCipher = url.searchParams.get('signatureCipher') || undefined;
+      const cipher = url.searchParams.get('cipher') || undefined;
+      const result = await provider.decipherPlaybackUrl(rawUrl, signatureCipher, cipher);
+      sendJson(response, 200, { ok: true, url: result.url });
       return;
     }
     sendJson(response, 404, { error: 'Not found' });

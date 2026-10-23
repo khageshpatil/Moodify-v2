@@ -20,6 +20,10 @@ Platform.shim.eval = async (data) => new Function(data.output)();
 const requestTimeoutMs = 20_000;
 const maxAttempts = 2;
 const sourceSafetyWindowMs = 30_000;
+// youtubei.js does not add the public InnerTube API key when the request is
+// rewritten from www.youtube.com to youtubei.googleapis.com.  Google accepts
+// the former without the query key, but the latter returns 404 without it.
+const INNERTUBE_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
 const maxContinuationEntries = 256;
 const continuationTtlMs = 10 * 60 * 1000;
 
@@ -316,6 +320,7 @@ export class InnerTubeProviderAdapter {
           // same InnerTube request is accepted by the Google API hostname;
           // keep the library's client context and deciphering unchanged.
           target.hostname = 'youtubei.googleapis.com';
+          if (!target.searchParams.has('key')) target.searchParams.set('key', INNERTUBE_API_KEY);
           // Preserve the client identity headers. BotGuard/attestation and
           // SABR depend on the exact InnerTube client context; reducing this
           // to content-type and user-agent yields a challenge without a WebPO
@@ -568,7 +573,10 @@ export class InnerTubeProviderAdapter {
           // Formats from MWEB/WEB/ANDROID commonly contain signatureCipher
           // rather than url. Calling Player.decipher explicitly handles both
           // forms and also transforms YouTube's n parameter.
-          const deciphered = fmt.url || await player?.decipher(fmt.url, fmt.signature_cipher, fmt.cipher);
+          // NOTE: always call decipher even when fmt.url is present — the n
+          // throttle parameter must be transformed by the player JavaScript
+          // regardless of whether the URL is already deciphered.
+          const deciphered = await player?.decipher(fmt.url, fmt.signature_cipher, fmt.cipher) || fmt.url;
           if (deciphered) {
             // Web/MWeb GVS URLs require the WebPO token in the URL. The token
             // is content-bound, so it is safe to use when the media relay
@@ -615,6 +623,47 @@ export class InnerTubeProviderAdapter {
     // Cache for 5 minutes (YouTube CDN URLs typically last ~6 hours)
     this.sourceSessions.set(id, { source, expiresAt: Date.now() + 5 * 60 * 1000 });
     return source;
+  }
+
+  /**
+   * Decipher a media URL that was resolved on a client device.
+   *
+   * The media request must remain on the device: a URL generated from the
+   * device's InnerTube session can be rejected when Render fetches it. The
+   * backend is only used as a small JavaScript-decipher service for the `n`
+   * parameter/signature; it never downloads or relays the media bytes.
+   */
+  async decipherPlaybackUrl(rawUrl, signatureCipher, cipher) {
+    const candidate = rawUrl || signatureCipher || cipher;
+    if (!candidate) {
+      throw Object.assign(new Error('A YouTube stream URL is required'), { code: 'INVALID_STREAM_URL', status: 400 });
+    }
+
+    const encodedMediaUrl = rawUrl || new URLSearchParams(candidate).get('url');
+    let mediaUrl;
+    try {
+      mediaUrl = new URL(encodedMediaUrl || candidate);
+    } catch {
+      throw Object.assign(new Error('Invalid YouTube stream URL'), { code: 'INVALID_STREAM_URL', status: 400 });
+    }
+
+    const isGoogleVideo = mediaUrl.hostname === 'googlevideo.com' || mediaUrl.hostname.endsWith('.googlevideo.com');
+    if (!isGoogleVideo) {
+      throw Object.assign(new Error('Only YouTube media URLs may be deciphered'), { code: 'INVALID_STREAM_URL', status: 400 });
+    }
+
+    // IOS is intentionally used only to load the player JavaScript. The
+    // returned URL is still the device-resolved URL, so no server IP is
+    // embedded into the media request.
+    const client = await this.getClient('IOS');
+    const deciphered = await this.withTimeout(
+      client.session.player?.decipher(rawUrl, signatureCipher, cipher),
+    );
+    if (!deciphered) {
+      throw Object.assign(new Error('YouTube did not return a deciphered URL'), { code: 'DECIPHER_FAILED', status: 502 });
+    }
+
+    return { url: deciphered };
   }
 
   async resolveSabrPlayback(id) {
