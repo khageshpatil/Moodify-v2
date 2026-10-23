@@ -10,7 +10,10 @@ import { discoveryGraphStore } from './discovery/DiscoveryGraphStore.mjs';
 const port = Number(process.env.PORT || process.env.MOODIFY_SERVER_PORT || 8787);
 const requestTimeoutMs = 20000;
 const maxAttempts = 2;
-const defaultRelayChunkBytes = 1024 * 1024;
+// YouTube accepts these signed CDN range requests reliably at 64 KiB.
+// Keep chunking internal to the relay; clients still receive one continuous
+// media response.
+const defaultRelayChunkBytes = 64 * 1024;
 const sabrInitializationCache = new Map();
 
 const smokeHtml = await readFile(new URL('./smoke.html', import.meta.url), 'utf8');
@@ -71,7 +74,7 @@ const toUpstreamRange = (header, totalLength) => {
   const start = match[1] ? Number(match[1]) : Math.max(0, totalLength - Number(match[2]));
   const requestedEnd = match[2] ? Number(match[2]) : start + defaultRelayChunkBytes - 1;
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(requestedEnd) || start < 0 || requestedEnd < start || start >= totalLength) return null;
-  return `bytes=${start}-${Math.min(requestedEnd, totalLength - 1)}`;
+  return `bytes=${start}-${Math.min(requestedEnd, start + defaultRelayChunkBytes - 1, totalLength - 1)}`;
 };
 
 const sendJson = (response, status, payload) => {
@@ -104,8 +107,19 @@ const persistDiscoverySnapshot = async (snapshot) => {
 };
 
 const relay = async (request, response, id) => {
+  const requestUrl = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+  const requestedStartMs = requestUrl.searchParams.get('startMs');
+  const useDirectRelay = requestUrl.searchParams.get('transport') === 'direct';
   try {
-    await streamSabrMedia(request, response, id, request.url ? new URL(request.url, `http://${request.headers.host || 'localhost'}`).searchParams.get('startMs') : null);
+    // Keep the established web contract on /api/media: SABR produces a
+    // complete no-range stream and supports timestamp-based starts. The
+    // normal signed range relay is opt-in for diagnostics or clients that
+    // explicitly request it.
+    if (useDirectRelay) {
+      await streamMedia(request, response, id);
+    } else {
+      await streamSabrMedia(request, response, id, requestedStartMs);
+    }
   } catch (error) {
     diagnostics('relay.failed', { id, code: error.code, error: error.message, headersSent: response.headersSent });
     if (response.headersSent) {
@@ -117,7 +131,10 @@ const relay = async (request, response, id) => {
 };
 
 const streamSabrMedia = async (request, response, id, requestedStartMs) => {
-  if (request.headers.range) {
+  // Media3 can send an initial open-ended zero range even when it starts at
+  // position zero. Treat that as a normal SABR start; nonzero ranges still
+  // require the timestamp-based reopen path used by Android.
+  if (request.headers.range && !/^bytes=0-$/.test(request.headers.range)) {
     throw Object.assign(new Error('SABR relay does not support byte ranges'), { code: 'RANGE_NOT_SUPPORTED', status: 416 });
   }
 
@@ -229,14 +246,18 @@ const streamMedia = async (request, response, id) => {
         return;
       }
       const end = source.contentLength - 1;
+      // Let the client own buffering and subsequent range requests. Making
+      // several CDN range requests inside one response can trigger a second
+      // request-level 403 even though the signed source is still valid.
       const firstEnd = Math.min(end, start + defaultRelayChunkBytes - 1);
       diagnostics('relay.upstream.request', { id, range: `bytes=${start}-${firstEnd}`, source: sourceUrlSnapshot(source.url) });
+      const upstreamHeaders = {
+        'User-Agent': source.userAgent,
+        Referer: source.referer,
+        Range: `bytes=${start}-${firstEnd}`,
+      };
       let firstUpstream = await fetch(source.url, {
-        headers: {
-          Range: `bytes=${start}-${firstEnd}`,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36',
-          Referer: 'https://music.youtube.com/',
-        },
+        headers: upstreamHeaders,
         signal: AbortSignal.timeout(requestTimeoutMs),
       });
       diagnostics('relay.upstream.response', { id, range: `bytes=${start}-${firstEnd}`, response: responseHeaderSnapshot(firstUpstream) });
@@ -262,15 +283,24 @@ const streamMedia = async (request, response, id) => {
       for (let chunkStart = start + firstChunk.byteLength; chunkStart <= end; chunkStart += defaultRelayChunkBytes) {
         const chunkEnd = Math.min(end, chunkStart + defaultRelayChunkBytes - 1);
         diagnostics('relay.upstream.request', { id, range: `bytes=${chunkStart}-${chunkEnd}`, source: sourceUrlSnapshot(source.url) });
-        const upstream = await fetch(source.url, {
-          headers: {
-            Range: `bytes=${chunkStart}-${chunkEnd}`,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36',
-            Referer: 'https://music.youtube.com/',
-          },
-          signal: AbortSignal.timeout(requestTimeoutMs),
-        });
-        diagnostics('relay.upstream.response', { id, range: `bytes=${chunkStart}-${chunkEnd}`, response: responseHeaderSnapshot(upstream) });
+        let upstream;
+        for (let sourceAttempt = 1; sourceAttempt <= maxAttempts; sourceAttempt += 1) {
+          upstream = await fetch(source.url, {
+            headers: {
+              Range: `bytes=${chunkStart}-${chunkEnd}`,
+              'User-Agent': source.userAgent,
+              Referer: source.referer,
+            },
+            signal: AbortSignal.timeout(requestTimeoutMs),
+          });
+          diagnostics('relay.upstream.response', { id, range: `bytes=${chunkStart}-${chunkEnd}`, response: responseHeaderSnapshot(upstream) });
+          if (upstream.status === 403 && sourceAttempt < maxAttempts) {
+            diagnostics('relay.refreshing_source', { id, range: `${chunkStart}-${chunkEnd}`, sourceAttempt });
+            source = await provider.resolvePlayback(id, true);
+            continue;
+          }
+          break;
+        }
         if (upstream.status === 403) {
           diagnostics('relay.source_expired', { id, range: `${chunkStart}-${chunkEnd}` });
           response.destroy();
@@ -292,6 +322,8 @@ const streamMedia = async (request, response, id) => {
     const upstream = await fetch(source.url, {
       headers: {
         Range: upstreamRange,
+        'User-Agent': source.userAgent,
+        Referer: source.referer,
       },
       signal: AbortSignal.timeout(requestTimeoutMs),
     });

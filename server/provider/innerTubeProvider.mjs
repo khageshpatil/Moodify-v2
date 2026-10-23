@@ -490,16 +490,32 @@ export class InnerTubeProviderAdapter {
       return cached.source;
     }
 
+    let poToken;
+    try {
+      // GVS playback tokens are video-bound and must be minted for every
+      // video. Without this token YouTube can return a perfectly valid-looking
+      // format URL that later fails with HTTP 403 at googlevideo.com.
+      const tokenClient = await this.getClient();
+      poToken = await this.withTimeout(getPoToken(tokenClient, id), 30_000);
+    } catch (error) {
+      diagnostics('playback.po_token.failed', { id, error: error.message });
+    }
+
+    const loadBasicInfo = (client) => client.getBasicInfo(
+      id,
+      poToken ? { po_token: poToken } : undefined,
+    );
+
     // Resolve a normal signed audio format. SABR is intentionally not used
     // here: cloud-hosted requests can receive an attestation-pending response
     // and stall after the initialization segment. This is the same bounded
     // format flow used by native InnerTube clients.
     const playbackAttempts = [
-      { name: 'MWEB', load: (client) => client.getBasicInfo(id) },
-      { name: 'WEB', load: (client) => client.getBasicInfo(id) },
-      { name: 'ANDROID', load: (client) => client.getBasicInfo(id) },
+      { name: 'MWEB', load: loadBasicInfo },
+      { name: 'WEB', load: loadBasicInfo },
+      { name: 'ANDROID', load: loadBasicInfo },
       { name: 'YTMUSIC', load: (client) => client.music.getInfo(id) },
-      { name: 'DEFAULT_IOS', clientType: null, load: (client) => client.getBasicInfo(id, { client: 'IOS' }) },
+      { name: 'DEFAULT_IOS', clientType: 'IOS', load: loadBasicInfo },
     ];
 
     let url;
@@ -554,7 +570,16 @@ export class InnerTubeProviderAdapter {
           // forms and also transforms YouTube's n parameter.
           const deciphered = fmt.url || await player?.decipher(fmt.url, fmt.signature_cipher, fmt.cipher);
           if (deciphered) {
-            url = deciphered;
+            // Web/MWeb GVS URLs require the WebPO token in the URL. The token
+            // is content-bound, so it is safe to use when the media relay
+            // fetches the URL later from the same provider session.
+            url = poToken && ['MWEB', 'WEB'].includes(attempt.name)
+              ? (() => {
+                const candidate = new URL(deciphered);
+                if (!candidate.searchParams.has('pot')) candidate.searchParams.set('pot', poToken);
+                return candidate.toString();
+              })()
+              : deciphered;
             bestFormat = fmt;
             selectedClient = candidateClient;
             selectedClientName = attempt.name;
@@ -583,6 +608,8 @@ export class InnerTubeProviderAdapter {
         || 'Mozilla/5.0',
       referer: selectedClientName === 'YTMUSIC' ? 'https://music.youtube.com/' : 'https://www.youtube.com/',
       clientType: selectedClientName,
+      poToken,
+      expiresAt: Number(new URL(url).searchParams.get('expire')) * 1000 || undefined,
     };
 
     // Cache for 5 minutes (YouTube CDN URLs typically last ~6 hours)
