@@ -14,6 +14,7 @@ import {
   makeTrackNode,
   nodeKey,
 } from './canonicalModels.mjs';
+import { makeCatalogPage } from './catalogModels.mjs';
 
 Platform.shim.eval = async (data) => new Function(data.output)();
 
@@ -153,7 +154,7 @@ const toCanonicalTrack = (item, fallback = {}) => {
   };
 };
 
-const itemIsTrack = (item) => Boolean(item?.item_type === 'song' || item?.item_type === 'video' || item?.video_id || item?.videoId || item?.duration?.seconds);
+const itemIsTrack = (item) => Boolean(item?.item_type === 'song' || item?.item_type === 'video' || item?.item_type === 'non_music_track' || item?.video_id || item?.videoId || item?.duration?.seconds);
 
 const unique = (items) => [...new Map(items.filter(Boolean).map((item) => [item.key, item])).values()];
 
@@ -482,6 +483,12 @@ export class InnerTubeProviderAdapter {
       edges: unique(edges),
       observedAt,
       nextCursor: this.registerSearchContinuation(search, normalizedQuery),
+      catalog: makeCatalogPage({
+        surface: 'search',
+        title: normalizedQuery,
+        sections: searchShelves(search),
+        normalizeTrack: toCanonicalTrack,
+      }),
     });
   }
 
@@ -817,6 +824,12 @@ export class InnerTubeProviderAdapter {
       items,
       provenance,
       continuationOwner: this.artistContinuationOwner(artist),
+      catalog: makeCatalogPage({
+        surface: 'artist',
+        title: text(artist.header?.title) || id,
+        sections: artist.sections,
+        normalizeTrack: toCanonicalTrack,
+      }),
     });
   }
 
@@ -826,7 +839,22 @@ export class InnerTubeProviderAdapter {
     const provenance = this.provenance('getAlbum', 'album', id, observedAt);
     const albumNode = makeEntityNode({ type: NODE_TYPES.ALBUM, id, title: text(album.header?.title), artworkUrl: toThumbnailUrl(album.header, album), provenance });
     const items = [...(album.contents || []), ...sectionItems(album.sections)];
-    return this.collectionSnapshot({ operation: 'getAlbum', surface: 'album', sourceId: id, parent: albumNode, items, provenance, continuationOwner: album });
+    return this.collectionSnapshot({
+      operation: 'getAlbum',
+      surface: 'album',
+      sourceId: id,
+      parent: albumNode,
+      items,
+      provenance,
+      continuationOwner: album,
+      catalog: makeCatalogPage({
+        surface: 'album',
+        title: text(album.header?.title) || id,
+        sections: album.sections,
+        primaryItems: album.contents || [],
+        normalizeTrack: toCanonicalTrack,
+      }),
+    });
   }
 
   async getPlaylist(id, cursor) {
@@ -834,7 +862,23 @@ export class InnerTubeProviderAdapter {
     const playlist = cursor ? await this.continuations.consume(cursor) : await this.request(async () => (await this.getClient()).music.getPlaylist(id));
     const provenance = this.provenance('getPlaylist', 'playlist', id, observedAt);
     const playlistNode = makeEntityNode({ type: NODE_TYPES.PLAYLIST, id, title: text(playlist.header?.title), artworkUrl: toThumbnailUrl(playlist.header, playlist), provenance });
-    return this.collectionSnapshot({ operation: 'getPlaylist', surface: 'playlist', sourceId: id, parent: playlistNode, items: playlist.items || playlist.contents || [], provenance, continuationOwner: playlist });
+    const playlistItems = playlist.items || playlist.contents || [];
+    return this.collectionSnapshot({
+      operation: 'getPlaylist',
+      surface: 'playlist',
+      sourceId: id,
+      parent: playlistNode,
+      items: playlistItems,
+      provenance,
+      continuationOwner: playlist,
+      catalog: makeCatalogPage({
+        surface: 'playlist',
+        title: text(playlist.header?.title) || id,
+        sections: playlist.sections,
+        primaryItems: playlistItems,
+        normalizeTrack: toCanonicalTrack,
+      }),
+    });
   }
 
   async getExplore(cursor) {
@@ -842,7 +886,85 @@ export class InnerTubeProviderAdapter {
     const explore = cursor ? await this.continuations.consume(cursor) : await this.request(async () => (await this.getClient()).music.getExplore());
     const provenance = this.provenance('getExplore', 'explore', 'FEmusic_explore', observedAt);
     const context = makeContextNode({ surface: 'explore', id: 'FEmusic_explore', title: 'YouTube Music Explore', provenance });
-    return this.contextSnapshot({ operation: 'getExplore', surface: 'explore', sourceId: 'FEmusic_explore', context, sections: [...(explore.top_buttons || []), ...(explore.sections || [])], provenance, continuationOwner: null });
+    return this.contextSnapshot({
+      operation: 'getExplore',
+      surface: 'explore',
+      sourceId: 'FEmusic_explore',
+      context,
+      sections: explore.sections || [],
+      provenance,
+      continuationOwner: null,
+      catalog: makeCatalogPage({
+        surface: 'explore',
+        title: 'Explore',
+        sections: explore.sections,
+        actions: explore.top_buttons,
+        normalizeTrack: toCanonicalTrack,
+      }),
+    });
+  }
+
+  async parseBrowseResponse(client, response, browseId) {
+    const root = response?.contents?.item?.() || response?.contents?.[0] || response?.contents;
+    const tabs = asList(root?.tabs);
+    const tab = tabs.find((entry) => entry?.selected) || tabs[0];
+    const content = tab?.content || root?.content || root;
+    const sections = asList(content?.contents || response?.contents);
+    const continuation = content?.continuation;
+    const continuationOwner = continuation ? {
+      has_continuation: true,
+      getContinuation: async () => {
+        const nextResponse = await this.request(() => client.actions.execute('/browse', {
+          continuation,
+          client: 'YTMUSIC',
+          parse: true,
+        }));
+        return this.parseBrowseResponse(client, nextResponse, browseId);
+      },
+    } : null;
+    return {
+      title: text(content?.header?.title) || text(tab?.title) || browseId,
+      sections,
+      continuationOwner,
+    };
+  }
+
+  async getBrowse(browseId, params, cursor) {
+    if (!browseId) throw Object.assign(new Error('Browse id is required'), { code: 'INVALID_BROWSE_ID', status: 400 });
+    const observedAt = Date.now();
+    const page = cursor
+      ? await this.continuations.consume(cursor)
+      : await this.request(async () => {
+        const client = await this.getClient();
+        const response = await client.actions.execute('/browse', {
+          browseId,
+          ...(params ? { params } : {}),
+          client: 'YTMUSIC',
+          parse: true,
+        });
+        return this.parseBrowseResponse(client, response, browseId);
+      });
+    const provenance = this.provenance('browse', 'browse', browseId, observedAt);
+    const context = makeContextNode({ surface: 'browse', id: browseId, title: page.title || browseId, provenance, metadata: { browseId, params } });
+    return this.contextSnapshot({
+      operation: 'browse',
+      surface: 'browse',
+      sourceId: browseId,
+      context,
+      sections: page.sections || [],
+      provenance,
+      continuationOwner: page.continuationOwner,
+      catalog: makeCatalogPage({
+        surface: 'browse',
+        title: page.title || browseId,
+        sections: page.sections,
+        normalizeTrack: toCanonicalTrack,
+      }),
+    });
+  }
+
+  async getCharts(cursor) {
+    return this.getBrowse('FEmusic_charts', undefined, cursor);
   }
 
   async getHome(cursor) {
@@ -850,7 +972,21 @@ export class InnerTubeProviderAdapter {
     const home = cursor ? await this.continuations.consume(cursor) : await this.request(async () => (await this.getClient()).music.getHomeFeed());
     const provenance = this.provenance('getHomeFeed', 'home', 'FEmusic_home', observedAt);
     const context = makeContextNode({ surface: 'home', id: 'FEmusic_home', title: 'YouTube Music Home', provenance });
-    return this.contextSnapshot({ operation: 'getHomeFeed', surface: 'home', sourceId: 'FEmusic_home', context, sections: home.sections || [], provenance, continuationOwner: home });
+    return this.contextSnapshot({
+      operation: 'getHomeFeed',
+      surface: 'home',
+      sourceId: 'FEmusic_home',
+      context,
+      sections: home.sections || [],
+      provenance,
+      continuationOwner: home,
+      catalog: makeCatalogPage({
+        surface: 'home',
+        title: 'Home',
+        sections: home.sections,
+        normalizeTrack: toCanonicalTrack,
+      }),
+    });
   }
 
   async getRelated(id, cursor) {
@@ -860,7 +996,18 @@ export class InnerTubeProviderAdapter {
     const provenance = this.provenance('getRelated', 'related', id, observedAt);
     const parentTrack = await this.getTrack(id);
     const parentNode = parentTrack ? makeTrackNode(parentTrack, provenance) : makeEntityNode({ type: NODE_TYPES.TRACK, id, provenance });
-    return this.collectionSnapshot({ operation: 'getRelated', surface: 'related', sourceId: id, parent: parentNode, items: sectionItems(related?.contents || related), provenance, continuationOwner: related, edgeType: EDGE_TYPES.RELATED_TO });
+    const relatedItems = sectionItems(related?.contents || related);
+    return this.collectionSnapshot({
+      operation: 'getRelated',
+      surface: 'related',
+      sourceId: id,
+      parent: parentNode,
+      items: relatedItems,
+      provenance,
+      continuationOwner: related,
+      edgeType: EDGE_TYPES.RELATED_TO,
+      catalog: makeCatalogPage({ surface: 'related', title: 'Related', primaryItems: relatedItems, normalizeTrack: toCanonicalTrack }),
+    });
   }
 
   async getUpNext(id, cursor) {
@@ -871,10 +1018,20 @@ export class InnerTubeProviderAdapter {
     const parentTrack = await this.getTrack(id);
     const parentNode = parentTrack ? makeTrackNode(parentTrack, provenance) : makeEntityNode({ type: NODE_TYPES.TRACK, id, provenance });
     const items = (panel?.contents || []).flatMap((item) => item?.primary ? [item.primary] : [item]);
-    return this.collectionSnapshot({ operation: 'getUpNext', surface: 'up-next', sourceId: id, parent: parentNode, items, provenance, continuationOwner: { info, panel }, edgeType: EDGE_TYPES.QUEUED_AFTER });
+    return this.collectionSnapshot({
+      operation: 'getUpNext',
+      surface: 'up-next',
+      sourceId: id,
+      parent: parentNode,
+      items,
+      provenance,
+      continuationOwner: { info, panel },
+      edgeType: EDGE_TYPES.QUEUED_AFTER,
+      catalog: makeCatalogPage({ surface: 'up-next', title: 'Up next', primaryItems: items, normalizeTrack: toCanonicalTrack }),
+    });
   }
 
-  collectionSnapshot({ operation, surface, sourceId, parent, items, provenance, continuationOwner, edgeType = EDGE_TYPES.CONTAINS }) {
+  collectionSnapshot({ operation, surface, sourceId, parent, items, provenance, continuationOwner, edgeType = EDGE_TYPES.CONTAINS, catalog }) {
     const nodes = [parent];
     const edges = [];
     items.forEach((item, index) => {
@@ -895,10 +1052,10 @@ export class InnerTubeProviderAdapter {
       }
     });
     const nextCursor = this.registerContinuation(continuationOwner, operation, surface, sourceId);
-    return makeSnapshot({ operation, surface, sourceId, nodes: unique(nodes), edges: unique(edges), observedAt: provenance.observedAt, nextCursor });
+    return makeSnapshot({ operation, surface, sourceId, nodes: unique(nodes), edges: unique(edges), observedAt: provenance.observedAt, nextCursor, catalog });
   }
 
-  contextSnapshot({ operation, surface, sourceId, context, sections, provenance, continuationOwner }) {
+  contextSnapshot({ operation, surface, sourceId, context, sections, provenance, continuationOwner, catalog }) {
     const nodes = [context];
     const edges = [];
     sectionItems(sections).forEach((item, index) => {
@@ -919,7 +1076,7 @@ export class InnerTubeProviderAdapter {
       }
     });
     const nextCursor = this.registerContinuation(continuationOwner, operation, surface, sourceId);
-    return makeSnapshot({ operation, surface, sourceId, nodes: unique(nodes), edges: unique(edges), observedAt: provenance.observedAt, nextCursor });
+    return makeSnapshot({ operation, surface, sourceId, nodes: unique(nodes), edges: unique(edges), observedAt: provenance.observedAt, nextCursor, catalog });
   }
 
   artistContinuationOwner(artist) {

@@ -3,6 +3,8 @@ package com.example.myapplication.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +21,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.Track
+import com.example.myapplication.data.CatalogSection
+import com.example.myapplication.data.BrowseEndpoint
+import com.example.myapplication.ui.components.CatalogShelves
 import com.example.myapplication.ui.components.TrackRowItem
 import com.example.myapplication.ui.theme.PrimaryPurple
 import com.example.myapplication.ui.theme.SignalBorder
@@ -34,6 +39,10 @@ fun DiscoverScreen(
     currentTrack: Track?,
     isSearching: Boolean,
     errorMessage: String?,
+    catalogSections: List<CatalogSection> = emptyList(),
+    onBrowseClick: (BrowseEndpoint) -> Unit = {},
+    searchType: String? = null,
+    onSearchTypeChange: (String?) -> Unit = {},
     onQueryChange: (String) -> Unit,
     onTrackSelect: (Track) -> Unit,
     onFavoriteToggle: (Track) -> Unit
@@ -82,6 +91,20 @@ fun DiscoverScreen(
         }
         Spacer(modifier = Modifier.height(24.dp))
 
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(null to "All", "song" to "Songs", "video" to "Videos", "album" to "Albums", "artist" to "Artists", "playlist" to "Playlists").forEach { (type, label) ->
+                FilterChip(
+                    selected = searchType == type,
+                    onClick = { onSearchTypeChange(type) },
+                    label = { Text(label) }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
         // Loading or Results Header
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -120,6 +143,17 @@ fun DiscoverScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(bottom = 150.dp)
         ) {
+            if (searchQuery.isBlank() && catalogSections.isNotEmpty()) {
+                item {
+                    CatalogShelves(
+                        sections = catalogSections.take(6),
+                        currentTrack = currentTrack,
+                        onTrackClick = onTrackSelect,
+                        onBrowseClick = onBrowseClick
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
             items(searchResults) { track ->
                 TrackRowItem(
                     track = track,

@@ -17,8 +17,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.DEFAULT_VIBE_WORLDS
+import com.example.myapplication.data.CatalogSection
+import com.example.myapplication.data.BrowseEndpoint
+import com.example.myapplication.data.Track
 import com.example.myapplication.data.VibeWorld
 import com.example.myapplication.ui.components.IntentComposer
+import com.example.myapplication.ui.components.CatalogShelves
 import com.example.myapplication.ui.components.VibeWorldCard
 import com.example.myapplication.ui.theme.PrimaryPurple
 import com.example.myapplication.ui.theme.TextPrimary
@@ -27,7 +31,11 @@ import com.example.myapplication.ui.theme.TextSecondary
 @Composable
 fun ModernHomeScreen(
     onIntent: (String) -> Unit,
-    onVibeSelect: (VibeWorld) -> Unit
+    onVibeSelect: (VibeWorld) -> Unit,
+    catalogSections: List<CatalogSection> = emptyList(),
+    currentTrack: Track? = null,
+    onTrackSelect: (Track) -> Unit = {},
+    onBrowseClick: (BrowseEndpoint) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier
@@ -67,6 +75,18 @@ fun ModernHomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
+        }
+
+        if (catalogSections.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(34.dp))
+                CatalogShelves(
+                    sections = catalogSections.take(5),
+                    currentTrack = currentTrack,
+                    onTrackClick = onTrackSelect,
+                    onBrowseClick = onBrowseClick
+                )
+            }
         }
     }
 }

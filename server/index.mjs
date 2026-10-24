@@ -420,6 +420,20 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, await persistDiscoverySnapshot(await provider.getHome(url.searchParams.get('cursor') || undefined)));
       return;
     }
+    if (request.method === 'GET' && url.pathname === '/api/discovery/charts') {
+      sendJson(response, 200, await persistDiscoverySnapshot(await provider.getCharts(url.searchParams.get('cursor') || undefined)));
+      return;
+    }
+    const browseMatch = /^\/api\/discovery\/browse\/([^/]+)$/.exec(url.pathname);
+    if (request.method === 'GET' && browseMatch) {
+      const browseId = decodeURIComponent(browseMatch[1]);
+      sendJson(response, 200, await persistDiscoverySnapshot(await provider.getBrowse(
+        browseId,
+        url.searchParams.get('params') || undefined,
+        url.searchParams.get('cursor') || undefined,
+      )));
+      return;
+    }
     const discoveryMatch = /^\/api\/discovery\/(artist|album|playlist|related|up-next)\/([^/]+)$/.exec(url.pathname);
     if (request.method === 'GET' && discoveryMatch) {
       const [, type, encodedId] = discoveryMatch;

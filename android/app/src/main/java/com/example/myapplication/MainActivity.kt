@@ -28,6 +28,7 @@ import com.example.myapplication.ui.components.NavTab
 import com.example.myapplication.ui.components.TopHeader
 import com.example.myapplication.ui.screens.DiscoverScreen
 import com.example.myapplication.ui.screens.AboutScreen
+import com.example.myapplication.ui.screens.CatalogDetailScreen
 import com.example.myapplication.ui.screens.ModernHomeScreen
 import com.example.myapplication.ui.screens.ModernLibraryScreen
 import com.example.myapplication.ui.theme.DarkBackground
@@ -88,12 +89,27 @@ fun MoodifyApp(
     val playbackState by viewModel.playbackState.collectAsState()
     val trendingTracks by viewModel.trendingTracks.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchType by viewModel.searchType.collectAsState()
+    val searchCatalog by viewModel.searchCatalog.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val favoriteTracks by viewModel.favoriteTracks.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val exploreCatalog by viewModel.exploreCatalog.collectAsState()
+    val homeCatalog by viewModel.homeCatalog.collectAsState()
+    val chartsCatalog by viewModel.chartsCatalog.collectAsState()
+    val openedCatalog by viewModel.openedCatalog.collectAsState()
     val lyrics by viewModel.lyrics.collectAsState()
     val isLoadingLyrics by viewModel.isLoadingLyrics.collectAsState()
+
+    val catalogTracks = remember(exploreCatalog, homeCatalog, chartsCatalog, searchResults, trendingTracks) {
+        (searchResults + trendingTracks +
+            exploreCatalog?.sections.orEmpty().flatMap { it.items.mapNotNull { item -> item.track } } +
+            homeCatalog?.sections.orEmpty().flatMap { it.items.mapNotNull { item -> item.track } } +
+            chartsCatalog?.sections.orEmpty().flatMap { it.items.mapNotNull { item -> item.track } } +
+            openedCatalog?.sections.orEmpty().flatMap { it.items.mapNotNull { item -> item.track } })
+            .distinctBy { it.id }
+    }
 
     Scaffold(
         containerColor = DarkBackground,
@@ -115,7 +131,18 @@ fun MoodifyApp(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when (currentRoute) {
+            if (openedCatalog != null) {
+                CatalogDetailScreen(
+                    page = openedCatalog!!,
+                    currentTrack = playbackState.currentTrack,
+                    onTrackSelect = { track ->
+                        viewModel.playTrack(track, catalogTracks.ifEmpty { listOf(track) })
+                        isPlayerExpanded = true
+                    },
+                    onBrowseClick = viewModel::openBrowse,
+                    onBack = viewModel::closeCatalog
+                )
+            } else when (currentRoute) {
                 NavTab.Home.route -> {
                     ModernHomeScreen(
                         onIntent = { intent ->
@@ -125,7 +152,14 @@ fun MoodifyApp(
                         onVibeSelect = { vibe ->
                             viewModel.selectVibe(vibe)
                             currentRoute = NavTab.Discover.route
-                        }
+                        },
+                        catalogSections = homeCatalog?.sections.orEmpty(),
+                        currentTrack = playbackState.currentTrack,
+                        onTrackSelect = { track ->
+                            viewModel.playTrack(track, catalogTracks.ifEmpty { listOf(track) })
+                            isPlayerExpanded = true
+                        },
+                        onBrowseClick = viewModel::openBrowse
                     )
                 }
 
@@ -136,9 +170,17 @@ fun MoodifyApp(
                         currentTrack = playbackState.currentTrack,
                         isSearching = isSearching,
                         errorMessage = errorMessage,
+                        catalogSections = if (searchQuery.isBlank()) {
+                            (exploreCatalog?.sections.orEmpty() + chartsCatalog?.sections.orEmpty()).take(10)
+                        } else {
+                            searchCatalog?.sections.orEmpty()
+                        },
+                        onBrowseClick = viewModel::openBrowse,
+                        searchType = searchType,
+                        onSearchTypeChange = viewModel::onSearchTypeChange,
                         onQueryChange = viewModel::onSearchQueryChange,
                         onTrackSelect = { track ->
-                            viewModel.playTrack(track, searchResults.ifEmpty { trendingTracks })
+                            viewModel.playTrack(track, catalogTracks.ifEmpty { listOf(track) })
                             isPlayerExpanded = true
                         },
                         onFavoriteToggle = viewModel::toggleFavorite

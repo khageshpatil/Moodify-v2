@@ -71,4 +71,28 @@ describe('discovery API mapping', () => {
     expect(toDiscoveryPlaybackRequest('artist', tracks, { id: 'UCa', position: 0 })?.discoveryContext).toEqual({ type: 'artist', id: 'UCa', position: 0 });
     expect(toDiscoveryPlaybackRequest('album', tracks, { id: 'MPRa', position: 0 })?.discoveryContext).toEqual({ type: 'album', id: 'MPRa', position: 0 });
   });
+
+  it('preserves typed catalog sections and converts nested track payloads', () => {
+    const parsed = parseDiscoverySnapshot({
+      surface: 'explore',
+      catalog: {
+        version: 1,
+        surface: 'explore',
+        title: 'Explore',
+        sections: [{
+          id: 'new-releases',
+          title: 'New releases',
+          layout: 'grid',
+          items: [
+            { type: 'album', id: 'MPRa', title: 'Album A', artworkUrl: 'https://example.test/a.jpg', endpoint: { browseId: 'MPRa' } },
+            { type: 'track', id: 't1', title: 'Track One', track: { id: 't1', title: 'Track One', artist: 'Artist A', durationMs: 180000 } },
+          ],
+        }],
+      },
+      nodes: [],
+    });
+    expect(parsed.catalog?.sections[0].title).toBe('New releases');
+    expect(parsed.catalog?.sections[0].items[0].endpoint?.browseId).toBe('MPRa');
+    expect(parsed.catalog?.sections[0].items[1].track?.title).toBe('Track One');
+  });
 });

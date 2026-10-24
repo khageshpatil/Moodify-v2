@@ -46,12 +46,73 @@ type DiscoveryNode = {
   track?: BackendTrack;
 };
 
+export type DiscoveryCatalogItemType = 'track' | 'video' | 'artist' | 'album' | 'playlist' | 'podcast' | 'browse';
+
+export interface DiscoveryBrowseEndpoint {
+  browseId?: string;
+  videoId?: string;
+  params?: string;
+}
+
+type BackendCatalogItem = {
+  type?: DiscoveryCatalogItemType;
+  id?: string;
+  title?: string;
+  artworkUrl?: string;
+  track?: BackendTrack;
+  endpoint?: DiscoveryBrowseEndpoint;
+  metadata?: Record<string, unknown>;
+};
+
+type BackendCatalogSection = {
+  id?: string;
+  title?: string;
+  layout?: 'carousel' | 'grid' | 'list';
+  items?: BackendCatalogItem[];
+  endpoint?: DiscoveryBrowseEndpoint;
+};
+
+type BackendCatalogPage = {
+  version?: number;
+  surface?: string;
+  title?: string;
+  sections?: BackendCatalogSection[];
+  actions?: BackendCatalogItem[];
+};
+
 type DiscoverySnapshot = {
   surface?: string;
   sourceId?: string;
   nodes?: DiscoveryNode[];
   pageInfo?: { hasMore?: boolean; nextCursor?: string };
+  catalog?: BackendCatalogPage;
 };
+
+export interface DiscoveryCatalogItem {
+  type: DiscoveryCatalogItemType;
+  id: string;
+  title: string;
+  artworkUrl?: string;
+  track?: Track;
+  endpoint?: DiscoveryBrowseEndpoint;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DiscoveryCatalogSection {
+  id: string;
+  title: string;
+  layout: 'carousel' | 'grid' | 'list';
+  items: DiscoveryCatalogItem[];
+  endpoint?: DiscoveryBrowseEndpoint;
+}
+
+export interface DiscoveryCatalogPage {
+  version: number;
+  surface: string;
+  title: string;
+  sections: DiscoveryCatalogSection[];
+  actions: DiscoveryCatalogItem[];
+}
 
 const artistName = (item: BackendTrack) => {
   if (typeof item.artist === 'string') return item.artist;
@@ -108,12 +169,41 @@ export const parseDiscoverySnapshot = (snapshot: DiscoverySnapshot) => {
     }))
     .filter((entry) => Boolean(entry.title));
   const uniqueEntities = [...new Map(entities.map((entry) => [`${entry.type}:${entry.id}`, entry])).values()];
+  const catalog: DiscoveryCatalogPage | undefined = snapshot.catalog ? {
+    version: snapshot.catalog.version || 1,
+    surface: snapshot.catalog.surface || snapshot.surface || '',
+    title: snapshot.catalog.title || snapshot.surface || 'Discovery',
+    sections: (snapshot.catalog.sections || []).map((section, sectionIndex) => ({
+      id: section.id || `section:${sectionIndex}`,
+      title: section.title || `Section ${sectionIndex + 1}`,
+      layout: section.layout || 'carousel',
+      endpoint: section.endpoint,
+      items: (section.items || []).map((item, itemIndex) => ({
+        type: item.type || 'browse',
+        id: item.id || `${sectionIndex}:${itemIndex}`,
+        title: item.title || item.id || 'Untitled',
+        artworkUrl: presentArtworkUrl(item.artworkUrl),
+        endpoint: item.endpoint,
+        metadata: item.metadata,
+        track: item.track ? toTrack(item.track) || undefined : undefined,
+      })),
+    })),
+    actions: (snapshot.catalog.actions || []).map((item, index) => ({
+      type: item.type || 'browse',
+      id: item.id || `action:${index}`,
+      title: item.title || item.id || 'Open',
+      artworkUrl: presentArtworkUrl(item.artworkUrl),
+      endpoint: item.endpoint,
+      metadata: item.metadata,
+    })),
+  } : undefined;
   return {
     tracks,
     entities: uniqueEntities,
     surface: snapshot.surface || '',
     sourceId: snapshot.sourceId,
     nextCursor: snapshot.pageInfo?.nextCursor,
+    catalog,
   };
 };
 
@@ -134,6 +224,7 @@ export interface DiscoveryCollectionResult {
   surface: string;
   sourceId?: string;
   nextCursor?: string;
+  catalog?: DiscoveryCatalogPage;
 }
 
 const collectionFromPath = async (path: string, signal?: AbortSignal): Promise<DiscoveryCollectionResult> => {
@@ -184,11 +275,22 @@ export const fetchDiscoveryExplore = (cursor?: string, signal?: AbortSignal) =>
 export const fetchDiscoveryHome = (cursor?: string, signal?: AbortSignal) =>
   collectionFromPath(`/api/discovery/home${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
 
+export const fetchDiscoveryCharts = (cursor?: string, signal?: AbortSignal) =>
+  collectionFromPath(`/api/discovery/charts${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
+
+export const fetchDiscoveryBrowse = (browseId: string, params?: string, cursor?: string, signal?: AbortSignal) => {
+  const query = new URLSearchParams();
+  if (params) query.set('params', params);
+  if (cursor) query.set('cursor', cursor);
+  const suffix = query.toString();
+  return collectionFromPath(`/api/discovery/browse/${encodeURIComponent(browseId)}${suffix ? `?${suffix}` : ''}`, signal);
+};
+
 export const fetchDiscoveryArtist = (id: string, cursor?: string, signal?: AbortSignal) =>
-  collectionFromPath(`/api/discovery/artist/${encodeURIComponent(id)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
+  collectionFromPath(`/api/discovery/artist/${encodeURIComponent(id)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
 
 export const fetchDiscoveryAlbum = (id: string, cursor?: string, signal?: AbortSignal) =>
-  collectionFromPath(`/api/discovery/album/${encodeURIComponent(id)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
+  collectionFromPath(`/api/discovery/album/${encodeURIComponent(id)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
 
 export const fetchDiscoveryPlaylist = (id: string, cursor?: string, signal?: AbortSignal) =>
   collectionFromPath(`/api/discovery/playlist/${encodeURIComponent(id)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
@@ -264,10 +366,10 @@ export const fetchVibePlaylistFromYouTube = async (
 };
 
 export const fetchDiscoveryRelated = (trackId: string, cursor?: string, signal?: AbortSignal) =>
-  collectionFromPath(`/api/discovery/related/${encodeURIComponent(trackId)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
+  collectionFromPath(`/api/discovery/related/${encodeURIComponent(trackId)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
 
 export const fetchDiscoveryUpNext = (trackId: string, cursor?: string, signal?: AbortSignal) =>
-  collectionFromPath(`/api/discovery/up-next/${encodeURIComponent(trackId)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
+  collectionFromPath(`/api/discovery/up-next/${encodeURIComponent(trackId)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, signal);
 
 export const fetchDiscoveryGraph = async (signal?: AbortSignal): Promise<DiscoveryGraphSnapshot> => {
   const response = await fetchJson<DiscoveryGraphSnapshot>('/api/discovery/graph', signal);

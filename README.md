@@ -17,6 +17,17 @@ A beautiful anime-inspired music streaming application that curates playlists ba
 - **Progressive Web App**: Installable on any device with offline capabilities
 - **Mood-reactive UI**: Dynamic interface that responds to user's emotional state
 
+### Current catalog architecture
+
+Moodify now uses YouTube Music through the server's InnerTube provider for catalog and discovery data. The server normalizes provider responses into a typed catalog contract (`catalog.sections`, typed items, browse endpoints, and continuation cursors). The web client and Android client consume that same contract independently:
+
+- **Backend**: `server/provider/innerTubeProvider.mjs` owns InnerTube calls, continuation handling, canonical graph ingestion, and typed catalog pages.
+- **Web**: `src/services/moodifyMusicApi.ts` parses the contract and renders Explore, Home, Charts, browse pages, entity pages, and search filters.
+- **Android**: `android/app/.../MusicRepository.kt` parses the same contract and Compose renders native shelves and catalog detail screens.
+- **Playback**: discovery only supplies track metadata and YouTube video IDs; Android resolves streams natively, while the web player uses its browser/server playback boundary.
+
+The legacy JioSaavn helpers and curated mood data remain as compatibility/fallback content, but they are no longer the source of the live YouTube Music discovery surfaces.
+
 The application features a unique 6-mood system (Chill, Focus, Party, Workout, Love, Melancholy) and generates deterministic avatars for anonymous user identification, enabling social features without compromising privacy.
 
 ## Privacy and Anonymous Identity System
@@ -54,7 +65,7 @@ The application features a unique 6-mood system (Chill, Focus, Party, Workout, L
 - **Playlist Creation**: Build and save unlimited custom playlists
 - **Favorites System**: Heart your favorite tracks for quick access
 - **Listening History**: Track your music journey with playback history
-- **Search Integration**: JioSaavn API integration for extensive music library
+- **Search Integration**: YouTube Music search with song, video, album, artist, and playlist filters
 - **Crossfade Support**: Smooth transitions between tracks
 
 ### Anonymous Identity System

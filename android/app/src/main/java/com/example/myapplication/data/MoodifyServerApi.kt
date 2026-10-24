@@ -12,4 +12,27 @@ interface MoodifyServerApi {
 
     @GET("api/tracks/{id}/lyrics")
     suspend fun getLyrics(@Path("id") id: String): Response<JsonObject>
+
+    @GET("api/discovery/explore")
+    suspend fun getExplore(@Query("cursor") cursor: String? = null): Response<JsonObject>
+
+    @GET("api/discovery/home")
+    suspend fun getHome(@Query("cursor") cursor: String? = null): Response<JsonObject>
+
+    @GET("api/discovery/charts")
+    suspend fun getCharts(@Query("cursor") cursor: String? = null): Response<JsonObject>
+
+    @GET("api/discovery/browse/{browseId}")
+    suspend fun browse(
+        @Path("browseId") browseId: String,
+        @Query("params") params: String? = null,
+        @Query("cursor") cursor: String? = null
+    ): Response<JsonObject>
+
+    @GET("api/discovery/search")
+    suspend fun searchDiscovery(
+        @Query("q") query: String,
+        @Query("type") type: String? = null,
+        @Query("cursor") cursor: String? = null
+    ): Response<JsonObject>
 }

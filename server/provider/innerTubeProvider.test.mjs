@@ -211,3 +211,51 @@ test('normalizes artist, album, Explore, Home, and related surfaces without sema
   assert.ok(home.edges.some((edge) => edge.type === 'surfaced_in'));
   assert.ok(related.edges.some((edge) => edge.type === 'related_to'));
 });
+
+test('preserves typed catalog sections alongside the canonical graph', async () => {
+  const adapter = new InnerTubeProviderAdapter();
+  adapter.getClient = async () => ({ music: {
+    getExplore: async () => ({
+      top_buttons: [{ button_text: 'Charts', endpoint: { payload: { browseId: 'FEmusic_charts', params: 'chart_params' } } }],
+      sections: [
+        { type: 'MusicCarouselShelf', header: { title: 'New releases' }, contents: [
+          { item_type: 'album', id: 'MPRalbum', title: 'Night Drive', thumbnails: [{ url: 'https://example.test/album.jpg' }] },
+          song('explore-track', 'Explore Track'),
+        ] },
+      ],
+    }),
+  } });
+
+  const snapshot = await adapter.getExplore();
+  assert.equal(snapshot.catalog.version, 1);
+  assert.equal(snapshot.catalog.sections[0].title, 'New releases');
+  assert.equal(snapshot.catalog.sections[0].items[0].type, 'album');
+  assert.equal(snapshot.catalog.sections[0].items[1].track.title, 'Explore Track');
+  assert.equal(snapshot.catalog.actions[0].endpoint.browseId, 'FEmusic_charts');
+});
+
+test('loads generic browse pages and their continuation through the catalog contract', async () => {
+  const adapter = new InnerTubeProviderAdapter();
+  let continuationCalls = 0;
+  adapter.getClient = async () => ({
+    actions: {
+      execute: async (_endpoint, args) => args.continuation
+        ? { contents: { contents: [{ type: 'MusicCarouselShelf', header: { title: 'More moods' }, contents: [song('mood-2', 'More Mood')] }] } }
+        : {
+          contents: {
+            item: () => ({
+              tabs: [{ selected: true, content: { header: { title: 'Moods & genres' }, contents: [{ type: 'MusicCarouselShelf', header: { title: 'Moods' }, contents: [song('mood-1', 'First Mood')] }], continuation: 'next-moods' } }],
+            }),
+          },
+        },
+    },
+  });
+  const first = await adapter.getBrowse('FEmusic_explore');
+  assert.equal(first.catalog.title, 'Moods & genres');
+  assert.equal(first.catalog.sections[0].items[0].track.id, 'mood-1');
+  assert.equal(first.pageInfo.hasMore, true);
+  const second = await adapter.getBrowse('FEmusic_explore', undefined, first.pageInfo.nextCursor);
+  continuationCalls += 1;
+  assert.equal(second.catalog.sections[0].items[0].track.id, 'mood-2');
+  assert.equal(continuationCalls, 1);
+});

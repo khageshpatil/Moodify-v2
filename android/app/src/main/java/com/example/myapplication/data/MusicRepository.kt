@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import retrofit2.Response
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -82,6 +83,96 @@ class MusicRepository {
     }
 
     // ── JSON helpers ────────────────────────────────────────────────
+
+    suspend fun getExploreCatalog(): CatalogPage = getCatalogPage { api.getExplore() }
+
+    suspend fun getHomeCatalog(): CatalogPage = getCatalogPage { api.getHome() }
+
+    suspend fun getChartsCatalog(): CatalogPage = getCatalogPage { api.getCharts() }
+
+    suspend fun browseCatalog(browseId: String, params: String? = null): CatalogPage =
+        getCatalogPage { api.browse(browseId, params) }
+
+    suspend fun searchCatalog(query: String, type: String? = null): CatalogPage =
+        getCatalogPage { api.searchDiscovery(query, type) }
+
+    private suspend fun getCatalogPage(request: suspend () -> Response<JsonObject>): CatalogPage {
+        val response = request()
+        if (!response.isSuccessful) {
+            throw MoodifyApiException("Moodify catalog request failed (${response.code()})", response.code())
+        }
+        return response.body()?.toCatalogPage()
+            ?: throw MoodifyApiException("Moodify returned an empty catalog page")
+    }
+
+    private fun JsonObject.toCatalogPage(): CatalogPage {
+        val catalog = get("catalog")?.takeIf { it.isJsonObject }?.asJsonObject
+        val pageInfo = get("pageInfo")?.takeIf { it.isJsonObject }?.asJsonObject
+        if (catalog == null) {
+            val fallbackTracks = getAsJsonArray("tracks")?.mapNotNull { it.toTrackOrNull() }.orEmpty()
+            return CatalogPage(
+                surface = stringValue("surface") ?: "discovery",
+                title = stringValue("surface") ?: "Discovery",
+                sections = if (fallbackTracks.isEmpty()) emptyList() else listOf(
+                    CatalogSection("fallback", "Songs", "list", fallbackTracks.map { track ->
+                        CatalogItem("track", track.id, track.title, track.albumArtUrl, track = track)
+                    })
+                ),
+                nextCursor = pageInfo?.stringValue("nextCursor")
+            )
+        }
+
+        fun JsonObject.toEndpoint(): BrowseEndpoint? {
+            val endpoint = get("endpoint")?.takeIf { it.isJsonObject }?.asJsonObject ?: return null
+            return BrowseEndpoint(
+                browseId = endpoint.stringValue("browseId"),
+                videoId = endpoint.stringValue("videoId"),
+                params = endpoint.stringValue("params")
+            )
+        }
+
+        fun JsonObject.toCatalogItem(): CatalogItem? {
+            val id = stringValue("id") ?: return null
+            val title = stringValue("title") ?: id
+            val track = get("track")?.takeIf { it.isJsonObject }?.toTrackOrNull()
+            return CatalogItem(
+                type = stringValue("type") ?: "browse",
+                id = id,
+                title = title,
+                artworkUrl = stringValue("artworkUrl").orEmpty(),
+                track = track,
+                endpoint = toEndpoint()
+            )
+        }
+
+        val sections = catalog.getAsJsonArray("sections")?.mapNotNull { sectionElement ->
+            if (!sectionElement.isJsonObject) return@mapNotNull null
+            val section = sectionElement.asJsonObject
+            val items = section.getAsJsonArray("items")?.mapNotNull { itemElement ->
+                if (!itemElement.isJsonObject) null else itemElement.asJsonObject.toCatalogItem()
+            }.orEmpty()
+            CatalogSection(
+                id = section.stringValue("id") ?: "section-${items.hashCode()}",
+                title = section.stringValue("title") ?: "Discovery",
+                layout = section.stringValue("layout") ?: "carousel",
+                items = items,
+                endpoint = section.toEndpoint()
+            )
+        }.orEmpty()
+
+        val actions = catalog.getAsJsonArray("actions")?.mapNotNull { itemElement ->
+            if (!itemElement.isJsonObject) null else itemElement.asJsonObject.toCatalogItem()
+        }.orEmpty()
+
+        return CatalogPage(
+            version = catalog.get("version")?.takeIf { it.isJsonPrimitive }?.asInt ?: 1,
+            surface = catalog.stringValue("surface") ?: stringValue("surface") ?: "discovery",
+            title = catalog.stringValue("title") ?: "Discovery",
+            sections = sections,
+            actions = actions,
+            nextCursor = pageInfo?.stringValue("nextCursor")
+        )
+    }
 
     private fun JsonElement.stringValue(): String? {
         if (!isJsonPrimitive || !asJsonPrimitive.isString) return null

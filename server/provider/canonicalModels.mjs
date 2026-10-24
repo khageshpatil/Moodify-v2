@@ -75,7 +75,7 @@ export const makeEdge = ({ fromKey, toKey, type, provenance, position, metadata 
   ...(Object.keys(metadata).length ? { metadata } : {}),
 });
 
-export const makeSnapshot = ({ operation, surface, sourceId, nodes, edges, observedAt, nextCursor }) => ({
+export const makeSnapshot = ({ operation, surface, sourceId, nodes, edges, observedAt, nextCursor, catalog }) => ({
   snapshotId: `${operation}:${sourceId || surface}:${observedAt}`,
   provider: PROVIDER,
   operation,
@@ -88,4 +88,5 @@ export const makeSnapshot = ({ operation, surface, sourceId, nodes, edges, obser
     hasMore: Boolean(nextCursor),
     ...(nextCursor ? { nextCursor } : {}),
   },
+  ...(catalog ? { catalog } : {}),
 });

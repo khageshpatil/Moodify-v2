@@ -24,6 +24,8 @@ interface SearchBarProps {
   onCreatePlaylist: (name: string) => void;
 }
 
+type SearchType = 'all' | 'song' | 'video' | 'album' | 'artist' | 'playlist';
+
 const mergeEntities = (current: DiscoveryEntity[], incoming: DiscoveryEntity[]) => (
   [...new Map([...current, ...incoming].map((entry) => [`${entry.type}:${entry.id}`, entry])).values()]
 );
@@ -38,6 +40,7 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
   const [collectionLabel, setCollectionLabel] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [activeQuery, setActiveQuery] = useState('');
+  const [searchType, setSearchType] = useState<SearchType>('all');
   const [searchError, setSearchError] = useState(false);
   const [collectionError, setCollectionError] = useState(false);
   const [openedEntity, setOpenedEntity] = useState<DiscoveryEntity | null>(null);
@@ -59,7 +62,7 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
     setSearchError(false);
     setCollectionError(false);
     try {
-      const page = await fetchDiscoverySearch(rawQuery.trim());
+      const page = await fetchDiscoverySearch(rawQuery.trim(), undefined, undefined, searchType);
       setActiveQuery(rawQuery.trim());
       applySearchPage(page, false);
     } catch {
@@ -98,7 +101,7 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
     if (!activeQuery || !nextCursor) return;
     setIsSearching(true);
     try {
-      const page = await fetchDiscoverySearch(activeQuery, nextCursor);
+      const page = await fetchDiscoverySearch(activeQuery, nextCursor, undefined, searchType);
       applySearchPage(page, true);
     } finally {
       setIsSearching(false);
@@ -134,11 +137,29 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
     if (e.key === 'Enter') handleSearch();
   };
 
+  const selectSearchType = async (nextType: SearchType) => {
+    setSearchType(nextType);
+    if (!activeQuery) return;
+    setIsSearching(true);
+    setSearchError(false);
+    try {
+      const page = await fetchDiscoverySearch(activeQuery, undefined, undefined, nextType);
+      applySearchPage(page, false);
+    } catch {
+      setSearchError(true);
+      setResults([]);
+      setEntities([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const visibleTracks = (collection?.tracks.length ? collection.tracks : results).map((track) => presentTrack(track)).filter((track): track is Track => Boolean(track));
   const visibleEntities = (collection
     ? collection.entities.filter((entry) => entry.id !== openedEntity?.id)
     : entities
   ).filter((entry) => Boolean(entry.title));
+  const collectionSections = collection?.catalog?.sections.filter((section) => section.items.length) || [];
   const playKind = collection?.surface === 'artist' || collection?.surface === 'album' || collection?.surface === 'playlist'
     ? collection.surface
     : 'search';
@@ -192,6 +213,34 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
         </button>
       </div>
 
+      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Search result type">
+        {([
+          ['all', 'All'],
+          ['song', 'Songs'],
+          ['video', 'Videos'],
+          ['album', 'Albums'],
+          ['artist', 'Artists'],
+          ['playlist', 'Playlists'],
+        ] as Array<[SearchType, string]>).map(([type, label]) => (
+          <button
+            key={type}
+            type="button"
+            role="tab"
+            aria-selected={searchType === type}
+            onClick={() => void selectSearchType(type)}
+            className="text-button whitespace-nowrap"
+            style={{
+              color: searchType === type ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              borderBottom: searchType === type ? '1px solid var(--text-primary)' : '1px solid transparent',
+              borderRadius: 0,
+              padding: '6px 2px',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {collection && (
         <button className="text-button" type="button" onClick={() => { setCollection(null); setCollectionLabel(''); setOpenedEntity(null); setCollectionError(false); }}>Back to search</button>
       )}
@@ -210,6 +259,16 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
           {visibleTracks.length > 0 && (
             <button type="button" className="btn-primary px-5 py-2 text-sm" onClick={() => playFrom(playKind, visibleTracks, 0, playId)}>Play</button>
           )}
+        </div>
+      )}
+
+      {collection && collectionSections.length > 0 && (
+        <div className="flex flex-wrap gap-2" aria-label="Catalog sections">
+          {collectionSections.map((section) => (
+            <span key={section.id} className="text-xs px-3 py-1.5 rounded-full" style={{ color: 'var(--text-secondary)', border: '1px solid var(--stroke-subtle)', background: 'var(--surface-frost)' }}>
+              {section.title} · {section.items.length}
+            </span>
+          ))}
         </div>
       )}
 
