@@ -31,7 +31,8 @@ import com.example.myapplication.ui.theme.TextSecondary
 
 @Composable
 fun TopHeader(
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    onAboutClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -72,7 +73,7 @@ fun TopHeader(
             }
 
             IconButton(
-                onClick = { },
+                onClick = onAboutClick,
                 modifier = Modifier
                     .size(48.dp)
                     .background(Color.Transparent, CircleShape)

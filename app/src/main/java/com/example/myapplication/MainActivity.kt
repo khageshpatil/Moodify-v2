@@ -26,6 +26,7 @@ import com.example.myapplication.ui.components.MiniPlayerBar
 import com.example.myapplication.ui.components.NavTab
 import com.example.myapplication.ui.components.TopHeader
 import com.example.myapplication.ui.screens.DiscoverScreen
+import com.example.myapplication.ui.screens.AboutScreen
 import com.example.myapplication.ui.screens.ModernHomeScreen
 import com.example.myapplication.ui.screens.ModernLibraryScreen
 import com.example.myapplication.ui.theme.DarkBackground
@@ -94,7 +95,8 @@ fun MoodifyApp(
         containerColor = DarkBackground,
         topBar = {
             TopHeader(
-                onSearchClick = { currentRoute = NavTab.Discover.route }
+                onSearchClick = { currentRoute = NavTab.Discover.route },
+                onAboutClick = { currentRoute = "about" }
             )
         },
         bottomBar = {
@@ -148,6 +150,12 @@ fun MoodifyApp(
                             isPlayerExpanded = true
                         },
                         onFavoriteToggle = viewModel::toggleFavorite
+                    )
+                }
+
+                "about" -> {
+                    AboutScreen(
+                        onBack = { currentRoute = NavTab.Home.route }
                     )
                 }
             }
