@@ -2,6 +2,7 @@ package com.example.myapplication.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,9 +49,21 @@ fun FullScreenPlayerSheet(
     onPrevious: () -> Unit,
     onSeekTo: (Long) -> Unit,
     onToggleShuffle: () -> Unit,
-    onToggleRepeat: () -> Unit
+    onToggleRepeat: () -> Unit,
+    onRetry: () -> Unit,
+    onQueueItemClick: (com.example.myapplication.data.Track) -> Unit,
+    onRemoveFromQueue: (Int) -> Unit,
+    onSetSpeed: (Float) -> Unit,
+    onSetPitch: (Float) -> Unit,
+    onDownload: () -> Unit,
+    lyrics: String?,
+    isLoadingLyrics: Boolean,
+    onLoadLyrics: () -> Unit
 ) {
     val track = state.currentTrack ?: return
+    var showQueue by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showLyrics by remember { mutableStateOf(false) }
 
     val imageScale by animateFloatAsState(
         targetValue = if (state.isPlaying) 1f else 0.92f,
@@ -102,13 +116,72 @@ fun FullScreenPlayerSheet(
                     letterSpacing = 2.sp,
                     color = PrimaryPurple
                 )
-                IconButton(onClick = { }) {
+                IconButton(onClick = { showQueue = !showQueue }) {
                     Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "More",
+                        imageVector = Icons.Default.QueueMusic,
+                        contentDescription = "Queue",
                         tint = Color.White
                     )
                 }
+                Box {
+                    IconButton(onClick = { showSettings = !showSettings }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Player settings", tint = Color.White)
+                    }
+                    DropdownMenu(
+                        expanded = showSettings,
+                        onDismissRequest = { showSettings = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Speed 0.75x") },
+                            onClick = { onSetSpeed(0.75f); showSettings = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Speed 1.0x") },
+                            onClick = { onSetSpeed(1f); showSettings = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Speed 1.25x") },
+                            onClick = { onSetSpeed(1.25f); showSettings = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Speed 1.5x") },
+                            onClick = { onSetSpeed(1.5f); showSettings = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Pitch down") },
+                            onClick = { onSetPitch(0.9f); showSettings = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Normal pitch") },
+                            onClick = { onSetPitch(1f); showSettings = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (state.downloadedTrackIds.contains(track.id)) "Downloaded" else "Download audio") },
+                            enabled = !state.downloadedTrackIds.contains(track.id),
+                            onClick = { onDownload(); showSettings = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Lyrics") },
+                            onClick = { showLyrics = true; onLoadLyrics(); showSettings = false }
+                        )
+                    }
+                }
+            }
+
+            if (showLyrics) {
+                LyricsPanel(
+                    lyrics = lyrics,
+                    isLoading = isLoadingLyrics,
+                    onClose = { showLyrics = false }
+                )
+            }
+
+            if (showQueue) {
+                QueuePreview(
+                    state = state,
+                    onQueueItemClick = onQueueItemClick,
+                    onRemoveFromQueue = onRemoveFromQueue
+                )
             }
 
             // Album artwork — animates smaller when paused
@@ -166,13 +239,16 @@ fun FullScreenPlayerSheet(
 
             // Error message
             if (state.errorMessage != null) {
-                Text(
-                    text = state.errorMessage,
-                    color = NeonPink,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = state.errorMessage,
+                        color = NeonPink,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    TextButton(onClick = onRetry) { Text("Retry", color = PrimaryPurple) }
+                }
             }
 
             // Seek slider + time labels
@@ -269,6 +345,82 @@ fun FullScreenPlayerSheet(
                         tint = if (state.isRepeat) PrimaryPurple else Color.Gray,
                         modifier = Modifier.size(24.dp)
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QueuePreview(
+    state: PlaybackState,
+    onQueueItemClick: (com.example.myapplication.data.Track) -> Unit,
+    onRemoveFromQueue: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 190.dp)
+    ) {
+        Text("UP NEXT", color = PrimaryPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        androidx.compose.foundation.lazy.LazyColumn {
+            items(state.queue.size) { index ->
+                val queuedTrack = state.queue[index]
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onQueueItemClick(queuedTrack) }
+                        .padding(vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (index == state.currentIndex) "▶" else "${index + 1}",
+                        color = if (index == state.currentIndex) PrimaryPurple else Color.Gray,
+                        modifier = Modifier.width(30.dp)
+                    )
+                    Text(
+                        text = queuedTrack.title,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { onRemoveFromQueue(index) }) {
+                        Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.Gray)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LyricsPanel(
+    lyrics: String?,
+    isLoading: Boolean,
+    onClose: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 240.dp)
+            .background(SurfaceCard, RoundedCornerShape(16.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("LYRICS", color = PrimaryPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            TextButton(onClick = onClose) { Text("Close", color = Color.Gray) }
+        }
+        when {
+            isLoading -> CircularProgressIndicator(color = PrimaryPurple, modifier = Modifier.size(24.dp))
+            lyrics.isNullOrBlank() -> Text("Lyrics are not available for this track.", color = Color.Gray, fontSize = 13.sp)
+            else -> androidx.compose.foundation.lazy.LazyColumn {
+                item {
+                    Text(lyrics, color = Color.White, fontSize = 14.sp, lineHeight = 22.sp)
                 }
             }
         }

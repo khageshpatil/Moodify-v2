@@ -3,6 +3,8 @@ package com.example.myapplication.player
 import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -40,6 +42,11 @@ class InnerTubeStreamResolver(
 
     private val poTokenCache = java.util.concurrent.ConcurrentHashMap<String, CachedPoToken>()
 
+    // A resolved URL is useful only until its CDN expiry. Keep the cache
+    // bounded by video/profile key and invalidate it on transport failures.
+    private val resolvedCache = java.util.concurrent.ConcurrentHashMap<String, ResolvedStream>()
+    private val resolutionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     // Per-instance in-flight dedup map: videoId/profile-attempt → running result
     private val inFlight = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Deferred<ResolvedStream>>()
 
@@ -47,16 +54,30 @@ class InnerTubeStreamResolver(
         // A changed offset intentionally selects the next InnerTube client
         // after a CDN 403 instead of returning the same signed URL again.
         val requestKey = "$videoId:$profileOffset"
+        resolvedCache[requestKey]?.takeUnless { it.isExpired }?.let { return@withContext it }
         val deferred = inFlight.getOrPut(requestKey) {
-            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).async {
+            resolutionScope.async {
                 try {
-                    resolveUncached(videoId, profileOffset)
+                    resolveUncached(videoId, profileOffset).also { resolvedCache[requestKey] = it }
                 } finally {
                     inFlight.remove(requestKey)
                 }
             }
         }
         deferred.await()
+    }
+
+    /** Drop every URL for a video after a CDN 403/404/410 or malformed stream. */
+    fun invalidate(videoId: String) {
+        resolvedCache.keys.removeIf { it.startsWith("$videoId:") }
+        inFlight.keys.removeIf { it.startsWith("$videoId:") }
+        poTokenCache.remove(videoId)
+    }
+
+    /** Resolve ahead of playback without making the player wait for it. */
+    suspend fun preload(videoId: String) {
+        runCatching { resolve(videoId) }
+            .onFailure { Log.d(TAG, "Preload skipped for $videoId: ${it.message}") }
     }
 
     /**
@@ -283,6 +304,7 @@ class InnerTubeStreamResolver(
                 durationMs = durationMs,
                 userAgent = profile.userAgent,
                 requestHeaders = buildMap {
+                    put("User-Agent", profile.userAgent)
                     profile.origin?.let { put("Origin", it) }
                     profile.referer?.let { put("Referer", it) }
                 },
@@ -407,7 +429,10 @@ class InnerTubeStreamResolver(
         val userAgent: String,
         val requestHeaders: Map<String, String>,
         val expiresAtMs: Long
-    )
+    ) {
+        val isExpired: Boolean
+            get() = expiresAtMs <= System.currentTimeMillis() + URL_EXPIRY_SAFETY_MS
+    }
 
     class ResolveException(message: String, cause: Throwable? = null) : IOException(message, cause)
 
@@ -519,6 +544,16 @@ class InnerTubeStreamResolver(
                 deviceModel = "Quest 3"
             ),
             ClientProfile(
+                name = "ANDROID_TESTSUITE",
+                version = "1.9",
+                apiKey = INNERTUBE_API_KEY,
+                clientNameId = "30",
+                userAgent = "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
+                osName = "Android",
+                osVersion = "11",
+                androidSdkVersion = 30
+            ),
+            ClientProfile(
                 name = "WEB_REMIX",
                 version = "1.20250219.01.00",
                 apiKey = INNERTUBE_API_KEY,
@@ -562,6 +597,16 @@ class InnerTubeStreamResolver(
                 version = "1.0",
                 apiKey = INNERTUBE_API_KEY,
                 clientNameId = "74",
+                userAgent = "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
+                osName = "",
+                osVersion = "",
+                platform = "TV"
+            ),
+            ClientProfile(
+                name = "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
+                version = "2.0",
+                apiKey = INNERTUBE_API_KEY,
+                clientNameId = "85",
                 userAgent = "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
                 osName = "",
                 osVersion = "",

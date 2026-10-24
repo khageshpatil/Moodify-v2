@@ -8,5 +8,6 @@ data class Track(
     val albumArtUrl: String = "",
     val durationSeconds: Int = 0,
     val audioUrl: String = "",
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val explicit: Boolean = false
 )

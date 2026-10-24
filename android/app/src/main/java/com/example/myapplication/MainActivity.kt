@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -82,6 +83,7 @@ fun MoodifyApp(
 ) {
     var currentRoute by remember { mutableStateOf(NavTab.Home.route) }
     var isPlayerExpanded by remember { mutableStateOf(false) }
+    val playerScope = rememberCoroutineScope()
 
     val playbackState by viewModel.playbackState.collectAsState()
     val trendingTracks by viewModel.trendingTracks.collectAsState()
@@ -90,6 +92,8 @@ fun MoodifyApp(
     val favoriteTracks by viewModel.favoriteTracks.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val lyrics by viewModel.lyrics.collectAsState()
+    val isLoadingLyrics by viewModel.isLoadingLyrics.collectAsState()
 
     Scaffold(
         containerColor = DarkBackground,
@@ -182,7 +186,26 @@ fun MoodifyApp(
                     onPrevious = { viewModel.playbackManager.playPrevious() },
                     onSeekTo = { pos -> viewModel.playbackManager.seekTo(pos) },
                     onToggleShuffle = { viewModel.playbackManager.toggleShuffle() },
-                    onToggleRepeat = { viewModel.playbackManager.toggleRepeat() }
+                    onToggleRepeat = { viewModel.playbackManager.toggleRepeat() },
+                    onRetry = { viewModel.playbackManager.retryCurrent() },
+                    onQueueItemClick = { track ->
+                        viewModel.playbackManager.playTrack(track, playbackState.queue)
+                    },
+                    onRemoveFromQueue = { index -> viewModel.playbackManager.removeFromQueue(index) },
+                    onSetSpeed = { speed -> viewModel.playbackManager.setPlaybackSpeed(speed) },
+                    onSetPitch = { pitch -> viewModel.playbackManager.setPitch(pitch) },
+                    onDownload = {
+                        playbackState.currentTrack?.let { track ->
+                            playerScope.launch {
+                                runCatching { viewModel.playbackManager.downloadTrack(track) }
+                            }
+                        }
+                    },
+                    lyrics = lyrics,
+                    isLoadingLyrics = isLoadingLyrics,
+                    onLoadLyrics = {
+                        playbackState.currentTrack?.let(viewModel::loadLyrics)
+                    }
                 )
             }
         }

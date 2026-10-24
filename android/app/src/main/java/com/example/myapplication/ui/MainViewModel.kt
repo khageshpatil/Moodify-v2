@@ -9,6 +9,7 @@ import com.example.myapplication.data.MusicRepository
 import com.example.myapplication.data.Track
 import com.example.myapplication.data.VibeWorld
 import com.example.myapplication.player.PlaybackManager
+import com.example.myapplication.player.PlaybackPersistence
 import com.example.myapplication.player.PlaybackState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MusicRepository()
+    private val persistence = PlaybackPersistence(application)
 
     // Use the singleton. getInstance(context) ensures it is initialized with
     // an Application context before the ExoPlayer is accessed.
@@ -35,7 +37,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _trendingTracks = MutableStateFlow<List<Track>>(emptyList())
     val trendingTracks: StateFlow<List<Track>> = _trendingTracks.asStateFlow()
 
-    private val _favoriteTrackIds = MutableStateFlow<Set<String>>(emptySet())
+    private val _favoriteTrackIds = MutableStateFlow(persistence.loadFavoriteIds())
 
     val favoriteTracks: StateFlow<List<Track>> = combine(
         _trendingTracks,
@@ -55,6 +57,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val _lyrics = MutableStateFlow<String?>(null)
+    val lyrics: StateFlow<String?> = _lyrics.asStateFlow()
+
+    private val _isLoadingLyrics = MutableStateFlow(false)
+    val isLoadingLyrics: StateFlow<Boolean> = _isLoadingLyrics.asStateFlow()
 
     init {
         loadTrendingTracks()
@@ -154,7 +162,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleFavorite(track: Track) {
         _favoriteTrackIds.update { set ->
-            if (set.contains(track.id)) set - track.id else set + track.id
+            val updated = if (set.contains(track.id)) set - track.id else set + track.id
+            persistence.saveFavoriteIds(updated)
+            updated
         }
         _trendingTracks.update { list ->
             list.map { if (it.id == track.id) it.copy(isFavorite = !it.isFavorite) else it }
@@ -166,6 +176,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun playTrack(track: Track, queue: List<Track>) {
         playbackManager.playTrack(track, queue)
+    }
+
+    fun loadLyrics(track: Track) {
+        viewModelScope.launch {
+            _isLoadingLyrics.value = true
+            _lyrics.value = null
+            try {
+                _lyrics.value = repository.getLyrics(track.id)
+            } catch (e: Exception) {
+                _errorMessage.value = readableError(e)
+            } finally {
+                _isLoadingLyrics.value = false
+            }
+        }
     }
 
     private fun readableError(e: Exception): String = when (e) {

@@ -12,5 +12,9 @@ data class PlaybackState(
     val isShuffle: Boolean = false,
     val isRepeat: Boolean = false,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val bufferedPositionMs: Long = 0L,
+    val downloadedTrackIds: Set<String> = emptySet(),
+    val playbackSpeed: Float = 1f,
+    val pitch: Float = 1f
 )

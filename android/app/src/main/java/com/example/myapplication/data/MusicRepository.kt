@@ -9,6 +9,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 
 class MoodifyApiException(message: String, val statusCode: Int? = null) : IOException(message)
 
@@ -21,7 +23,8 @@ class MusicRepository {
         .client(
             OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .callTimeout(75, TimeUnit.SECONDS)
                 .addInterceptor(HttpLoggingInterceptor().apply {
                     level = HttpLoggingInterceptor.Level.BASIC
                 })
@@ -35,26 +38,48 @@ class MusicRepository {
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) return emptyList()
 
-        val response = api.searchSongs(normalizedQuery)
-        if (!response.isSuccessful) {
-            throw MoodifyApiException(
-                "Moodify search failed (${response.code()})",
-                response.code()
-            )
+        var lastError: Exception? = null
+        repeat(3) { attempt ->
+            try {
+                val response = api.searchSongs(normalizedQuery)
+                if (!response.isSuccessful) {
+                    throw MoodifyApiException(
+                        "Moodify search failed (${response.code()})",
+                        response.code()
+                    )
+                }
+
+                val tracks = response.body()
+                    ?.getAsJsonArray("tracks")
+                    ?.mapNotNull { it.toTrackOrNull() }
+                    ?.distinctBy { it.id }
+                    ?.take(20)
+                    .orEmpty()
+
+                if (tracks.isEmpty()) throw MoodifyApiException("No songs found for \"$normalizedQuery\"")
+                return tracks
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                lastError = error
+                if (attempt < 2) delay(700L * (attempt + 1))
+            }
         }
-
-        val tracks = response.body()
-            ?.getAsJsonArray("tracks")
-            ?.mapNotNull { it.toTrackOrNull() }
-            ?.distinctBy { it.id }
-            ?.take(20)
-            .orEmpty()
-
-        if (tracks.isEmpty()) throw MoodifyApiException("No songs found for \"$normalizedQuery\"")
-        return tracks
+        throw lastError ?: MoodifyApiException("Moodify search failed")
     }
 
     suspend fun getTrendingSongs(): List<Track> = searchSongs("trending")
+
+    suspend fun getLyrics(trackId: String): String? {
+        val response = api.getLyrics(trackId)
+        if (!response.isSuccessful) {
+            if (response.code() == 404) return null
+            throw MoodifyApiException("Lyrics request failed (${response.code()})", response.code())
+        }
+        return response.body()?.get("lyrics")?.takeIf { it.isJsonPrimitive }?.asString
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+    }
 
     // ── JSON helpers ────────────────────────────────────────────────
 
@@ -115,7 +140,7 @@ class MusicRepository {
             album = album,
             albumArtUrl = artwork,
             durationSeconds = durationSeconds,
-            // Playback uses the YouTube video ID via the IFrame player.
+            // Playback resolves this YouTube video ID natively through InnerTube.
             audioUrl = ""
         )
     }

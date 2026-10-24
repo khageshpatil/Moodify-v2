@@ -81,6 +81,11 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
     implementation(libs.media3.ui)
+    implementation(libs.media3.datasource)
+    implementation(libs.media3.database)
+
+    // Small local persistence layer for queue, favorites, and downloads.
+    implementation(libs.gson)
 
     debugImplementation(libs.compose.ui.tooling)
 
