@@ -309,6 +309,7 @@ export class InnerTubeProviderAdapter {
         // Reconstructing from `input` alone would reuse the unprocessed body
         // and drop the selected client context.
         const request = new Request(input, init);
+        const originalTarget = new URL(request.url);
         const target = new URL(request.url);
         const isYouTubeInnerTube =
           (target.hostname === 'www.youtube.com' || target.hostname === 'music.youtube.com') &&
@@ -337,7 +338,15 @@ export class InnerTubeProviderAdapter {
           if (request.method !== 'GET' && request.method !== 'HEAD') {
             requestInit.body = await request.clone().text();
           }
-          return globalThis.fetch(new Request(target, requestInit));
+          const response = await globalThis.fetch(new Request(target, requestInit));
+          if (response.status !== 404) return response;
+
+          // Some datacenter egress ranges receive a generic 404 from the
+          // googleapis hostname even though the same InnerTube request is
+          // valid on YouTube's public host. Keep the Google-host path first,
+          // then retry the original endpoint without changing the request
+          // body or client headers.
+          return globalThis.fetch(new Request(originalTarget, requestInit));
         }
 
           return globalThis.fetch(request);
