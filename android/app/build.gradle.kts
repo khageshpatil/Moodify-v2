@@ -7,6 +7,15 @@ android {
     namespace = "com.example.myapplication"
     compileSdk = 35
 
+    val buildVersionCode = project.findProperty("versionCode")
+        ?.toString()
+        ?.toIntOrNull()
+        ?: 1
+    val buildVersionName = project.findProperty("versionName")
+        ?.toString()
+        ?.takeIf { it.isNotBlank() }
+        ?: "1.0"
+
     val moodifyServerUrl = (project.findProperty("moodifyServerUrl") as String?)
         ?.trimEnd('/')
         ?.takeIf { it.isNotBlank() }
@@ -16,8 +25,8 @@ android {
         applicationId = "com.example.myapplication"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = buildVersionCode
+        versionName = buildVersionName
 
         buildConfigField("String", "MOODIFY_SERVER_URL", "\"${moodifyServerUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
 
