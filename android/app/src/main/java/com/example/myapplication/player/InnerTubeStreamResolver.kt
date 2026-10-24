@@ -75,10 +75,10 @@ class InnerTubeStreamResolver(
     }
 
     /** Resolve ahead of playback without making the player wait for it. */
-    suspend fun preload(videoId: String) {
+    suspend fun preload(videoId: String): ResolvedStream? =
         runCatching { resolve(videoId) }
             .onFailure { Log.d(TAG, "Preload skipped for $videoId: ${it.message}") }
-    }
+            .getOrNull()
 
     /**
      * Ask Moodify only for a freshly resolved, tokenized CDN URL.  The
@@ -283,8 +283,6 @@ class InnerTubeStreamResolver(
                     .toString()
             }
 
-            probeCdn(finalUrl, profile)
-
             val contentLength = selectedFormat.contentLength ?: Uri.parse(finalUrl)
                 .getQueryParameter("clen")
                 ?.toLongOrNull()
@@ -398,25 +396,6 @@ class InnerTubeStreamResolver(
                 token
             }
         }.onFailure { Log.w(TAG, "PO token unavailable for $videoId: ${it.message}") }.getOrNull()
-    }
-
-    private fun probeCdn(url: String, profile: ClientProfile) {
-        val request = Request.Builder()
-            .url(url)
-            .header("Range", "bytes=0-1")
-            .header("Accept", "*/*")
-            .header("Accept-Encoding", "identity")
-            .header("User-Agent", profile.userAgent)
-            .apply {
-                profile.origin?.let { header("Origin", it) }
-                profile.referer?.let { header("Referer", it) }
-            }
-            .build()
-        httpClient.newCall(request).execute().use { response ->
-            if (response.code !in 200..299) {
-                throw ResolveException("${profile.name}: CDN probe HTTP ${response.code}")
-            }
-        }
     }
 
     data class ResolvedStream(
@@ -616,13 +595,19 @@ class InnerTubeStreamResolver(
 
         private fun orderedProfiles(offset: Int): List<ClientProfile> {
             if (CLIENT_PROFILES.isEmpty()) return emptyList()
-            if (offset <= 0) return CLIENT_PROFILES
-            val start = offset.coerceAtMost(CLIENT_PROFILES.size - 1)
+            // VISIONOS is currently challenged immediately on normal Android
+            // networks. Keep it as a last-resort fallback, but do not make
+            // every playback attempt pay for a known failed request first.
+            val profiles = CLIENT_PROFILES
+                .filterNot { it.name == "VISIONOS" } +
+                CLIENT_PROFILES.filter { it.name == "VISIONOS" }
+            if (offset <= 0) return profiles
+            val start = offset.coerceAtMost(profiles.size - 1)
             // Do not wrap back to a client that already produced a rejected
             // CDN URL.  A retry must be a genuinely different InnerTube
             // contract; the server/tokenized path handles the final fallback.
-            return (CLIENT_PROFILES.drop(start) + CLIENT_PROFILES.take(start))
-                .take(CLIENT_PROFILES.size - offset.coerceAtMost(CLIENT_PROFILES.size))
+            return (profiles.drop(start) + profiles.take(start))
+                .take(profiles.size - offset.coerceAtMost(profiles.size))
         }
 
         private fun defaultHttpClient(): OkHttpClient = OkHttpClient.Builder()

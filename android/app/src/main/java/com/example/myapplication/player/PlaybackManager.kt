@@ -12,8 +12,10 @@ import androidx.media3.common.Player
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.ResolvingDataSource
+import androidx.media3.datasource.cache.Cache
+import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.myapplication.BuildConfig
@@ -22,12 +24,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import java.io.File
+import java.io.EOFException
+import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 /**
  * Singleton playback engine that resolves YouTube audio through native
@@ -54,6 +62,11 @@ class PlaybackManager private constructor(context: Context) {
 
         private val YOUTUBE_VIDEO_ID_REGEX = Regex("^[A-Za-z0-9_-]{11}$")
         private const val DIRECT_PROFILE_RETRY_COUNT = 3
+        private const val MIN_BUFFER_MS = 20_000
+        private const val MAX_BUFFER_MS = 60_000
+        private const val BUFFER_FOR_PLAYBACK_MS = 750
+        private const val BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 2_500
+        private const val MAX_STREAM_CONTRACTS = 64
     }
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -73,18 +86,21 @@ class PlaybackManager private constructor(context: Context) {
     private val downloadManager = MoodifyDownloadManager(context, streamResolver)
     private val playbackCache = PlaybackCache(context)
     private var preloadJob: Job? = null
+    private var loadJob: Job? = null
     private var lastPersistAtMs = 0L
     private var historyRecordedForTrack: String? = null
     private enum class PlaybackRoute { NONE, LOCAL, DIRECT_CDN, SERVER_DIRECT_CDN, SERVER_DIRECT_RELAY }
     @Volatile
     private var activePlaybackRoute = PlaybackRoute.NONE
-    @Volatile
-    private var activeDirectHeaders: Map<String, String> = emptyMap()
-    private val directHttpDataSourceFactory = DefaultHttpDataSource.Factory()
-        .setUserAgent("Moodify-Android/1.0")
-        .setAllowCrossProtocolRedirects(true)
-        .setReadTimeoutMs(30000)
-        .setConnectTimeoutMs(15000)
+    private val streamContracts = ConcurrentHashMap<String, StreamContract>()
+    private val routeByCacheKey = ConcurrentHashMap<String, PlaybackRoute>()
+    private val mediaHttpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .build()
+    private val directHttpDataSourceFactory = OkHttpDataSource.Factory(mediaHttpClient)
         .setDefaultRequestProperties(
             mapOf(
                 "Accept" to "*/*",
@@ -94,19 +110,15 @@ class PlaybackManager private constructor(context: Context) {
     private val dataSourceFactory: DataSource.Factory = ResolvingDataSource.Factory(
         playbackCache.factory(DefaultDataSource.Factory(context, directHttpDataSourceFactory))
     ) { dataSpec ->
-        var resolved = dataSpec
-        android.util.Log.d(
-            "MoodifyPlayer",
-            "DataSpec position=${dataSpec.position} length=${dataSpec.length}"
-        )
-        if (activeDirectHeaders.isNotEmpty()) {
-            resolved = resolved.withAdditionalHeaders(activeDirectHeaders)
+        val contract = dataSpec.key?.let(streamContracts::get)
+        if (contract == null) {
+            dataSpec
+        } else {
+            // Headers belong to the media item/cache key, not to a mutable
+            // global HTTP factory. This keeps range and seek requests tied to
+            // the exact InnerTube client that produced the signed URL.
+            dataSpec.withAdditionalHeaders(contract.requestHeaders)
         }
-        android.util.Log.d(
-            "MoodifyPlayer",
-            "ResolvedDataSpec position=${resolved.position} length=${resolved.length} headers=${resolved.httpRequestHeaders.keys}"
-        )
-        resolved
     }
 
     // ── ExoPlayer ────────────────────────────────────────────────────────────
@@ -114,6 +126,17 @@ class PlaybackManager private constructor(context: Context) {
     private val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(dataSourceFactory)
+        )
+        .setLoadControl(
+            DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    MIN_BUFFER_MS,
+                    MAX_BUFFER_MS,
+                    BUFFER_FOR_PLAYBACK_MS,
+                    BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                )
+                .setPrioritizeTimeOverSizeThresholds(true)
+                .build()
         )
         .setAudioAttributes(
         AudioAttributes.Builder()
@@ -123,6 +146,28 @@ class PlaybackManager private constructor(context: Context) {
         true
     ).setHandleAudioBecomingNoisy(true).build().apply {
         addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                val mediaId = mediaItem?.mediaId ?: return
+                val track = _state.value.queue.firstOrNull { it.id == mediaId } ?: return
+                val cacheKey = mediaItem.localConfiguration?.customCacheKey ?: mediaId
+                activePlaybackRoute = routeByCacheKey[cacheKey] ?: activePlaybackRoute
+                historyRecordedForTrack = null
+                refreshAttempts.remove(track.id)
+                _state.update {
+                    it.copy(
+                        currentTrack = track,
+                        currentIndex = it.queue.indexOfFirst { queued -> queued.id == track.id }
+                            .coerceAtLeast(0),
+                        isLoading = true,
+                        isPlaying = exoPlayer.isPlaying,
+                        positionMs = 0L,
+                        durationMs = track.durationSeconds * 1000L,
+                        errorMessage = null
+                    )
+                }
+                preloadNext()
+            }
+
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _state.update { it.copy(isPlaying = isPlaying) }
             }
@@ -164,10 +209,24 @@ class PlaybackManager private constructor(context: Context) {
             override fun onPlayerError(error: PlaybackException) {
                 val current = _state.value.currentTrack
                 val attempts = current?.let { refreshAttempts[it.id] ?: 0 } ?: 0
+                val currentMediaItem = exoPlayer.currentMediaItem
+                val cacheKey = currentMediaItem?.localConfiguration?.customCacheKey
+                    ?: currentMediaItem?.mediaId
                 if (current != null) {
                     // Signed CDN URLs and their token context must never be
                     // retried unchanged after a transport failure.
                     streamResolver.invalidate(current.id)
+                }
+                if (current != null &&
+                    activePlaybackRoute != PlaybackRoute.LOCAL &&
+                    cacheKey != null &&
+                    shouldDiscardPlaybackCache(error)
+                ) {
+                    // A partial CDN response can leave a valid-looking but
+                    // truncated cache span. Remove it before resolving again.
+                    playbackCache.remove(cacheKey)
+                    streamContracts.remove(cacheKey)
+                    routeByCacheKey.remove(cacheKey)
                 }
                 if (current != null &&
                     activePlaybackRoute == PlaybackRoute.DIRECT_CDN &&
@@ -343,7 +402,19 @@ class PlaybackManager private constructor(context: Context) {
         } else {
             current.currentIndex + 1
         }
-        current.queue.getOrNull(nextIndex)?.let { playTrack(it, current.queue) }
+        val nextTrack = current.queue.getOrNull(nextIndex) ?: return
+        val queuedNext = exoPlayer.nextMediaItemIndex
+            .takeIf { it != C.INDEX_UNSET }
+            ?.let(exoPlayer::getMediaItemAt)
+        if (!current.isShuffle && queuedNext?.mediaId == nextTrack.id) {
+            // The next item has already been resolved and prepared while the
+            // current song was playing. Handoff through ExoPlayer's timeline
+            // instead of resolving and preparing a new player item.
+            exoPlayer.seekToNext()
+            exoPlayer.play()
+        } else {
+            playTrack(nextTrack, current.queue)
+        }
     }
 
     fun playPrevious() {
@@ -472,11 +543,11 @@ class PlaybackManager private constructor(context: Context) {
         forceServerDirect: Boolean = false,
         profileOffset: Int = 0
     ) {
-        scope.launch {
+        loadJob?.cancel()
+        loadJob = scope.launch {
             try {
                 if (generation != loadGeneration || _state.value.currentTrack?.id != track.id) return@launch
 
-                val metadata = buildMediaMetadata(track)
                 val downloaded = downloadManager.get(track.id)
 
                 // ── Strategy 1: Direct InnerTube call from this device ──────────────
@@ -512,10 +583,10 @@ class PlaybackManager private constructor(context: Context) {
                 }
                 val serverDirectUrl = serverStream?.url
 
+                var selectedRoute = PlaybackRoute.NONE
                 val streamChoice = when {
                     downloaded != null -> {
-                        activePlaybackRoute = PlaybackRoute.LOCAL
-                        activeDirectHeaders = emptyMap()
+                        selectedRoute = PlaybackRoute.LOCAL
                         StreamChoice(
                             Uri.fromFile(File(downloaded.filePath)).toString(),
                             downloaded.mimeType,
@@ -524,8 +595,7 @@ class PlaybackManager private constructor(context: Context) {
                         )
                     }
                     directUrl != null -> {
-                        activePlaybackRoute = PlaybackRoute.DIRECT_CDN
-                        configureDirectStream(requireNotNull(directStream))
+                        selectedRoute = PlaybackRoute.DIRECT_CDN
                         android.util.Log.d("MoodifyPlayer",
                             "Direct InnerTube URL for ${track.id}")
                         // Direct CDN: no start-time support — ExoPlayer can seek natively
@@ -537,8 +607,7 @@ class PlaybackManager private constructor(context: Context) {
                         )
                     }
                     serverDirectUrl != null -> {
-                        activePlaybackRoute = PlaybackRoute.SERVER_DIRECT_CDN
-                        configureDirectStream(requireNotNull(serverStream))
+                        selectedRoute = PlaybackRoute.SERVER_DIRECT_CDN
                         android.util.Log.d(
                             "MoodifyPlayer",
                             "Server-resolved CDN URL for ${track.id} (device transport)"
@@ -553,8 +622,7 @@ class PlaybackManager private constructor(context: Context) {
                     else -> {
                         // ── Strategy 2: Server direct relay ────────────────────────────
                         // Fall back to the backend when the direct call fails.
-                        activePlaybackRoute = PlaybackRoute.SERVER_DIRECT_RELAY
-                        configureDirectRelay()
+                        selectedRoute = PlaybackRoute.SERVER_DIRECT_RELAY
                         val mediaUrl =
                             "${BuildConfig.MOODIFY_SERVER_URL.trimEnd('/')}/api/media/${track.id}?transport=direct"
                         android.util.Log.d("MoodifyPlayer",
@@ -563,13 +631,21 @@ class PlaybackManager private constructor(context: Context) {
                     }
                 }
 
+                registerStreamContract(
+                    cacheKey = streamChoice.cacheKey,
+                    route = selectedRoute,
+                    stream = streamChoice.stream
+                )
+
                 if (generation != loadGeneration || _state.value.currentTrack?.id != track.id) return@launch
 
+                activePlaybackRoute = selectedRoute
+
                 val byteRangeRoute =
-                    activePlaybackRoute == PlaybackRoute.LOCAL ||
-                        activePlaybackRoute == PlaybackRoute.DIRECT_CDN ||
-                        activePlaybackRoute == PlaybackRoute.SERVER_DIRECT_CDN ||
-                        activePlaybackRoute == PlaybackRoute.SERVER_DIRECT_RELAY
+                    selectedRoute == PlaybackRoute.LOCAL ||
+                        selectedRoute == PlaybackRoute.DIRECT_CDN ||
+                        selectedRoute == PlaybackRoute.SERVER_DIRECT_CDN ||
+                        selectedRoute == PlaybackRoute.SERVER_DIRECT_RELAY
                 val safeStartMs = if (byteRangeRoute) {
                     startPositionMs.coerceAtLeast(0L).let { pos ->
                         val dur = _state.value.durationMs
@@ -579,13 +655,12 @@ class PlaybackManager private constructor(context: Context) {
                     0L
                 }
 
-                val mediaItem = MediaItem.Builder()
-                    .setUri(streamChoice.url)
-                    .setMimeType(streamChoice.mimeType)
-                    .setMediaId(track.id)
-                    .setCustomCacheKey(streamChoice.cacheKey)
-                    .setMediaMetadata(metadata)
-                    .build()
+                val mediaItem = buildMediaItem(
+                    track = track,
+                    url = streamChoice.url,
+                    mimeType = streamChoice.mimeType,
+                    cacheKey = streamChoice.cacheKey
+                )
 
                 exoPlayer.setMediaItem(mediaItem, safeStartMs)
                 exoPlayer.prepare()
@@ -602,6 +677,31 @@ class PlaybackManager private constructor(context: Context) {
     private fun setError(message: String) {
         _state.update { it.copy(isLoading = false, isPlaying = false, errorMessage = message) }
         persistState()
+    }
+
+    private fun shouldDiscardPlaybackCache(error: PlaybackException): Boolean {
+        if (error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
+            error.errorCode == PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ||
+            error.errorCode == PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE ||
+            error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED ||
+            error.errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED
+        ) {
+            return true
+        }
+
+        var cause: Throwable? = error.cause
+        while (cause != null) {
+            if (cause is EOFException || cause is Cache.CacheException) return true
+            if (cause is IOException && cause.message?.contains(
+                    "unexpected end of stream",
+                    ignoreCase = true
+                ) == true
+            ) {
+                return true
+            }
+            cause = cause.cause
+        }
+        return false
     }
 
     private fun buildMediaMetadata(track: Track): MediaMetadata = MediaMetadata.Builder()
@@ -621,9 +721,36 @@ class PlaybackManager private constructor(context: Context) {
             current.currentIndex + 1
         }
         val nextTrack = current.queue.getOrNull(nextIndex ?: -1) ?: return
+        val currentTrackId = current.currentTrack?.id ?: return
         preloadJob?.cancel()
-        preloadJob = scope.launch(Dispatchers.IO) {
-            streamResolver.preload(nextTrack.id)
+        preloadJob = scope.launch {
+            val resolved = withContext(Dispatchers.IO) {
+                streamResolver.preload(nextTrack.id)
+            } ?: return@launch
+
+            if (_state.value.currentTrack?.id != currentTrackId ||
+                exoPlayer.currentMediaItem?.mediaId != currentTrackId
+            ) {
+                return@launch
+            }
+
+            val cacheKey = "moodify:${nextTrack.id}:${resolved.itag}"
+            if ((0 until exoPlayer.mediaItemCount).any {
+                    exoPlayer.getMediaItemAt(it).mediaId == nextTrack.id
+                }
+            ) {
+                return@launch
+            }
+
+            registerStreamContract(cacheKey, PlaybackRoute.DIRECT_CDN, resolved)
+            exoPlayer.addMediaItem(
+                buildMediaItem(
+                    track = nextTrack,
+                    url = resolved.url,
+                    mimeType = resolved.mimeType,
+                    cacheKey = cacheKey
+                )
+            )
         }
     }
 
@@ -639,35 +766,63 @@ class PlaybackManager private constructor(context: Context) {
         )
     }
 
-    private fun configureDirectStream(stream: InnerTubeStreamResolver.ResolvedStream) {
-        activeDirectHeaders = stream.requestHeaders
-        android.util.Log.d(
-            "MoodifyPlayer",
-            "Direct stream metadata: mime=${stream.mimeType} length=${stream.contentLength} " +
-                "itag=${stream.itag} ua=${stream.userAgent} headers=${stream.requestHeaders.keys}"
-        )
-        directHttpDataSourceFactory
-            .setUserAgent(stream.userAgent)
-            .setDefaultRequestProperties(
-                buildMap {
-                    put("Accept", "*/*")
-                    put("Accept-Encoding", "identity")
+    private fun registerStreamContract(
+        cacheKey: String,
+        route: PlaybackRoute,
+        stream: InnerTubeStreamResolver.ResolvedStream?
+    ) {
+        if (stream == null) {
+            if (route == PlaybackRoute.SERVER_DIRECT_RELAY) {
+                streamContracts[cacheKey] = StreamContract(
+                    requestHeaders = mapOf("User-Agent" to "Moodify-Android/1.0")
+                )
+            } else {
+                streamContracts.remove(cacheKey)
+            }
+        } else {
+            streamContracts[cacheKey] = StreamContract(
+                requestHeaders = buildMap {
+                    put("User-Agent", stream.userAgent)
                     putAll(stream.requestHeaders)
                 }
             )
+        }
+        routeByCacheKey[cacheKey] = route
+
+        // Keep stale contracts from becoming a long-lived memory leak while
+        // retaining enough resolved queue items for normal listening.
+        if (streamContracts.size > MAX_STREAM_CONTRACTS) {
+            val liveKeys = (0 until exoPlayer.mediaItemCount)
+                .mapNotNull { index ->
+                    exoPlayer.getMediaItemAt(index).localConfiguration?.customCacheKey
+                }
+                .toSet() + cacheKey
+            streamContracts.keys
+                .filterNot(liveKeys::contains)
+                .take(streamContracts.size - MAX_STREAM_CONTRACTS)
+                .forEach { staleKey ->
+                    streamContracts.remove(staleKey)
+                    routeByCacheKey.remove(staleKey)
+                }
+        }
     }
 
-    private fun configureDirectRelay() {
-        activeDirectHeaders = emptyMap()
-        directHttpDataSourceFactory
-            .setUserAgent("Moodify-Android/1.0")
-            .setDefaultRequestProperties(
-                mapOf(
-                    "Accept" to "*/*",
-                    "Accept-Encoding" to "identity"
-                )
-            )
-    }
+    private fun buildMediaItem(
+        track: Track,
+        url: String,
+        mimeType: String,
+        cacheKey: String
+    ): MediaItem = MediaItem.Builder()
+        .setUri(url)
+        .setMimeType(mimeType)
+        .setMediaId(track.id)
+        .setCustomCacheKey(cacheKey)
+        .setMediaMetadata(buildMediaMetadata(track))
+        .build()
+
+    private data class StreamContract(
+        val requestHeaders: Map<String, String>
+    )
 
     private data class StreamChoice(
         val url: String,

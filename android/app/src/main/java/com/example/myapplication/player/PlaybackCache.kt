@@ -6,6 +6,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import java.io.IOException
 import java.io.File
 
 /**
@@ -30,6 +31,14 @@ class PlaybackCache(context: Context) {
             .setCache(cache)
             .setUpstreamDataSourceFactory(upstream)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+    /** Remove a possibly truncated stream before retrying from the CDN. */
+    fun remove(cacheKey: String) {
+        runCatching { cache.removeResource(cacheKey) }
+            .onFailure { error ->
+                if (error !is IOException) throw error
+            }
+    }
 
     companion object {
         private const val MAX_CACHE_BYTES = 150L * 1024L * 1024L
