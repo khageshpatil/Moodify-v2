@@ -9,7 +9,7 @@ import { PlaylistManager } from "@/components/PlaylistManager";
 import { QueueManager } from "@/components/QueueManager";
 import { FavoritesView } from "@/components/FavoritesView";
 import { HistoryView } from "@/components/HistoryView";
-import { DiscoverView } from "@/components/DiscoverView";
+import { DiscoverView, type CatalogSurface } from "@/components/DiscoverView";
 import { LocalSocialDiscovery } from "@/components/LocalSocialDiscovery";
 import { EnhancedListenTogetherDialog } from "@/components/EnhancedListenTogetherDialog";
 import { ListeningInspector } from "@/components/ListeningInspector";
@@ -27,7 +27,7 @@ import { usePlaylistSharing } from "@/hooks/usePlaylistSharing";
 import { Button } from "@/components/ui/button";
 import { Search, Music, Home, ListMusic, Heart, Clock, Sparkles, Upload, Download, Users, User, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { searchMoodifyTracks, toDiscoveryPlaybackRequest } from "@/services/moodifyMusicApi";
+import { fetchDiscoveryHome, searchMoodifyTracks, toDiscoveryPlaybackRequest, type DiscoveryCollectionResult } from "@/services/moodifyMusicApi";
 import { useDiscoverySidecar } from "@/hooks/useDiscoverySidecar";
 import type { Track } from "@/data/mockMusic";
 import { getVibeWorld } from "@/data/vibeWorlds";
@@ -45,6 +45,8 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<'moods' | 'search' | 'library' | 'playlists' | 'queue' | 'favorites' | 'history' | 'discover' | 'social' | 'identity' | 'friends'>('moods');
   const [listenTogetherOpen, setListenTogetherOpen] = useState(false);
   const [chatFriendId, setChatFriendId] = useState<string | null>(null);
+  const [providerHome, setProviderHome] = useState<DiscoveryCollectionResult | null>(null);
+  const [discoverSurface, setDiscoverSurface] = useState<CatalogSurface>('explore');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // React Router hooks
@@ -121,6 +123,18 @@ const Index = () => {
   useEffect(() => {
     if (vibeId && !vibeWorld) navigate('/', { replace: true });
   }, [vibeId, vibeWorld, navigate]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchDiscoveryHome(undefined, controller.signal)
+      .then((page) => {
+        if (!controller.signal.aborted) setProviderHome(page);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setProviderHome(null);
+      });
+    return () => controller.abort();
+  }, []);
 
   // Playlist sharing hook
   const { importFromURLShare } = usePlaylistSharing({
@@ -490,6 +504,9 @@ const Index = () => {
            onToggleFavorite={toggleFavorite}
           onAddToQueue={addToQueue}
           isFavorite={isFavorite}
+          onVibeSelect={(id) => navigate(`/vibes/${id}`)}
+          initialSurface={discoverSurface}
+          onSurfaceChange={setDiscoverSurface}
         />
       );
     }
@@ -549,7 +566,7 @@ const Index = () => {
       );
     }
 
-    return <ListeningHome recentlyPlayed={recentlyPlayed} favorites={favorites} history={history} currentTrack={currentTrack} isPlaying={isPlaying} playbackStatus={playbackStatus} signals={listeningSignals} onIntent={handleIntent} onVibeSelect={(vibeId) => navigate(`/vibes/${vibeId}`)} onPlay={playTrackWithSync} onQueue={addToQueue} homeModel={homeModel} playlists={playlists} />;
+    return <ListeningHome recentlyPlayed={recentlyPlayed} favorites={favorites} history={history} currentTrack={currentTrack} isPlaying={isPlaying} playbackStatus={playbackStatus} signals={listeningSignals} onIntent={handleIntent} onVibeSelect={(vibeId) => navigate(`/vibes/${vibeId}`)} onPlay={playTrackWithSync} onQueue={addToQueue} homeModel={homeModel} playlists={playlists} providerHome={providerHome} onOpenCatalog={(destination = 'explore') => { if (destination === 'search') { setCurrentView('search'); return; } setDiscoverSurface(destination); setCurrentView('discover'); }} />;
   };
 
   return (

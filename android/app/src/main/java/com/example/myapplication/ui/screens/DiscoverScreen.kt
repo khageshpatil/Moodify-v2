@@ -13,6 +13,10 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +44,9 @@ fun DiscoverScreen(
     isSearching: Boolean,
     errorMessage: String?,
     catalogSections: List<CatalogSection> = emptyList(),
+    exploreSections: List<CatalogSection> = emptyList(),
+    chartsSections: List<CatalogSection> = emptyList(),
+    homeSections: List<CatalogSection> = emptyList(),
     onBrowseClick: (BrowseEndpoint) -> Unit = {},
     searchType: String? = null,
     onSearchTypeChange: (String?) -> Unit = {},
@@ -47,6 +54,8 @@ fun DiscoverScreen(
     onTrackSelect: (Track) -> Unit,
     onFavoriteToggle: (Track) -> Unit
 ) {
+    var activeSurface by remember { mutableStateOf("explore") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -105,6 +114,30 @@ fun DiscoverScreen(
         }
         Spacer(modifier = Modifier.height(20.dp))
 
+        if (searchQuery.isBlank()) {
+            Text(
+                text = "CATALOG",
+                color = TextMuted,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.3.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("explore" to "Explore", "charts" to "Charts", "for-you" to "For you").forEach { (surface, label) ->
+                    FilterChip(
+                        selected = activeSurface == surface,
+                        onClick = { activeSurface = surface },
+                        label = { Text(label) }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
         // Loading or Results Header
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -143,10 +176,16 @@ fun DiscoverScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(bottom = 150.dp)
         ) {
-            if (searchQuery.isBlank() && catalogSections.isNotEmpty()) {
+            val visibleCatalogSections = when (activeSurface) {
+                "charts" -> chartsSections
+                "for-you" -> homeSections
+                else -> if (exploreSections.isNotEmpty()) exploreSections else catalogSections
+            }
+
+            if (searchQuery.isBlank() && visibleCatalogSections.isNotEmpty()) {
                 item {
                     CatalogShelves(
-                        sections = catalogSections.take(6),
+                        sections = visibleCatalogSections.take(6),
                         currentTrack = currentTrack,
                         onTrackClick = onTrackSelect,
                         onBrowseClick = onBrowseClick

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Track } from "@/data/mockMusic";
-import { ArrowLeft, Clock3, Disc3, Heart, LoaderCircle, Play, Plus, Sparkles } from "lucide-react";
+import { ArrowLeft, BarChart3, Clock3, Compass, Disc3, Heart, Layers3, LoaderCircle, Play, Plus, Sparkles } from "lucide-react";
 import { DownloadButton } from "@/components/DownloadButton";
 import { Artwork } from "@/components/Artwork";
 import { presentTrack } from "@/presentation/providerPresentation";
@@ -17,6 +17,9 @@ import {
   type DiscoveryCatalogSection,
   type DiscoveryCollectionResult,
 } from '@/services/moodifyMusicApi';
+import { VibesCarousel } from './VibesCarousel';
+
+export type CatalogSurface = 'explore' | 'charts' | 'for-you' | 'moods';
 
 interface DiscoverViewProps {
   recentlyPlayed: Track[];
@@ -25,6 +28,9 @@ interface DiscoverViewProps {
   onToggleFavorite: (track: Track) => void;
   onAddToQueue: (track: Track) => void;
   isFavorite: (trackId: string) => boolean;
+  onVibeSelect: (vibeId: string) => void;
+  initialSurface?: CatalogSurface;
+  onSurfaceChange?: (surface: CatalogSurface) => void;
 }
 
 const playCollection = (
@@ -83,6 +89,9 @@ export const DiscoverView = ({
   onToggleFavorite,
   onAddToQueue,
   isFavorite,
+  onVibeSelect,
+  initialSurface = 'explore',
+  onSurfaceChange,
 }: DiscoverViewProps) => {
   const [explorePage, setExplorePage] = useState<DiscoveryCollectionResult | null>(null);
   const [exploreCursor, setExploreCursor] = useState<string | undefined>();
@@ -92,6 +101,16 @@ export const DiscoverView = ({
   const [browseLoading, setBrowseLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [exploreFailed, setExploreFailed] = useState(false);
+  const [activeSurface, setActiveSurface] = useState<CatalogSurface>(initialSurface);
+
+  useEffect(() => {
+    setActiveSurface(initialSurface);
+  }, [initialSurface]);
+
+  const selectSurface = (surface: CatalogSurface) => {
+    setActiveSurface(surface);
+    onSurfaceChange?.(surface);
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -246,6 +265,32 @@ export const DiscoverView = ({
 
   return (
     <div className="catalog-discover">
+      <div className="catalog-discover-header">
+        <div>
+          <span className="catalog-eyebrow"><Layers3 size={13} aria-hidden="true" /> Your catalog</span>
+          <h1>Find the next song</h1>
+          <p>Move between live shelves, charts, moods and your own listening trail.</p>
+        </div>
+        <div className="catalog-surface-tabs" role="tablist" aria-label="Catalog destinations">
+          {([
+            ['explore', 'Explore', Compass],
+            ['charts', 'Charts', BarChart3],
+            ['for-you', 'For you', Sparkles],
+            ['moods', 'Moods', Heart],
+          ] as const).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={activeSurface === id}
+              className={`catalog-surface-tab${activeSurface === id ? ' is-active' : ''}`}
+              onClick={() => selectSurface(id)}
+            >
+              <Icon size={15} aria-hidden="true" />{label}
+            </button>
+          ))}
+        </div>
+      </div>
       {recentlyPlayed.length > 0 && (
         <section className="catalog-surface catalog-recent" aria-labelledby="recently-played-heading">
           <div className="catalog-surface-heading"><div><span className="catalog-eyebrow"><Clock3 size={13} aria-hidden="true" /> Your listening</span><h2 id="recently-played-heading">Recently played</h2></div></div>
@@ -265,9 +310,22 @@ export const DiscoverView = ({
           {renderSurface(browsePage.catalog?.title || 'Browse', browsePage, 'explore', false)}
         </div>
       )}
-      {renderSurface('Explore', explorePage, 'explore')}
-      {renderSurface('Charts', chartsPage, 'home', false)}
-      {homePage && renderSurface('For you', homePage, 'home')}
+      {activeSurface === 'explore' && renderSurface('Explore', explorePage, 'explore')}
+      {activeSurface === 'charts' && renderSurface('Charts', chartsPage, 'home', false)}
+      {activeSurface === 'for-you' && renderSurface('For you', homePage, 'home', false)}
+      {activeSurface === 'moods' && (
+        <section className="catalog-moods-destination" aria-labelledby="catalog-moods-heading">
+          <div className="catalog-surface-heading">
+            <div>
+              <span className="catalog-eyebrow"><Heart size={13} aria-hidden="true" /> Moodify originals</span>
+              <h2 id="catalog-moods-heading">Choose a world</h2>
+            </div>
+            <span className="catalog-count">8 worlds</span>
+          </div>
+          <p className="catalog-moods-copy">Mood is the shortcut. Each world resolves into a living provider-backed collection when you open it.</p>
+          <VibesCarousel onVibeSelect={onVibeSelect} />
+        </section>
+      )}
     </div>
   );
 };

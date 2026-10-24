@@ -909,8 +909,16 @@ export class InnerTubeProviderAdapter {
     const tabs = asList(root?.tabs);
     const tab = tabs.find((entry) => entry?.selected) || tabs[0];
     const content = tab?.content || root?.content || root;
-    const sections = asList(content?.contents || response?.contents);
-    const continuation = content?.continuation;
+    // Playlist and community pages are returned as TwoColumnBrowseResults.
+    // Their header lives in the selected tab, while the actual track shelf
+    // lives in secondary_contents. Reading only tab.content made these pages
+    // look valid to callers but produced an empty catalog with title "N/A".
+    const secondaryContent = root?.secondary_contents || root?.secondaryContents;
+    const sections = [
+      ...asList(content?.contents || response?.contents),
+      ...asList(secondaryContent?.contents),
+    ];
+    const continuation = content?.continuation || secondaryContent?.continuation;
     const continuationOwner = continuation ? {
       has_continuation: true,
       getContinuation: async () => {
@@ -923,7 +931,7 @@ export class InnerTubeProviderAdapter {
       },
     } : null;
     return {
-      title: text(content?.header?.title) || text(tab?.title) || browseId,
+      title: text(response?.microformat?.title) || text(content?.header?.title) || text(tab?.title) || browseId,
       sections,
       continuationOwner,
     };

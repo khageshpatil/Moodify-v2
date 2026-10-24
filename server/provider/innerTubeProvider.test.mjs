@@ -259,3 +259,38 @@ test('loads generic browse pages and their continuation through the catalog cont
   assert.equal(second.catalog.sections[0].items[0].track.id, 'mood-2');
   assert.equal(continuationCalls, 1);
 });
+
+test('loads playlist shelves returned in the browse response secondary column', async () => {
+  const adapter = new InnerTubeProviderAdapter();
+  adapter.getClient = async () => ({
+    actions: {
+      execute: async () => ({
+        microformat: { title: 'The Hits' },
+        contents: {
+          item: () => ({
+            tabs: [{
+              selected: false,
+              title: 'N/A',
+              content: {
+                contents: [{ type: 'MusicResponsiveHeader', title: 'The Hits' }],
+              },
+            }],
+            secondary_contents: {
+              contents: [{
+                type: 'MusicPlaylistShelf',
+                contents: [song('playlist-track', 'Playlist Track')],
+                continuation: 'playlist-next',
+              }],
+              continuation: 'playlist-next',
+            },
+          }),
+        },
+      }),
+    },
+  });
+
+  const page = await adapter.getBrowse('VLRplaylist', 'playlist_params');
+  assert.equal(page.catalog.title, 'The Hits');
+  assert.equal(page.catalog.sections[0].items[0].track.id, 'playlist-track');
+  assert.equal(page.pageInfo.hasMore, true);
+});

@@ -94,7 +94,9 @@ export const useMusicPlayer = () => {
       providerId = data.tracks?.[0]?.id;
     }
     if (!providerId) throw new Error('No YouTube Music source matched this track');
-    return { url: `${serverBase}/api/media/${encodeURIComponent(providerId)}` };
+    // Use the direct signed-URL relay which supports HTTP Range requests
+    // (byte-range seeking). The SABR default does not support Range headers.
+    return { url: `${serverBase}/api/media/${encodeURIComponent(providerId)}?transport=direct` };
   }, []);
 
   const playbackEngineRef = useRef<ReturnType<typeof getCanonicalPlaybackEngine> | null>(null);

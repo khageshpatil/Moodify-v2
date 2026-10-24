@@ -149,10 +149,6 @@ fun MoodifyApp(
                             viewModel.startIntent(intent)
                             currentRoute = NavTab.Discover.route
                         },
-                        onVibeSelect = { vibe ->
-                            viewModel.selectVibe(vibe)
-                            currentRoute = NavTab.Discover.route
-                        },
                         catalogSections = homeCatalog?.sections.orEmpty(),
                         currentTrack = playbackState.currentTrack,
                         onTrackSelect = { track ->
@@ -175,6 +171,9 @@ fun MoodifyApp(
                         } else {
                             searchCatalog?.sections.orEmpty()
                         },
+                        exploreSections = exploreCatalog?.sections.orEmpty(),
+                        chartsSections = chartsCatalog?.sections.orEmpty(),
+                        homeSections = homeCatalog?.sections.orEmpty(),
                         onBrowseClick = viewModel::openBrowse,
                         searchType = searchType,
                         onSearchTypeChange = viewModel::onSearchTypeChange,

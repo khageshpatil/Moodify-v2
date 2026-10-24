@@ -176,7 +176,9 @@ class MusicRepository {
 
     private fun JsonElement.stringValue(): String? {
         if (!isJsonPrimitive || !asJsonPrimitive.isString) return null
-        return asString.trim().takeIf { it.isNotEmpty() }
+        return asString.trim().takeIf { value ->
+            value.isNotEmpty() && value.lowercase() !in setOf("n/a", "na", "null", "undefined")
+        }
     }
 
     private fun JsonObject.stringValue(name: String): String? = get(name)?.stringValue()

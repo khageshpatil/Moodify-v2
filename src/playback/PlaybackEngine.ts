@@ -20,6 +20,7 @@ const initialSnapshot: PlaybackSnapshot = {
 
 export class PlaybackEngine {
   readonly audio: HTMLAudioElement;
+  private resolveSource: PlaybackSourceResolver | null;
   private snapshot: PlaybackSnapshot = { ...initialSnapshot };
   private listeners = new Set<(snapshot: PlaybackSnapshot) => void>();
   private requestId = 0;
@@ -28,7 +29,8 @@ export class PlaybackEngine {
   private mediaSessionHandlers: { next?: () => void; previous?: () => void } = {};
   private recoveryAttemptedTrackId: string | null = null;
 
-  constructor(private readonly resolveSource: PlaybackSourceResolver) {
+  constructor(resolveSource?: PlaybackSourceResolver) {
+    this.resolveSource = resolveSource ?? null;
     this.audio = document.createElement('audio');
     this.audio.preload = 'auto';
     this.audio.crossOrigin = 'anonymous';
@@ -53,6 +55,7 @@ export class PlaybackEngine {
 
   getSnapshot() { return this.snapshot; }
   getAudioElement() { return this.audio; }
+  setSourceResolver(resolveSource: PlaybackSourceResolver) { this.resolveSource = resolveSource; }
   setEndedListener(listener: (() => void) | null) { this.endedListener = listener; }
   setMediaSessionHandlers(handlers: { next?: () => void; previous?: () => void }) {
     this.mediaSessionHandlers = handlers;
@@ -77,13 +80,19 @@ export class PlaybackEngine {
     this.audio.removeAttribute('src');
     this.audio.load();
 
+    const resolveSource = this.resolveSource;
+    if (!resolveSource) {
+      this.fail({ code: 'SOURCE_RESOLUTION_FAILED', message: 'Playback source resolver is not configured' });
+      return;
+    }
+
     let source;
     try {
-      source = await this.resolveSource(track, controller.signal, 0);
+      source = await resolveSource(track, controller.signal, 0);
     } catch (firstError) {
       if (controller.signal.aborted || requestId !== this.requestId) return;
       try {
-        source = await this.resolveSource(track, controller.signal, 1);
+        source = await resolveSource(track, controller.signal, 1);
       } catch (secondError) {
         if (controller.signal.aborted || requestId !== this.requestId) return;
         this.fail({ code: 'SOURCE_RESOLUTION_FAILED', message: secondError instanceof Error ? secondError.message : 'Unable to resolve playback source', cause: firstError });
@@ -152,14 +161,18 @@ export class PlaybackEngine {
   };
 }
 
-import { YouTubePlaybackEngine } from './YouTubePlaybackEngine';
+// YouTubePlaybackEngine is kept for reference but the canonical engine now uses
+// HTMLAudioElement + the backend relay for full Range/seek support.
+// import { YouTubePlaybackEngine } from './YouTubePlaybackEngine';
 
-let canonicalEngine: YouTubePlaybackEngine | null = null;
+let canonicalEngine: PlaybackEngine | null = null;
 export const getCanonicalPlaybackEngine = (resolveSource?: PlaybackSourceResolver) => {
   if (!canonicalEngine) {
-    canonicalEngine = new YouTubePlaybackEngine(resolveSource);
+    canonicalEngine = new PlaybackEngine(resolveSource);
+  } else if (resolveSource) {
+    canonicalEngine.setSourceResolver(resolveSource);
   }
-  return canonicalEngine as unknown as PlaybackEngine;
+  return canonicalEngine;
 };
 
 export const resetCanonicalPlaybackEngine = () => { canonicalEngine?.destroy(); canonicalEngine = null; };
