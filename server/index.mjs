@@ -461,6 +461,30 @@ const server = http.createServer(async (request, response) => {
       await relay(request, response, videoId);
       return;
     }
+    const poTokenMatch = /^\/api\/po-token\/([^/]+)$/.exec(url.pathname);
+    if (request.method === 'GET' && poTokenMatch) {
+      const videoId = decodeURIComponent(poTokenMatch[1]);
+      if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        sendJson(response, 400, { error: 'Invalid video ID' });
+        return;
+      }
+      try {
+        const poToken = await provider.resolvePlaybackPoToken(videoId);
+        sendJson(response, 200, {
+          ok: true,
+          videoId,
+          poToken,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+        });
+      } catch (tokenError) {
+        diagnostics('playback.po_token.endpoint.failed', { videoId, error: tokenError.message });
+        sendJson(response, 502, {
+          error: 'PLAYBACK_TOKEN_FAILED',
+          message: tokenError?.message || 'Could not mint playback token',
+        });
+      }
+      return;
+    }
     // ── /api/stream/:id — returns direct audio CDN URL as JSON ───────────
     // Used by Android ExoPlayer to get the stream URL without the server
     // proxying the bytes.  resolvePlayback() already uses the ANDROID

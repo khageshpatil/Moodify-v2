@@ -377,6 +377,12 @@ export class InnerTubeProviderAdapter {
     throw lastError;
   }
 
+  async resolvePlaybackPoToken(id) {
+    if (!id) throw Object.assign(new Error('Track id is required'), { code: 'INVALID_ID', status: 400 });
+    const tokenClient = await this.getClient();
+    return this.withTimeout(getPoToken(tokenClient, id), 30_000);
+  }
+
   async request(operation) {
     return this.withRetry(() => this.withTimeout(operation()));
   }
