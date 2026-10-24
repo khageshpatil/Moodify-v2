@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Play, Search } from 'lucide-react';
 import {
   fetchDiscoveryAlbum,
   fetchDiscoveryArtist,
@@ -167,12 +167,12 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
   const canLoadMore = Boolean(!collection && nextCursor) || Boolean(collection?.nextCursor);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 fade-in">
-      <div className="flex gap-3 items-center">
-        <div className="relative flex-1">
+    <div className="catalog-search fade-in">
+      <div className="catalog-search-form">
+        <div className="catalog-search-field">
           <Search
-            className="absolute left-6 top-1/2 transform -translate-y-1/2 h-5 w-5"
-            style={{ color: 'var(--text-tertiary)' }}
+            className="catalog-search-icon"
+            aria-hidden="true"
           />
           <input
             type="text"
@@ -180,17 +180,16 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="search-input w-full pl-14 pr-6"
-            style={{ fontSize: '1rem' }}
+            className="catalog-search-input"
             aria-autocomplete="list"
           />
           {suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 z-10 mt-2 space-y-1" style={{ background: 'var(--surface-frost)', border: '1px solid var(--stroke-subtle)', borderRadius: 16, padding: 8 }}>
+            <div className="catalog-suggestions">
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion}
                   type="button"
-                  className="text-button w-full text-left px-3 py-2"
+                  className="catalog-suggestion"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     setQuery(suggestion);
@@ -206,14 +205,13 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
         <button
           onClick={() => void handleSearch()}
           disabled={isSearching}
-          className="btn-primary whitespace-nowrap"
-          style={{ opacity: isSearching ? 0.6 : 1, cursor: isSearching ? 'wait' : 'pointer' }}
+          className="catalog-search-submit"
         >
           {isSearching ? 'Searching...' : 'Search'}
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Search result type">
+      <div className="catalog-filter-tabs" role="tablist" aria-label="Search result type">
         {([
           ['all', 'All'],
           ['song', 'Songs'],
@@ -228,13 +226,7 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
             role="tab"
             aria-selected={searchType === type}
             onClick={() => void selectSearchType(type)}
-            className="text-button whitespace-nowrap"
-            style={{
-              color: searchType === type ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              borderBottom: searchType === type ? '1px solid var(--text-primary)' : '1px solid transparent',
-              borderRadius: 0,
-              padding: '6px 2px',
-            }}
+            className={`catalog-filter-tab${searchType === type ? ' is-active' : ''}`}
           >
             {label}
           </button>
@@ -242,30 +234,31 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
       </div>
 
       {collection && (
-        <button className="text-button" type="button" onClick={() => { setCollection(null); setCollectionLabel(''); setOpenedEntity(null); setCollectionError(false); }}>Back to search</button>
+        <button className="catalog-back-button" type="button" onClick={() => { setCollection(null); setCollectionLabel(''); setOpenedEntity(null); setCollectionError(false); }}>← Back to search</button>
       )}
 
       {collection && (
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--stroke-subtle)', background: 'var(--surface-frost)' }}>
-            <Artwork src={openedEntity?.artworkUrl || visibleTracks[0]?.albumArt} alt="" className="w-full h-full object-cover" />
+        <div className="catalog-collection-header">
+          <div className="catalog-collection-art">
+            <Artwork src={openedEntity?.artworkUrl || visibleTracks[0]?.albumArt} alt="" fallback={<Search size={22} aria-hidden="true" />} />
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{collectionLabel}</h3>
+          <div className="catalog-collection-copy">
+            <span className="catalog-eyebrow">Collection</span>
+            <h3>{collectionLabel}</h3>
             {visibleTracks[0]?.artist && playKind === 'album' ? (
-              <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{visibleTracks[0].artist}</p>
+              <p>{visibleTracks[0].artist}</p>
             ) : null}
           </div>
           {visibleTracks.length > 0 && (
-            <button type="button" className="btn-primary px-5 py-2 text-sm" onClick={() => playFrom(playKind, visibleTracks, 0, playId)}>Play</button>
+            <button type="button" className="catalog-search-play" onClick={() => playFrom(playKind, visibleTracks, 0, playId)}><Play size={15} fill="currentColor" aria-hidden="true" /> Play</button>
           )}
         </div>
       )}
 
       {collection && collectionSections.length > 0 && (
-        <div className="flex flex-wrap gap-2" aria-label="Catalog sections">
+        <div className="catalog-meta-pills" aria-label="Catalog sections">
           {collectionSections.map((section) => (
-            <span key={section.id} className="text-xs px-3 py-1.5 rounded-full" style={{ color: 'var(--text-secondary)', border: '1px solid var(--stroke-subtle)', background: 'var(--surface-frost)' }}>
+            <span key={section.id} className="catalog-meta-pill">
               {section.title} · {section.items.length}
             </span>
           ))}
@@ -273,65 +266,51 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
       )}
 
       {searchError && !collection && (
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Couldn't load those results</p>
+        <p className="catalog-feedback">Couldn't load those results</p>
       )}
       {collectionError && (
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Couldn't open that</p>
+        <p className="catalog-feedback">Couldn't open that</p>
       )}
       {!isSearching && !searchError && !collection && activeQuery && visibleTracks.length === 0 && visibleEntities.length === 0 && (
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Nothing matched</p>
+        <p className="catalog-feedback">Nothing matched</p>
       )}
 
       {visibleEntities.length > 0 && (
-        <div className="space-y-3">
+        <div className="catalog-entity-results">
           {visibleEntities.slice(0, collection ? 12 : 6).map((entity) => (
             <button
               key={`${entity.type}:${entity.id}`}
               type="button"
-              className="list-item group w-full text-left"
+              className="catalog-entity-result"
               onClick={() => openEntity(entity)}
             >
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--stroke-subtle)', background: 'var(--surface-frost)' }}>
-                  <Artwork src={entity.artworkUrl} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{entity.title}</p>
-                </div>
-              </div>
+              <Artwork src={entity.artworkUrl} alt="" className="catalog-entity-result-art" fallback={<span className="catalog-entity-result-art catalog-art-placeholder"><Search size={18} aria-hidden="true" /></span>} />
+              <span className="catalog-entity-result-copy"><strong>{entity.title}</strong><small>{entity.type}</small></span>
+              <span className="catalog-entity-result-arrow" aria-hidden="true">→</span>
             </button>
           ))}
         </div>
       )}
 
       {visibleTracks.length > 0 && (
-        <div className="space-y-4 scale-in">
+        <div className="catalog-search-results scale-in">
           {!collection && (
-          <h3 className="text-sm uppercase tracking-wide" style={{ color: 'var(--text-tertiary)', fontWeight: 500, letterSpacing: '0.5px' }}>
-            Search Results
-          </h3>
+          <div className="catalog-results-heading"><span className="catalog-eyebrow">Results</span><span>{visibleTracks.length} tracks</span></div>
           )}
-          <div className="space-y-3 player-safe-scroll overflow-y-auto pr-2 custom-scrollbar">
+          <div className="catalog-search-track-list player-safe-scroll overflow-y-auto custom-scrollbar">
             {visibleTracks.map((track, index) => (
-              <div key={`${track.id}-${index}`} className="list-item group" style={{ animationDelay: `${index * 0.03}s` }}>
-                <div className="flex items-center gap-4">
-                  <button type="button" className="flex items-center gap-4 min-w-0 flex-1 text-left" onClick={() => playFrom(playKind, visibleTracks, index, playId)}>
-                    <div className="relative flex-shrink-0">
+              <article key={`${track.id}-${index}`} className="catalog-search-track" style={{ animationDelay: `${index * 0.03}s` }}>
+                  <button type="button" className="catalog-track-main" onClick={() => playFrom(playKind, visibleTracks, index, playId)}>
                       <Artwork
                         src={track.albumArt}
                         alt=""
-                        className="w-16 h-16 rounded-xl object-cover"
-                        fallback={<div className="w-16 h-16 rounded-xl" style={{ border: '1px solid var(--stroke-subtle)', background: 'var(--surface-frost)' }} />}
+                        className="catalog-track-art"
+                        fallback={<span className="catalog-track-art catalog-art-placeholder"><Search size={18} aria-hidden="true" /></span>}
                       />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate mb-1" style={{ color: 'var(--text-primary)', fontWeight: 400 }}>{track.title}</p>
-                      {track.artist ? <p className="text-sm truncate mb-0.5" style={{ color: 'var(--text-secondary)', fontWeight: 300 }}>{track.artist}</p> : null}
-                      {track.album && playKind !== 'album' ? <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)', fontWeight: 300 }}>{track.album}</p> : null}
-                    </div>
+                    <span className="catalog-track-copy"><strong>{track.title}</strong><span>{track.artist || 'Unknown artist'}</span><small>{track.album || 'YouTube Music'}</small></span>
                   </button>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <button onClick={() => playFrom(playKind, visibleTracks, index, playId)} className="btn-primary px-5 py-2 text-sm">Play</button>
+                  <div className="catalog-track-actions">
+                    <button type="button" className="catalog-icon-button" aria-label={`Play ${track.title}`} onClick={() => playFrom(playKind, visibleTracks, index, playId)}><Play size={16} aria-hidden="true" /></button>
                     <AddToPlaylistButton
                       track={track}
                       variant="icon"
@@ -340,8 +319,7 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
                       onCreatePlaylist={onCreatePlaylist}
                     />
                   </div>
-                </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
@@ -349,7 +327,7 @@ export const SearchBar = ({ onTrackSelect, playlists, onAddToPlaylist, onCreateP
       {canLoadMore && (
         <button
           type="button"
-          className="btn-ghost"
+          className="catalog-more"
           onClick={collection ? async () => {
             if (!collection.nextCursor) return;
             setIsSearching(true);

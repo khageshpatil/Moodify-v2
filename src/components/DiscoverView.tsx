@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { Track } from "@/data/mockMusic";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Play, Heart, Plus, Disc3, ListMusic } from "lucide-react";
+import { ArrowLeft, Clock3, Disc3, Heart, LoaderCircle, Play, Plus, Sparkles } from "lucide-react";
 import { DownloadButton } from "@/components/DownloadButton";
 import { Artwork } from "@/components/Artwork";
 import { presentTrack } from "@/presentation/providerPresentation";
@@ -126,26 +123,33 @@ export const DiscoverView = ({
   };
 
   const renderTrack = (track: Track, tracks: Track[], index: number, kind: 'explore' | 'home') => (
-    <div key={`${kind}-${track.id}-${index}`} className="glass-card p-4 flex items-center gap-4 transition-all hover:bg-white/10 group">
-      {track.albumArt && <Artwork src={track.albumArt} alt="" className="w-16 h-16 rounded object-cover" />}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-white truncate">{track.title}</p>
-        <p className="text-sm text-white/60 truncate">{track.artist}</p>
-        <p className="text-xs text-white/40">{formatDuration(track.duration || 0)}</p>
+    <article key={`${kind}-${track.id}-${index}`} className="catalog-track-row">
+      <button type="button" className="catalog-track-main" onClick={() => playCollection(kind, tracks, index, onTrackSelect)}>
+        <Artwork src={track.albumArt} alt="" className="catalog-track-art" fallback={<span className="catalog-art-placeholder"><Disc3 size={18} aria-hidden="true" /></span>} />
+        <span className="catalog-track-copy">
+          <strong>{track.title}</strong>
+          <span>{track.artist || 'Unknown artist'}</span>
+          <small>{track.album || 'YouTube Music'} · {formatDuration(track.duration || 0)}</small>
+        </span>
+      </button>
+      <div className="catalog-track-actions">
+        <button type="button" className="catalog-icon-button" aria-label={`Play ${track.title}`} onClick={() => playCollection(kind, tracks, index, onTrackSelect)}><Play size={16} aria-hidden="true" /></button>
+        <button type="button" className={`catalog-icon-button${isFavorite(track.id) ? ' is-active' : ''}`} aria-label={`${isFavorite(track.id) ? 'Remove' : 'Save'} ${track.title}`} onClick={() => onToggleFavorite(track)}><Heart size={16} fill={isFavorite(track.id) ? 'currentColor' : 'none'} aria-hidden="true" /></button>
+        <button type="button" className="catalog-icon-button" aria-label={`Add ${track.title} to queue`} onClick={() => onAddToQueue(track)}><Plus size={16} aria-hidden="true" /></button>
+        <DownloadButton track={track} variant="ghost" size="icon" className="catalog-icon-button" />
       </div>
-      <div className="flex gap-2">
-        <Button variant="ghost" size="icon" aria-label={`Play ${track.title}`} onClick={() => playCollection(kind, tracks, index, onTrackSelect)} className="text-white hover:text-accent">
-          <Play className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" aria-label={`${isFavorite(track.id) ? 'Remove' : 'Save'} ${track.title}`} onClick={() => onToggleFavorite(track)} className={isFavorite(track.id) ? "text-accent" : "text-white hover:text-accent"}>
-          <Heart className={`h-4 w-4 ${isFavorite(track.id) ? 'fill-accent' : ''}`} />
-        </Button>
-        <Button variant="ghost" size="icon" aria-label={`Add ${track.title} to queue`} onClick={() => onAddToQueue(track)} className="text-white hover:text-accent">
-          <Plus className="h-4 w-4" />
-        </Button>
-        <DownloadButton track={track} variant="ghost" size="icon" className="text-white hover:text-accent" />
-      </div>
-    </div>
+    </article>
+  );
+
+  const renderTrackCard = (track: Track, tracks: Track[], index: number, kind: 'explore' | 'home') => (
+    <article key={`${kind}-card-${track.id}-${index}`} className="catalog-track-card">
+      <button type="button" className="catalog-card-main" onClick={() => playCollection(kind, tracks, index, onTrackSelect)}>
+        <Artwork src={track.albumArt} alt="" className="catalog-card-art" fallback={<span className="catalog-card-art catalog-art-placeholder"><Disc3 size={22} aria-hidden="true" /></span>} />
+        <strong>{track.title}</strong>
+        <span>{track.artist || 'Unknown artist'}</span>
+      </button>
+      <button type="button" className="catalog-card-play" aria-label={`Play ${track.title}`} onClick={() => playCollection(kind, tracks, index, onTrackSelect)}><Play size={15} fill="currentColor" aria-hidden="true" /></button>
+    </article>
   );
 
   const openBrowse = async (item: DiscoveryCatalogItem) => {
@@ -158,17 +162,19 @@ export const DiscoverView = ({
     }
   };
 
-  const renderCatalogItem = (item: DiscoveryCatalogItem, sectionTracks: Track[], kind: 'explore' | 'home') => {
+  const renderCatalogItem = (item: DiscoveryCatalogItem, sectionTracks: Track[], kind: 'explore' | 'home', layout: 'list' | 'card') => {
     const track = item.track ? presentTrack(item.track) : null;
     if (track) {
       const index = sectionTracks.findIndex((entry) => entry.id === track.id);
-      return renderTrack(track, sectionTracks, Math.max(index, 0), kind);
+      return layout === 'list'
+        ? renderTrack(track, sectionTracks, Math.max(index, 0), kind)
+        : renderTrackCard(track, sectionTracks, Math.max(index, 0), kind);
     }
     return (
-      <button type="button" key={`${item.type}-${item.id}`} onClick={() => void openBrowse(item)} disabled={!item.endpoint?.browseId || browseLoading} className="glass-card p-3 min-w-[150px] max-w-[190px] text-left disabled:cursor-default">
-        <Artwork src={item.artworkUrl} alt="" className="w-full aspect-square rounded object-cover mb-3" />
-        <p className="font-medium text-white truncate">{item.title}</p>
-        <p className="text-xs text-white/50 mt-1 flex items-center gap-1"><Disc3 className="h-3 w-3" />{itemLabel(item)}</p>
+      <button type="button" key={`${item.type}-${item.id}`} onClick={() => void openBrowse(item)} disabled={!item.endpoint?.browseId || browseLoading} className="catalog-entity-card disabled:cursor-default">
+        <Artwork src={item.artworkUrl} alt="" className="catalog-entity-art" fallback={<span className="catalog-entity-art catalog-art-placeholder"><Disc3 size={22} aria-hidden="true" /></span>} />
+        <span className="catalog-entity-title">{item.title}</span>
+        <span className="catalog-entity-type"><Disc3 size={13} aria-hidden="true" />{itemLabel(item)}</span>
       </button>
     );
   };
@@ -179,69 +185,83 @@ export const DiscoverView = ({
     const visibleSections = sections.length ? sections : (tracks.length ? [fallbackSection(title, tracks)] : []);
     const hasContent = visibleSections.length > 0;
     return (
-      <Card className="glass-card p-6">
-        <h2 className="text-2xl font-bold text-white mb-5 flex items-center gap-2"><Sparkles className="h-6 w-6 text-accent" />{title}</h2>
-        {!hasContent ? (
-          <div className="flex flex-col items-center justify-center py-12 text-white/60">
-            <Sparkles className="h-16 w-16 mb-4 opacity-40" />
-            <p className="text-lg">{loading ? 'Loading…' : kind === 'explore' && exploreFailed ? "Couldn't load this right now" : 'Nothing from this surface yet'}</p>
+      <section className="catalog-surface" aria-labelledby={`surface-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+        <div className="catalog-surface-heading">
+          <div>
+            <span className="catalog-eyebrow"><Sparkles size={13} aria-hidden="true" /> Live catalog</span>
+            <h2 id={`surface-${title.toLowerCase().replace(/\s+/g, '-')}`}>{title}</h2>
           </div>
+          {page?.tracks?.length ? <span className="catalog-count">{page.tracks.length} songs</span> : null}
+        </div>
+        {!hasContent ? (
+          loading ? (
+            <div className="catalog-skeleton" aria-label={`Loading ${title}`}>
+              {[1, 2, 3].map((item) => <span key={item} />)}
+            </div>
+          ) : (
+            <div className="catalog-feedback">
+              <Sparkles size={20} aria-hidden="true" />
+              <p>{kind === 'explore' && exploreFailed ? "Couldn't load this right now" : 'Nothing from this surface yet'}</p>
+            </div>
+            )
         ) : (
-          <div className="space-y-7">
+          <div className="catalog-surface-content">
             {page?.catalog?.actions && page.catalog.actions.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Explore shortcuts">
+              <div className="catalog-actions" aria-label="Explore shortcuts">
                 {page.catalog.actions.map((action) => (
-                  <Button key={`${action.type}-${action.id}`} variant="outline" className="whitespace-nowrap" onClick={() => void openBrowse(action)} disabled={!action.endpoint?.browseId || browseLoading}>
+                  <button type="button" className="catalog-action" key={`${action.type}-${action.id}`} onClick={() => void openBrowse(action)} disabled={!action.endpoint?.browseId || browseLoading}>
                     {action.title}
-                  </Button>
+                  </button>
                 ))}
               </div>
             )}
-            {visibleSections.map((section) => {
+            {visibleSections.map((section, sectionIndex) => {
               const sectionTracks = uniqueTracks(section.items.map((item) => item.track ? presentTrack(item.track) : null).filter((track): track is Track => Boolean(track)));
-              const isList = section.layout === 'list' || sectionTracks.length > 0;
+              const isList = section.layout === 'list';
+              const content = section.items.map((item) => isList
+                ? renderCatalogItem(item, sectionTracks, kind, 'list')
+                : renderCatalogItem(item, sectionTracks, kind, 'card'));
               return (
-                <section key={section.id} aria-labelledby={`${section.id}-title`}>
-                  <div className="flex items-center gap-2 mb-3"><ListMusic className="h-4 w-4 text-accent" /><h3 id={`${section.id}-title`} className="text-lg font-semibold text-white">{section.title}</h3></div>
-                  {isList ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{section.items.map((item) => renderCatalogItem(item, sectionTracks, kind))}</div>
-                  ) : (
-                    <ScrollArea className="player-safe-scroll"><div className="flex gap-4 pb-2">{section.items.map((item) => renderCatalogItem(item, sectionTracks, kind))}</div></ScrollArea>
-                  )}
+                <section key={section.id} className="catalog-section" aria-labelledby={`${section.id}-title`}>
+                  <div className="catalog-section-heading">
+                    <div><span className="catalog-section-index">{String(sectionIndex + 1).padStart(2, '0')}</span><h3 id={`${section.id}-title`}>{section.title}</h3></div>
+                    <span>{section.items.length} picks</span>
+                  </div>
+                  {isList ? <div className="catalog-track-list">{content}</div> : <div className="catalog-rail">{content}</div>}
                 </section>
               );
             })}
           </div>
         )}
         {allowMore && kind === 'explore' && exploreCursor && (
-          <Button variant="ghost" className="mt-5 text-white" onClick={async () => {
+          <button type="button" className="catalog-more" onClick={async () => {
             const page = await fetchDiscoveryExplore(exploreCursor).catch(() => emptyPage('explore'));
             setExplorePage((current) => current ? { ...current, tracks: uniqueTracks([...current.tracks, ...page.tracks]), catalog: mergeCatalogPages(current.catalog, page.catalog) } : page);
             setExploreCursor(page.nextCursor);
-          }}>More</Button>
+          }} disabled={loading}>{loading ? <LoaderCircle size={15} className="spin" aria-hidden="true" /> : null} Load more</button>
         )}
-      </Card>
+      </section>
     );
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6">
+    <div className="catalog-discover">
       {recentlyPlayed.length > 0 && (
-        <Card className="glass-card p-6">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2"><Clock className="h-6 w-6" />Recently Played</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <section className="catalog-surface catalog-recent" aria-labelledby="recently-played-heading">
+          <div className="catalog-surface-heading"><div><span className="catalog-eyebrow"><Clock3 size={13} aria-hidden="true" /> Your listening</span><h2 id="recently-played-heading">Recently played</h2></div></div>
+          <div className="catalog-recent-grid">
             {recentlyPlayed.slice(0, 4).map((track) => (
-              <div key={track.id} className="glass-card p-3 cursor-pointer transition-all hover:scale-105 group" onClick={() => onTrackSelect(track, recentlyPlayed, discoveryContextForLibrary('recently-played', recentlyPlayed.indexOf(track)))}>
-                {track.albumArt && <Artwork src={track.albumArt} alt="" className="w-full aspect-square rounded mb-2 object-cover" />}
-                <p className="font-medium text-white text-sm truncate">{track.title}</p><p className="text-xs text-white/60 truncate">{track.artist}</p>
-              </div>
+              <button key={track.id} type="button" className="catalog-recent-item" onClick={() => onTrackSelect(track, recentlyPlayed, discoveryContextForLibrary('recently-played', recentlyPlayed.indexOf(track)))}>
+                <Artwork src={track.albumArt} alt="" className="catalog-recent-art" fallback={<span className="catalog-recent-art catalog-art-placeholder"><Disc3 size={20} aria-hidden="true" /></span>} />
+                <span><strong>{track.title}</strong><small>{track.artist || 'Unknown artist'}</small></span>
+              </button>
             ))}
           </div>
-        </Card>
+        </section>
       )}
       {browsePage && (
-        <div>
-          <Button variant="ghost" className="mb-3 text-white" onClick={() => setBrowsePage(null)}>← Back to Explore</Button>
+        <div className="catalog-browse-backdrop">
+          <button type="button" className="catalog-back" onClick={() => setBrowsePage(null)}><ArrowLeft size={15} aria-hidden="true" /> Back to Explore</button>
           {renderSurface(browsePage.catalog?.title || 'Browse', browsePage, 'explore', false)}
         </div>
       )}
@@ -251,7 +271,3 @@ export const DiscoverView = ({
     </div>
   );
 };
-
-const Clock = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-);
