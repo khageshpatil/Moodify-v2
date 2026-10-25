@@ -600,12 +600,16 @@ export class InnerTubeProviderAdapter {
     // here: cloud-hosted requests can receive an attestation-pending response
     // and stall after the initialization segment. This is the same bounded
     // format flow used by native InnerTube clients.
+    // Keep this list to clients that can actually return usable audio in the
+    // current youtubei.js runtime. IOS is intentionally not a playback
+    // fallback: YouTube returns a 404 for its player endpoint here, and when
+    // it was last in this list that unrelated error hid the result of every
+    // preceding client attempt.
     const playbackAttempts = [
+      { name: 'ANDROID', load: loadBasicInfo },
       { name: 'MWEB', load: loadBasicInfo },
       { name: 'WEB', load: loadBasicInfo },
-      { name: 'ANDROID', load: loadBasicInfo },
       { name: 'YTMUSIC', load: (client) => client.music.getInfo(id) },
-      { name: 'DEFAULT_IOS', clientType: 'IOS', load: loadBasicInfo },
     ];
 
     let url;
@@ -613,6 +617,7 @@ export class InnerTubeProviderAdapter {
     let selectedClient;
     let selectedClientName;
     let lastPlaybackError;
+    const playbackFailures = [];
 
     for (const attempt of playbackAttempts) {
       let info;
@@ -622,6 +627,7 @@ export class InnerTubeProviderAdapter {
         info = await this.withRetry(() => this.withTimeout(attempt.load(candidateClient)));
       } catch (error) {
         lastPlaybackError = error;
+        playbackFailures.push(`${attempt.name}: ${error.message}`);
         continue;
       }
 
@@ -633,6 +639,7 @@ export class InnerTubeProviderAdapter {
           new Error(info.playability_status.reason || 'Video is not playable'),
           { code: 'PLAYBACK_RESTRICTED', status: 403 },
         );
+        playbackFailures.push(`${attempt.name}: ${info.playability_status.reason || info.playability_status.status}`);
         continue;
       }
 
@@ -685,10 +692,15 @@ export class InnerTubeProviderAdapter {
       if (url) break;
 
       lastPlaybackError = Object.assign(new Error(`${attempt.name} returned no decipherable audio format`), { code: 'DECIPHER_FAILED', status: 502 });
+      playbackFailures.push(`${attempt.name}: no decipherable audio format`);
     }
 
     if (!url) {
-      throw lastPlaybackError || Object.assign(new Error('Could not resolve audio stream URL'), { code: 'DECIPHER_FAILED', status: 502 });
+      const details = playbackFailures.length ? ` (${playbackFailures.join(' | ')})` : '';
+      throw Object.assign(
+        new Error(`${lastPlaybackError?.message || 'Could not resolve audio stream URL'}${details}`),
+        { code: lastPlaybackError?.code || 'DECIPHER_FAILED', status: lastPlaybackError?.status || 502 },
+      );
     }
 
     const source = {
