@@ -325,14 +325,26 @@ class InnerTubeStreamResolver(
             for (candidate in orderedCandidates) {
                 try {
                     val candidateUrl = candidate.url
-                     // Do not infer deciphering from the JSON shape. The
-                     // player script may need to transform an already
-                     // materialized URL (including its throttling parameter).
-                    val playableUrl = decipherOnServer(
-                         url = candidateUrl,
-                         signatureCipher = candidate.signatureCipher,
-                         cipher = candidate.cipher,
-                     )
+                    // A fully materialized URL is already signed for this
+                    // device request. Keep playback independent of the
+                    // server's JavaScript decipher endpoint in this case;
+                    // Render may be bot-challenged even though YouTube
+                    // accepted the original request from the device.
+                    // Ciphered formats still use the server only for the
+                    // JavaScript transform.
+                    val playableUrl = if (
+                        !candidateUrl.isNullOrBlank() &&
+                        candidate.signatureCipher.isNullOrBlank() &&
+                        candidate.cipher.isNullOrBlank()
+                    ) {
+                        candidateUrl
+                    } else {
+                        decipherOnServer(
+                            url = candidateUrl,
+                            signatureCipher = candidate.signatureCipher,
+                            cipher = candidate.cipher,
+                        )
+                    }
                     if (!playableUrl.isNullOrBlank()) {
                         selected = candidate
                         resolvedUrl = playableUrl
@@ -767,24 +779,24 @@ class InnerTubeStreamResolver(
 
         private fun orderedProfiles(offset: Int): List<ClientProfile> {
             if (CLIENT_PROFILES.isEmpty()) return emptyList()
-            // Keep this order aligned with the tested native client strategy:
-            // ArchiveTune starts with visionOS, then Android VR, then web
-            // clients. Every returned contract is range-probed before it is
-            // handed to ExoPlayer, so a client is only preferred when its CDN
-            // URL is usable beyond the first response.
+            // Prefer native clients first. The request must originate from
+            // the device IP; Render is intentionally only a discovery and
+            // optional decipher service because YouTube challenges cloud
+            // egress. Web/VR profiles remain fallbacks for videos where the
+            // native profile has no usable audio formats.
             val preferredOrder = listOf(
-                "VISIONOS",
-                "ANDROID_VR",
-                "WEB_REMIX",
-                "WEB",
-                "MWEB",
-                "WEB_CREATOR",
                 "ANDROID_MUSIC",
                 "ANDROID",
+                "IOS",
                 "ANDROID_TESTSUITE",
+                "ANDROID_VR",
+                "VISIONOS",
+                "MWEB",
+                "WEB_REMIX",
+                "WEB",
+                "WEB_CREATOR",
                 "TVHTML5_SIMPLY",
                 "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
-                "IOS",
             )
             val profiles = preferredOrder.mapNotNull { name ->
                 CLIENT_PROFILES.firstOrNull { it.name == name }
