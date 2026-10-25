@@ -50,11 +50,16 @@ fun DiscoverScreen(
     onBrowseClick: (BrowseEndpoint) -> Unit = {},
     searchType: String? = null,
     onSearchTypeChange: (String?) -> Unit = {},
+    canLoadMore: Boolean = false,
+    isLoadingMore: Boolean = false,
+    onLoadMore: () -> Unit = {},
     onQueryChange: (String) -> Unit,
     onTrackSelect: (Track) -> Unit,
     onFavoriteToggle: (Track) -> Unit
 ) {
     var activeSurface by remember { mutableStateOf("explore") }
+    var showOnlyMusic by remember { mutableStateOf(true) }
+    val colors = MaterialTheme.colorScheme
 
     Column(
         modifier = Modifier
@@ -63,35 +68,35 @@ fun DiscoverScreen(
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Spacer(modifier = Modifier.height(24.dp))
-        Text(text = "FIND A SONG, A FEELING, A MEMORY.", color = PrimaryPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+        Text(text = "FIND A SONG, A FEELING, A MEMORY.", color = colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
         Spacer(modifier = Modifier.height(14.dp))
-        Text(text = "Search the soundtrack.", color = TextPrimary, fontFamily = FontFamily.Serif, fontSize = 34.sp, lineHeight = 36.sp)
+        Text(text = "Search the soundtrack.", color = colors.onSurface, fontFamily = FontFamily.Serif, fontSize = 34.sp, lineHeight = 36.sp)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "Look for a song, an artist, or the feeling you want to stay with.", color = TextSecondary, fontSize = 14.sp, lineHeight = 21.sp)
+        Text(text = "Look for a song, an artist, or the feeling you want to stay with.", color = colors.onSurfaceVariant, fontSize = 14.sp, lineHeight = 21.sp)
         Spacer(modifier = Modifier.height(28.dp))
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, SignalBorder, RoundedCornerShape(0.dp)),
+            .border(1.dp, colors.outline.copy(alpha = 0.45f), RoundedCornerShape(0.dp)),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Search, contentDescription = "Search", tint = PrimaryPurple, modifier = Modifier.padding(start = 2.dp).size(21.dp))
+            Icon(Icons.Default.Search, contentDescription = "Search", tint = colors.primary, modifier = Modifier.padding(start = 2.dp).size(21.dp))
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onQueryChange,
-                placeholder = { Text("Search songs, artists, albums...", color = TextMuted) },
+                placeholder = { Text("Search songs, artists, albums...", color = colors.onSurfaceVariant.copy(alpha = 0.72f)) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Clear, contentDescription = "Clear", tint = TextSecondary) }
+                        IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Clear, contentDescription = "Clear", tint = colors.onSurfaceVariant) }
                     }
                 },
                 modifier = Modifier.weight(1f),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
+                    focusedTextColor = colors.onSurface,
+                    unfocusedTextColor = colors.onSurface,
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent
                 ),
@@ -112,12 +117,20 @@ fun DiscoverScreen(
                 )
             }
         }
+        if (searchQuery.isBlank()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            FilterChip(
+                selected = showOnlyMusic,
+                onClick = { showOnlyMusic = !showOnlyMusic },
+                label = { Text(if (showOnlyMusic) "Music only" else "Include video and podcasts") }
+            )
+        }
         Spacer(modifier = Modifier.height(20.dp))
 
         if (searchQuery.isBlank()) {
             Text(
                 text = "CATALOG",
-                color = TextMuted,
+                color = colors.onSurfaceVariant,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.3.sp
@@ -148,13 +161,13 @@ fun DiscoverScreen(
                 text = if (searchQuery.isBlank()) "Recommended Discoveries" else "Search Results",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = colors.onSurface
             )
 
             if (isSearching) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
-                    color = PrimaryPurple,
+                    color = colors.primary,
                     strokeWidth = 2.dp
                 )
             }
@@ -164,7 +177,7 @@ fun DiscoverScreen(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = errorMessage,
-                color = PrimaryPurple,
+                color = colors.primary,
                 fontSize = 13.sp,
                 lineHeight = 18.sp
             )
@@ -176,16 +189,29 @@ fun DiscoverScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(bottom = 150.dp)
         ) {
-            val visibleCatalogSections = when (activeSurface) {
-                "charts" -> chartsSections
-                "for-you" -> homeSections
-                else -> if (exploreSections.isNotEmpty()) exploreSections else catalogSections
+            // A typed search page owns the shelves shown below the query.
+            // Previously the default Explore shelf won whenever it was
+            // loaded, which made album/artist/playlist search results look
+            // missing even though the backend had returned them.
+            val visibleCatalogSections = if (searchQuery.isNotBlank()) {
+                catalogSections
+            } else {
+                when (activeSurface) {
+                    "charts" -> chartsSections
+                    "for-you" -> homeSections
+                    else -> if (exploreSections.isNotEmpty()) exploreSections else catalogSections
+                }
             }
+            val filteredCatalogSections = visibleCatalogSections
+                .map { section ->
+                    section.copy(items = if (showOnlyMusic) section.items.filter { it.type.lowercase() !in setOf("video", "podcast", "episode") } else section.items)
+                }
+                .filter { it.items.isNotEmpty() }
 
-            if (searchQuery.isBlank() && visibleCatalogSections.isNotEmpty()) {
+            if (filteredCatalogSections.isNotEmpty()) {
                 item {
                     CatalogShelves(
-                        sections = visibleCatalogSections.take(6),
+                        sections = filteredCatalogSections.take(if (searchQuery.isBlank()) 6 else 10),
                         currentTrack = currentTrack,
                         onTrackClick = onTrackSelect,
                         onBrowseClick = onBrowseClick
@@ -200,6 +226,22 @@ fun DiscoverScreen(
                     onTrackClick = { onTrackSelect(track) },
                     onFavoriteToggle = onFavoriteToggle
                 )
+            }
+            if (searchQuery.isNotBlank() && canLoadMore) {
+                item {
+                    OutlinedButton(
+                        onClick = onLoadMore,
+                        enabled = !isLoadingMore,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (isLoadingMore) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Load more results")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }

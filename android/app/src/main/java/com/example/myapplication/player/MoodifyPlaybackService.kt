@@ -19,6 +19,12 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.example.myapplication.MainActivity
 import com.example.myapplication.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 
 /**
  * Foreground service that keeps the process alive for background audio playback
@@ -38,6 +44,8 @@ class MoodifyPlaybackService : MediaLibraryService() {
     }
 
     private var mediaSession: MediaLibraryService.MediaLibrarySession? = null
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var activityIntent: PendingIntent? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -51,22 +59,13 @@ class MoodifyPlaybackService : MediaLibraryService() {
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        this.activityIntent = activityIntent
 
         // MediaSessionService normally promotes itself when playback starts.
         // PlaybackManager starts this service before the network resolver
         // finishes, so explicitly publish a notification now or Android 12+
         // will kill the process with ForegroundServiceDidNotStartInTimeException.
-        val currentTrack = playbackManager.state.value.currentTrack
-        val bootstrapNotification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(currentTrack?.title ?: "Moodify")
-            .setContentText(currentTrack?.artist ?: "Starting playback…")
-            .setContentIntent(activityIntent)
-            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true)
-            .setSilent(true)
-            .build()
+        val bootstrapNotification = buildPlaybackNotification(playbackManager.state.value)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -138,12 +137,26 @@ class MoodifyPlaybackService : MediaLibraryService() {
             }
         }).setSessionActivity(activityIntent)
             .build()
+
+        // The service's first notification is required immediately, but it
+        // must not remain a generic “preparing audio” card. Mirror the
+        // process-wide playback state into the same notification so the
+        // lock screen and notification shade receive the real title, artist,
+        // loading/error state, and current lifecycle without waiting for the
+        // Activity to be visible.
+        serviceScope.launch {
+            playbackManager.state.collect { state ->
+                val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                manager.notify(NOTIFICATION_ID, buildPlaybackNotification(state))
+            }
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibraryService.MediaLibrarySession? =
         mediaSession
 
     override fun onDestroy() {
+        serviceScope.cancel()
         mediaSession?.run {
             release()
         }
@@ -168,6 +181,27 @@ class MoodifyPlaybackService : MediaLibraryService() {
             (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(channel)
         }
+    }
+
+    private fun buildPlaybackNotification(state: PlaybackState): android.app.Notification {
+        val track = state.currentTrack
+        val title = track?.title ?: "Moodify"
+        val text = when {
+            state.errorMessage != null -> state.errorMessage
+            track == null -> "Choose something to play"
+            state.isLoading -> "Connecting to ${track.artist}"
+            else -> track.artist
+        }
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setContentIntent(activityIntent)
+            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(track != null)
+            .setSilent(true)
+            .build()
     }
 
     private fun browsableItem(id: String, title: String): MediaItem = MediaItem.Builder()

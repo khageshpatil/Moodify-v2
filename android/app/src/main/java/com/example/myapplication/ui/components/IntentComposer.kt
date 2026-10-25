@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +53,7 @@ fun IntentComposer(
     modifier: Modifier = Modifier
 ) {
     var value by remember { mutableStateOf("") }
+    val colors = MaterialTheme.colorScheme
     val date = remember { SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date()) }
     val suggestions = listOf("Something for deep focus", "A calm reset", "Surprise me", "Songs I know by heart")
 
@@ -62,27 +64,27 @@ fun IntentComposer(
         ) {
             Text(
                 text = greeting(),
-                color = TextPrimary,
+                color = colors.onBackground,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 1.2.sp
             )
             Text(
                 text = date,
-                color = TextSecondary,
+                color = colors.onSurfaceVariant,
                 fontSize = 11.sp,
                 letterSpacing = 1.sp
             )
         }
 
-        Spacer(modifier = Modifier.height(42.dp))
+        Spacer(modifier = Modifier.height(26.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PrimaryPurple, modifier = Modifier.size(15.dp))
+            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = colors.primary, modifier = Modifier.size(15.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "SET THE SCENE",
-                color = PrimaryPurple,
+                color = colors.primary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.8.sp
@@ -93,10 +95,10 @@ fun IntentComposer(
 
         Text(
             text = "Where are we going?",
-            color = TextPrimary,
+            color = colors.onBackground,
             modifier = Modifier.fillMaxWidth(0.86f),
-            fontSize = 40.sp,
-            lineHeight = 40.sp,
+            fontSize = 34.sp,
+            lineHeight = 36.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = (-1.7).sp
         )
@@ -105,20 +107,20 @@ fun IntentComposer(
 
         Text(
             text = "Give us a moment, a place, or a little feeling. We'll start the soundtrack.",
-            color = TextSecondary,
+            color = colors.onSurfaceVariant,
             fontSize = 14.sp,
             lineHeight = 22.sp,
             modifier = Modifier.fillMaxWidth(0.95f)
         )
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
                     drawLine(
-                        color = SignalBorder,
+                        color = colors.outline.copy(alpha = 0.45f),
                         start = Offset(0f, size.height),
                         end = Offset(size.width, size.height),
                         strokeWidth = 1.dp.toPx()
@@ -129,7 +131,7 @@ fun IntentComposer(
             TextField(
                 value = value,
                 onValueChange = { value = it },
-                placeholder = { Text("music for the train home, no destination", color = TextMuted, fontSize = 14.sp) },
+                placeholder = { Text("music for the train home, no destination", color = colors.onSurfaceVariant.copy(alpha = 0.72f), fontSize = 14.sp) },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
                 colors = TextFieldDefaults.colors(
@@ -138,9 +140,9 @@ fun IntentComposer(
                     disabledContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = PrimaryPurple,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    cursorColor = colors.primary,
+                    focusedTextColor = colors.onSurface,
+                    unfocusedTextColor = colors.onSurface
                 )
             )
             IconButton(
@@ -148,9 +150,9 @@ fun IntentComposer(
                 modifier = Modifier
                     .padding(end = 6.dp)
                     .size(44.dp)
-                    .background(PrimaryPurple, CircleShape)
+                    .background(colors.primary, CircleShape)
             ) {
-                Icon(Icons.Default.ArrowUpward, contentDescription = "Start listening", tint = DarkBackground)
+                Icon(Icons.Default.ArrowUpward, contentDescription = "Start listening", tint = colors.onPrimary)
             }
         }
 
@@ -163,9 +165,9 @@ fun IntentComposer(
             suggestions.forEach { suggestion ->
                 androidx.compose.material3.TextButton(
                     onClick = { onSubmit(suggestion) },
-                    modifier = Modifier.border(1.dp, SignalBorder, CircleShape),
+                modifier = Modifier.border(1.dp, colors.outline.copy(alpha = 0.45f), CircleShape),
                     shape = CircleShape,
-                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = TextSecondary)
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = colors.onSurfaceVariant)
                 ) {
                     Text(suggestion, fontSize = 11.sp, maxLines = 1)
                 }

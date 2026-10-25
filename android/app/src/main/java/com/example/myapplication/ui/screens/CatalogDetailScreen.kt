@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ fun CatalogDetailScreen(
     onBrowseClick: (com.example.myapplication.data.BrowseEndpoint) -> Unit,
     onBack: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 17.dp),
         contentPadding = PaddingValues(bottom = 150.dp),
@@ -38,12 +40,12 @@ fun CatalogDetailScreen(
         item {
             Spacer(modifier = Modifier.height(22.dp))
             TextButton(onClick = onBack, contentPadding = PaddingValues(0.dp)) {
-                Text(text = "← Back", color = PrimaryPurple, fontSize = 13.sp)
+                Text(text = "← Back", color = colors.primary, fontSize = 13.sp)
             }
-            Text(text = "CATALOG", color = PrimaryPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+            Text(text = page.surface.replaceFirstChar { it.uppercase() }, color = colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
             Spacer(modifier = Modifier.height(7.dp))
-            Text(text = page.title, color = TextPrimary, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-            Text(text = "Browse the live YouTube Music catalog.", color = TextSecondary, fontSize = 13.sp)
+            Text(text = page.title, color = colors.onSurface, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            Text(text = "A live music collection for the moment.", color = colors.onSurfaceVariant, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(18.dp))
         }
         item {

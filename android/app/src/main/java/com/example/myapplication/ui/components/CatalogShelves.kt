@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,12 +40,13 @@ fun CatalogShelves(
     onTrackClick: (Track) -> Unit,
     onBrowseClick: (BrowseEndpoint) -> Unit = {}
 ) {
+    val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
         sections.filter { it.items.isNotEmpty() }.forEach { section ->
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 Text(
                     text = section.title,
-                    color = TextPrimary,
+                    color = colors.onSurface,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -103,6 +105,7 @@ private fun CatalogCard(
     onBrowseClick: (BrowseEndpoint) -> Unit,
     modifier: Modifier = Modifier.width(142.dp)
 ) {
+    val colors = MaterialTheme.colorScheme
     val track = item.track
     val clickModifier = Modifier.clickable {
         if (track != null) onTrackClick(track)
@@ -123,7 +126,7 @@ private fun CatalogCard(
         )
         Text(
             text = track?.title ?: item.title,
-            color = if (track != null && currentTrack?.id == track.id) PrimaryPurple else TextPrimary,
+            color = if (track != null && currentTrack?.id == track.id) colors.primary else colors.onSurface,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -131,7 +134,7 @@ private fun CatalogCard(
         )
         Text(
             text = track?.artist ?: item.type.replaceFirstChar { it.uppercase() },
-            color = TextSecondary,
+            color = colors.onSurfaceVariant,
             fontSize = 11.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -146,6 +149,7 @@ private fun CatalogListItem(
     onTrackClick: (Track) -> Unit,
     onBrowseClick: (BrowseEndpoint) -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val track = item.track
     Row(
         modifier = Modifier
@@ -169,7 +173,7 @@ private fun CatalogListItem(
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = track?.title ?: item.title,
-                color = if (track != null && currentTrack?.id == track.id) PrimaryPurple else TextPrimary,
+                color = if (track != null && currentTrack?.id == track.id) colors.primary else colors.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -177,7 +181,7 @@ private fun CatalogListItem(
             )
             Text(
                 text = track?.artist ?: item.type.replaceFirstChar { it.uppercase() },
-                color = TextSecondary,
+                color = colors.onSurfaceVariant,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,6 +37,7 @@ fun BottomNavBar(
     currentRoute: String,
     onTabSelected: (NavTab) -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
     val tabs = listOf(NavTab.Home, NavTab.Discover, NavTab.Library)
 
     Row(
@@ -43,8 +45,8 @@ fun BottomNavBar(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 10.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceCard.copy(alpha = 0.96f))
-            .border(1.dp, SignalBorder, RoundedCornerShape(16.dp))
+            .background(colors.surfaceVariant.copy(alpha = 0.96f))
+            .border(1.dp, colors.outline.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
             .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -58,7 +60,7 @@ fun BottomNavBar(
                     .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(
-                        if (isSelected) Color.White.copy(alpha = 0.08f) else Color.Transparent
+                        if (isSelected) colors.primary.copy(alpha = 0.12f) else Color.Transparent
                     )
                     .clickable { onTabSelected(tab) }
                     .padding(horizontal = 8.dp, vertical = 7.dp),
@@ -71,14 +73,14 @@ fun BottomNavBar(
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = tab.title,
-                        tint = if (isSelected) PrimaryPurple else TextSecondary,
+                        tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
                         modifier = Modifier.size(19.dp)
                     )
                     Text(
                         text = tab.title,
                         fontSize = 11.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (isSelected) PrimaryPurple else TextSecondary
+                        color = if (isSelected) colors.primary else colors.onSurfaceVariant
                     )
                 }
             }

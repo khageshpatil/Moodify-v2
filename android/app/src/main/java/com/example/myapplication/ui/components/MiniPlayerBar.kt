@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,6 +44,7 @@ fun MiniPlayerBar(
     onExpandPlayer: () -> Unit
 ) {
     val track = state.currentTrack ?: return
+    val colors = MaterialTheme.colorScheme
 
     AnimatedVisibility(
         visible = true,
@@ -54,8 +56,8 @@ fun MiniPlayerBar(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 5.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceCard.copy(alpha = 0.96f))
-                .border(1.dp, SignalBorder, RoundedCornerShape(16.dp))
+                .background(colors.surfaceVariant.copy(alpha = 0.96f))
+                .border(1.dp, colors.outline.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
                 .clickable { onExpandPlayer() }
         ) {
             Row(
@@ -84,14 +86,14 @@ fun MiniPlayerBar(
                             text = track.title,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
+                            color = colors.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = track.artist,
                             fontSize = 12.sp,
-                            color = TextSecondary,
+                            color = colors.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -103,7 +105,7 @@ fun MiniPlayerBar(
                         Icon(
                             imageVector = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = "Play/Pause",
-                            tint = PrimaryPurple,
+                            tint = colors.primary,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -112,7 +114,7 @@ fun MiniPlayerBar(
                         Icon(
                             imageVector = Icons.Default.SkipNext,
                             contentDescription = "Next",
-                            tint = Color.White,
+                            tint = colors.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -125,7 +127,7 @@ fun MiniPlayerBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(2.dp),
-                color = NeonPink,
+                color = colors.primary,
                 trackColor = Color.Transparent
             )
         }

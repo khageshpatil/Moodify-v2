@@ -24,7 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,6 +66,9 @@ class PlaybackManager private constructor(context: Context) {
         private const val BUFFER_FOR_PLAYBACK_MS = 750
         private const val BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 2_500
         private const val MAX_STREAM_CONTRACTS = 64
+        // YouTube's CDN tolerates the same bounded range shape used by
+        // ArchiveTune far more reliably than many small 512 KB requests.
+        private const val STREAM_CHUNK_LENGTH = 8L * 1024L * 1024L
     }
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -99,6 +101,21 @@ class PlaybackManager private constructor(context: Context) {
         .readTimeout(30, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
+        .addInterceptor { chain ->
+            val request = chain.request()
+            val response = chain.proceed(request)
+            if (request.url.host.endsWith("googlevideo.com")) {
+                android.util.Log.d(
+                    "MoodifyHttp",
+                    "CDN ${response.code} range=${request.header("Range")} " +
+                        "ua=${request.header("User-Agent")?.take(48)} " +
+                        "referer=${request.header("Referer")?.take(48)} " +
+                        "itag=${request.url.queryParameter("itag")} " +
+                        "n=${request.url.queryParameter("n")?.take(12)}"
+                )
+            }
+            response
+        }
         .build()
     private val directHttpDataSourceFactory = OkHttpDataSource.Factory(mediaHttpClient)
         .setDefaultRequestProperties(
@@ -107,17 +124,37 @@ class PlaybackManager private constructor(context: Context) {
                 "Accept-Encoding" to "identity"
             )
         )
+    private val chunkedDirectDataSourceFactory: DataSource.Factory = DataSource.Factory {
+        ChunkedHttpDataSource(
+            upstream = directHttpDataSourceFactory.createDataSource(),
+            chunkLength = STREAM_CHUNK_LENGTH,
+        )
+    }
     private val dataSourceFactory: DataSource.Factory = ResolvingDataSource.Factory(
-        playbackCache.factory(DefaultDataSource.Factory(context, directHttpDataSourceFactory))
+        playbackCache.factory(DefaultDataSource.Factory(context, chunkedDirectDataSourceFactory))
     ) { dataSpec ->
         val contract = dataSpec.key?.let(streamContracts::get)
         if (contract == null) {
             dataSpec
         } else {
-            // Headers belong to the media item/cache key, not to a mutable
-            // global HTTP factory. This keeps range and seek requests tied to
-            // the exact InnerTube client that produced the signed URL.
-            dataSpec.withAdditionalHeaders(contract.requestHeaders)
+            // Headers and content length belong to the media item/cache key,
+            // not to a mutable global HTTP factory. Supplying the known length
+            // is important: it makes Media3 issue a bounded Range request,
+            // which is the contract YouTube's CDN accepted in validation and
+            // the same shape used by ArchiveTune.
+            val resolved = dataSpec.withAdditionalHeaders(contract.requestHeaders)
+            val contentLength = contract.contentLength
+            if (contentLength != null && contentLength > resolved.position) {
+                val remaining = contentLength - resolved.position
+                val requested = if (resolved.length == C.LENGTH_UNSET.toLong()) {
+                    remaining
+                } else {
+                    resolved.length.coerceAtMost(remaining)
+                }
+                resolved.subrange(0L, requested)
+            } else {
+                resolved
+            }
         }
     }
 
@@ -491,6 +528,41 @@ class PlaybackManager private constructor(context: Context) {
         persistState()
     }
 
+    /** Move a queued item without disturbing the currently playing item. */
+    fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        _state.update { current ->
+            if (fromIndex !in current.queue.indices ||
+                toIndex !in current.queue.indices ||
+                fromIndex == toIndex ||
+                fromIndex == current.currentIndex ||
+                toIndex == current.currentIndex
+            ) return@update current
+
+            val queue = current.queue.toMutableList()
+            val moved = queue.removeAt(fromIndex)
+            queue.add(toIndex, moved)
+            val nextCurrentIndex = when {
+                fromIndex < current.currentIndex && toIndex >= current.currentIndex -> current.currentIndex - 1
+                fromIndex > current.currentIndex && toIndex <= current.currentIndex -> current.currentIndex + 1
+                else -> current.currentIndex
+            }
+            current.copy(queue = queue, currentIndex = nextCurrentIndex)
+        }
+        persistState()
+        preloadNext()
+    }
+
+    /** Keep the current song, but remove every queued item after it. */
+    fun clearQueue() {
+        val current = _state.value.currentTrack ?: return
+        _state.update { it.copy(queue = listOf(current), currentIndex = 0) }
+        val currentMediaIndex = exoPlayer.currentMediaItemIndex
+        if (currentMediaIndex != C.INDEX_UNSET && exoPlayer.mediaItemCount > currentMediaIndex + 1) {
+            exoPlayer.removeMediaItems(currentMediaIndex + 1, exoPlayer.mediaItemCount)
+        }
+        persistState()
+    }
+
     suspend fun downloadTrack(track: Track): DownloadedTrack {
         val downloaded = downloadManager.download(track)
         _state.update { it.copy(downloadedTrackIds = it.downloadedTrackIds + track.id) }
@@ -560,8 +632,9 @@ class PlaybackManager private constructor(context: Context) {
                     null
                 } else {
                     runCatching {
-                        streamResolver.resolve(track.id, profileOffset)
+                        resolveValidatedDirectStream(track.id, profileOffset)
                     }.onFailure { error ->
+                        streamResolver.invalidate(track.id)
                         android.util.Log.w(
                             "MoodifyPlayer",
                             "Device InnerTube resolution failed for ${track.id}: ${error.message}"
@@ -603,7 +676,7 @@ class PlaybackManager private constructor(context: Context) {
                             directUrl,
                             directStream?.mimeType ?: MimeTypes.AUDIO_MP4,
                             directStream,
-                            "moodify:${track.id}:${directStream?.itag ?: -1}"
+                            "moodify:${track.id}:${directStream?.contractId ?: "direct"}"
                         )
                     }
                     serverDirectUrl != null -> {
@@ -616,7 +689,7 @@ class PlaybackManager private constructor(context: Context) {
                             serverDirectUrl,
                             serverStream?.mimeType ?: MimeTypes.AUDIO_MP4,
                             serverStream,
-                            "moodify:${track.id}:${serverStream?.itag ?: -1}"
+                            "moodify:${track.id}:${serverStream?.contractId ?: "server"}"
                         )
                     }
                     else -> {
@@ -662,6 +735,10 @@ class PlaybackManager private constructor(context: Context) {
                     cacheKey = streamChoice.cacheKey
                 )
 
+                // Close the failed source before preparing the new contract.
+                // This prevents a rejected URL, its cache span and its old
+                // timeline from surviving a recovery attempt.
+                exoPlayer.stop()
                 exoPlayer.setMediaItem(mediaItem, safeStartMs)
                 exoPlayer.prepare()
                 exoPlayer.play()
@@ -672,6 +749,35 @@ class PlaybackManager private constructor(context: Context) {
                 setError("Could not load audio: ${e.message ?: "Resolution failed"}")
             }
         }
+    }
+
+    /**
+     * Resolve a genuinely usable CDN contract before ExoPlayer is involved.
+     * A YouTube URL can return 206 for the first bytes and still return 403
+     * when the player advances. Rotate through distinct InnerTube clients and
+     * validate both the beginning and a later range before selecting one.
+     */
+    private suspend fun resolveValidatedDirectStream(
+        videoId: String,
+        initialProfileOffset: Int,
+    ): InnerTubeStreamResolver.ResolvedStream {
+        var lastFailure: Throwable? = null
+        val maxProfiles = 8
+        for (offset in initialProfileOffset until maxProfiles) {
+            try {
+                val resolved = streamResolver.resolve(videoId, offset)
+                streamResolver.validate(resolved)
+                return resolved
+            } catch (failure: Throwable) {
+                lastFailure = failure
+                streamResolver.invalidate(videoId)
+                android.util.Log.w(
+                    "MoodifyPlayer",
+                    "Rejected stream contract video=$videoId profileOffset=$offset: ${failure.message}"
+                )
+            }
+        }
+        throw (lastFailure ?: IllegalStateException("No validated stream contract"))
     }
 
     private fun setError(message: String) {
@@ -724,9 +830,19 @@ class PlaybackManager private constructor(context: Context) {
         val currentTrackId = current.currentTrack?.id ?: return
         preloadJob?.cancel()
         preloadJob = scope.launch {
-            val resolved = withContext(Dispatchers.IO) {
-                streamResolver.preload(nextTrack.id)
-            } ?: return@launch
+            // Preload the same validated contract that foreground playback
+            // accepts. Resolving-only here used to enqueue a URL that passed
+            // the first byte request but failed as soon as the next track
+            // started, causing an audible gap and a notification stuck on a
+            // loading state.
+            val resolved = runCatching {
+                resolveValidatedDirectStream(nextTrack.id, initialProfileOffset = 0)
+            }.onFailure {
+                android.util.Log.d(
+                    "MoodifyPlayer",
+                    "Preload skipped for ${nextTrack.id}: ${it.message}"
+                )
+            }.getOrNull() ?: return@launch
 
             if (_state.value.currentTrack?.id != currentTrackId ||
                 exoPlayer.currentMediaItem?.mediaId != currentTrackId
@@ -734,7 +850,8 @@ class PlaybackManager private constructor(context: Context) {
                 return@launch
             }
 
-            val cacheKey = "moodify:${nextTrack.id}:${resolved.itag}"
+            if (resolved.isExpired) return@launch
+            val cacheKey = "moodify:${nextTrack.id}:${resolved.contractId}"
             if ((0 until exoPlayer.mediaItemCount).any {
                     exoPlayer.getMediaItemAt(it).mediaId == nextTrack.id
                 }
@@ -774,7 +891,10 @@ class PlaybackManager private constructor(context: Context) {
         if (stream == null) {
             if (route == PlaybackRoute.SERVER_DIRECT_RELAY) {
                 streamContracts[cacheKey] = StreamContract(
-                    requestHeaders = mapOf("User-Agent" to "Moodify-Android/1.0")
+                    requestHeaders = mapOf("User-Agent" to "Moodify-Android/1.0"),
+                    contentLength = null,
+                    expiresAtMs = Long.MAX_VALUE,
+                    profileName = "RELAY"
                 )
             } else {
                 streamContracts.remove(cacheKey)
@@ -784,7 +904,10 @@ class PlaybackManager private constructor(context: Context) {
                 requestHeaders = buildMap {
                     put("User-Agent", stream.userAgent)
                     putAll(stream.requestHeaders)
-                }
+                },
+                contentLength = stream.contentLength,
+                expiresAtMs = stream.expiresAtMs,
+                profileName = stream.profileName
             )
         }
         routeByCacheKey[cacheKey] = route
@@ -821,7 +944,10 @@ class PlaybackManager private constructor(context: Context) {
         .build()
 
     private data class StreamContract(
-        val requestHeaders: Map<String, String>
+        val requestHeaders: Map<String, String>,
+        val contentLength: Long?,
+        val expiresAtMs: Long,
+        val profileName: String,
     )
 
     private data class StreamChoice(

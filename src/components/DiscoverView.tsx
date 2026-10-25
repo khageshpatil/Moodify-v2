@@ -102,6 +102,7 @@ export const DiscoverView = ({
   const [loading, setLoading] = useState(false);
   const [exploreFailed, setExploreFailed] = useState(false);
   const [activeSurface, setActiveSurface] = useState<CatalogSurface>(initialSurface);
+  const [mediaFilter, setMediaFilter] = useState<'music' | 'everything'>('music');
 
   useEffect(() => {
     setActiveSurface(initialSurface);
@@ -200,7 +201,14 @@ export const DiscoverView = ({
 
   const renderSurface = (title: string, page: DiscoveryCollectionResult | null, kind: 'explore' | 'home', allowMore = kind === 'explore') => {
     const tracks = page?.tracks || [];
-    const sections = page?.catalog?.sections.filter((section) => section.items.length) || [];
+    const sections = page?.catalog?.sections
+      .map((section) => ({
+        ...section,
+        items: mediaFilter === 'music'
+          ? section.items.filter((item) => !['video', 'podcast', 'episode'].includes(item.type.toLowerCase()))
+          : section.items,
+      }))
+      .filter((section) => section.items.length) || [];
     const visibleSections = sections.length ? sections : (tracks.length ? [fallbackSection(title, tracks)] : []);
     const hasContent = visibleSections.length > 0;
     return (
@@ -287,6 +295,19 @@ export const DiscoverView = ({
               onClick={() => selectSurface(id)}
             >
               <Icon size={15} aria-hidden="true" />{label}
+            </button>
+          ))}
+        </div>
+        <div className="catalog-media-tabs" role="group" aria-label="Catalog media filter">
+          {(['music', 'everything'] as const).map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              className={`catalog-media-tab${mediaFilter === filter ? ' is-active' : ''}`}
+              onClick={() => setMediaFilter(filter)}
+              aria-pressed={mediaFilter === filter}
+            >
+              {filter === 'music' ? 'Music only' : 'Everything'}
             </button>
           ))}
         </div>

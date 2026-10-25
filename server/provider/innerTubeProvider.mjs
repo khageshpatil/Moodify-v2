@@ -21,6 +21,7 @@ Platform.shim.eval = async (data) => new Function(data.output)();
 const requestTimeoutMs = 20_000;
 const maxAttempts = 2;
 const sourceSafetyWindowMs = 30_000;
+const lyricsRequestTimeoutMs = 7_000;
 // youtubei.js does not add the public InnerTube API key when the request is
 // rewritten from www.youtube.com to youtubei.googleapis.com.  Google accepts
 // the former without the query key, but the latter returns 404 without it.
@@ -112,6 +113,37 @@ const toAlbum = (item) => {
 const toDurationSeconds = (item) => {
   const seconds = item?.duration?.seconds ?? item?.duration_seconds ?? item?.length_seconds;
   return Number.isFinite(Number(seconds)) && Number(seconds) > 0 ? Number(seconds) : undefined;
+};
+
+const fetchLrcLibLyrics = async (track) => {
+  const title = text(track?.title);
+  const artist = text(track?.artist);
+  if (!title || !artist) return null;
+
+  const params = new URLSearchParams({ track_name: title, artist_name: artist });
+  const album = typeof track.album === 'object' ? track.album?.title : track.album;
+  const durationSeconds = Number(track.durationMs) > 0 ? Math.round(Number(track.durationMs) / 1000) : 0;
+  if (album) params.set('album_name', text(album));
+  if (durationSeconds > 0) params.set('duration', String(durationSeconds));
+
+  try {
+    const response = await fetch(`https://lrclib.net/api/get?${params}`, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Moodify/1.0 (lyrics feature)',
+      },
+      signal: AbortSignal.timeout(lyricsRequestTimeoutMs),
+    });
+    if (!response.ok) return null;
+    const body = await response.json();
+    const syncedLyrics = text(body?.syncedLyrics);
+    const plainLyrics = text(body?.plainLyrics);
+    if (syncedLyrics) return { lyrics: syncedLyrics, source: 'lrclib', format: 'lrc' };
+    if (plainLyrics) return { lyrics: plainLyrics, source: 'lrclib', format: 'plain' };
+  } catch {
+    // Lyrics are an enhancement; a provider outage must not affect playback.
+  }
+  return null;
 };
 
 const normalizeTrackItem = (item, fallback = {}) => {
@@ -384,6 +416,18 @@ export class InnerTubeProviderAdapter {
     return this.withTimeout(getPoToken(tokenClient, id), 30_000);
   }
 
+  async getPlaybackConfig(clientType = 'WEB_REMIX') {
+    const client = await this.getClient(clientType);
+    const player = client?.session?.player;
+    const contextClient = client?.session?.context?.client;
+    return {
+      clientType,
+      signatureTimestamp: Number(player?.signature_timestamp || 0) || 0,
+      clientVersion: contextClient?.clientVersion || '',
+      userAgent: contextClient?.userAgent || '',
+    };
+  }
+
   async request(operation) {
     return this.withRetry(() => this.withTimeout(operation()));
   }
@@ -415,25 +459,44 @@ export class InnerTubeProviderAdapter {
 
   async getLyrics(id) {
     if (!id) throw Object.assign(new Error('Track id is required'), { code: 'INVALID_ID', status: 400 });
+    let info = null;
     let shelf = null;
     try {
-      const info = await this.getTrackInfo(id);
+      info = await this.getTrackInfo(id);
       if (typeof info.getLyrics === 'function') {
         shelf = await this.request(() => info.getLyrics());
       }
     } catch {
       shelf = null;
     }
-    if (!shelf) {
+    const youtubeLyrics = text(shelf?.description || shelf?.text || shelf?.lyrics).trim();
+
+    if (!youtubeLyrics) {
       try {
         const yt = await this.getClient();
         shelf = await this.request(() => yt.music.getLyrics(id));
       } catch {
-        return null;
+        shelf = null;
       }
     }
-    const lyrics = text(shelf?.description || shelf?.text || shelf?.lyrics).trim();
-    return lyrics ? { id, lyrics } : null;
+
+    const refreshedYoutubeLyrics = text(shelf?.description || shelf?.text || shelf?.lyrics).trim();
+    const youtubeCandidate = refreshedYoutubeLyrics || youtubeLyrics;
+    const track = info
+      ? toCanonicalTrack({
+        id,
+        title: info.basic_info?.title,
+        author: info.basic_info?.author,
+        artists: info.basic_info?.author ? [{ name: info.basic_info.author }] : [],
+        album: info.basic_info?.album,
+        duration_seconds: Number(info.basic_info?.duration),
+      }, { id })
+      : null;
+    const lrcLibCandidate = track ? await fetchLrcLibLyrics(track) : null;
+
+    // Prefer timed lyrics so the Android player can highlight and seek by line.
+    if (lrcLibCandidate) return { id, ...lrcLibCandidate };
+    return youtubeCandidate ? { id, lyrics: youtubeCandidate, source: 'youtube-music', format: 'plain' } : null;
   }
 
   async getSearch(query, cursor, searchType) {
@@ -636,6 +699,7 @@ export class InnerTubeProviderAdapter {
       userAgent: selectedClient?.session.context.client.userAgent
         || Constants.CLIENTS[selectedClientName]?.USER_AGENT
         || 'Mozilla/5.0',
+      origin: selectedClientName === 'YTMUSIC' ? 'https://music.youtube.com' : 'https://www.youtube.com',
       referer: selectedClientName === 'YTMUSIC' ? 'https://music.youtube.com/' : 'https://www.youtube.com/',
       clientType: selectedClientName,
       poToken,

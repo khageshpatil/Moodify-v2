@@ -85,6 +85,11 @@ export const ListeningHome = ({
   const mixQueue = (mixItem?.queue || []).map((track) => presentTrack(track)).filter((track): track is Track => Boolean(track));
   const continueTrack = continueItem?.track ? presentTrack(continueItem.track) : null;
   const showMix = Boolean(mixSection?.visible && mixItem && mixQueue.length);
+  const quickPicks = (providerHome?.tracks || [])
+    .map((track) => presentTrack(track))
+    .filter((track): track is Track => Boolean(track))
+    .filter((track, index, list) => list.findIndex((candidate) => candidate.id === track.id) === index)
+    .slice(0, 6);
   const repeatArtist = Object.values(signals.artists).find((artist) => artist.artistPlayCount >= 2);
   const isFirstVisit = recentlyPlayed.length === 0 && favorites.length === 0 && history.length === 0 && playlists.length === 0;
 
@@ -106,7 +111,7 @@ export const ListeningHome = ({
       <section className="home-launchpad" aria-labelledby="home-heading">
         <div className="home-launchpad-main">
           <div className="home-status-line"><span>{greeting()}</span><span>{isFirstVisit ? 'A fresh start' : `${recentlyPlayed.length} recently played`}</span></div>
-          <h1 id="home-heading">Find the sound for right now.</h1>
+          <h1 id="home-heading">Quick picks for right now.</h1>
           <p className="home-lede">Start with a feeling, follow a live shelf, or let Moodify take you somewhere unexpected.</p>
           <IntentComposer onSubmit={onIntent} />
           <div className="home-quick-actions" aria-label="Catalog shortcuts">
@@ -136,6 +141,32 @@ export const ListeningHome = ({
           <div className="home-library-status"><div><span className="home-card-label">Your library</span><strong>{favorites.length + playlists.length} saved items</strong></div><span className="home-library-mark" aria-hidden="true"><Compass size={18} /></span></div>
         </aside>
       </section>
+
+      {quickPicks.length > 0 && (
+        <section className="archive-quick-picks" aria-labelledby="quick-picks-heading">
+          <div className="home-section-heading">
+            <div><span className="home-section-kicker">From the live catalog</span><h2 id="quick-picks-heading">Quick picks</h2></div>
+            <button type="button" onClick={() => onOpenCatalog('explore')}>Explore <ArrowRight size={15} aria-hidden="true" /></button>
+          </div>
+          <div className="archive-quick-picks-list">
+            {quickPicks.map((track, index) => {
+              const active = currentTrack?.id === track.id;
+              return (
+                <article className={`archive-quick-pick${active ? ' is-active' : ''}`} key={track.id}>
+                  <span className="archive-quick-pick-index">{String(index + 1).padStart(2, '0')}</span>
+                  <button type="button" className="archive-quick-pick-main" onClick={() => onPlay(track, quickPicks, discoveryContextForLibrary('quick-picks', index))}>
+                    <Artwork src={track.albumArt} alt="" fallback={<span className="home-art-placeholder"><Disc3 size={18} aria-hidden="true" /></span>} />
+                    <span><strong>{track.title}</strong><small>{track.artist || 'Unknown artist'}{track.album ? ` · ${track.album}` : ''}</small></span>
+                  </button>
+                  <button type="button" className="archive-quick-pick-play" aria-label={`${active && isPlaying ? 'Pause' : 'Play'} ${track.title}`} onClick={() => onPlay(track, quickPicks, discoveryContextForLibrary('quick-picks', index))}>
+                    {active && isPlaying ? <Pause size={16} fill="currentColor" aria-hidden="true" /> : <Play size={16} fill="currentColor" aria-hidden="true" />}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {providerHome && <ProviderHomeRail page={providerHome} onTrackSelect={onPlay} onOpenCatalog={() => onOpenCatalog('explore')} />}
 

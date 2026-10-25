@@ -82,6 +82,22 @@ class MusicRepository {
             ?.takeIf { it.isNotBlank() }
     }
 
+    suspend fun getLyrics(track: Track): LyricsDocument? {
+        val response = api.getLyrics(track.id)
+        if (!response.isSuccessful) {
+            if (response.code() == 404) return null
+            throw MoodifyApiException("Lyrics request failed (${response.code()})", response.code())
+        }
+        val body = response.body() ?: return null
+        val rawLyrics = body.get("lyrics")?.takeIf { it.isJsonPrimitive }?.asString
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        val source = body.get("source")?.takeIf { it.isJsonPrimitive }?.asString ?: "unknown"
+        val format = body.get("format")?.takeIf { it.isJsonPrimitive }?.asString
+        return LyricsParser.parse(rawLyrics, source, format)
+    }
+
     // ── JSON helpers ────────────────────────────────────────────────
 
     suspend fun getExploreCatalog(): CatalogPage = getCatalogPage { api.getExplore() }
@@ -93,8 +109,8 @@ class MusicRepository {
     suspend fun browseCatalog(browseId: String, params: String? = null): CatalogPage =
         getCatalogPage { api.browse(browseId, params) }
 
-    suspend fun searchCatalog(query: String, type: String? = null): CatalogPage =
-        getCatalogPage { api.searchDiscovery(query, type) }
+    suspend fun searchCatalog(query: String, type: String? = null, cursor: String? = null): CatalogPage =
+        getCatalogPage { api.searchDiscovery(query, type, cursor) }
 
     private suspend fun getCatalogPage(request: suspend () -> Response<JsonObject>): CatalogPage {
         val response = request()

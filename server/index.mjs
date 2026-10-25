@@ -499,6 +499,21 @@ const server = http.createServer(async (request, response) => {
       }
       return;
     }
+    // ── /api/playback-config — lightweight player metadata ────────────────
+    // Native clients need the current player signature timestamp when using
+    // web-capable InnerTube profiles. This endpoint returns metadata only;
+    // media resolution and media bytes remain on the Android device.
+    if (request.method === 'GET' && url.pathname === '/api/playback-config') {
+      const clientType = url.searchParams.get('client') || 'WEB_REMIX';
+      const allowedClients = new Set(['WEB', 'WEB_REMIX', 'MWEB', 'ANDROID', 'ANDROID_MUSIC']);
+      if (!allowedClients.has(clientType)) {
+        sendJson(response, 400, { error: 'INVALID_CLIENT', message: 'Unsupported playback client' });
+        return;
+      }
+      const config = await provider.getPlaybackConfig(clientType);
+      sendJson(response, 200, { ok: true, ...config });
+      return;
+    }
     // ── /api/stream/:id — returns direct audio CDN URL as JSON ───────────
     // Used by Android ExoPlayer to get the stream URL without the server
     // proxying the bytes.  resolvePlayback() already uses the ANDROID
@@ -525,6 +540,7 @@ const server = http.createServer(async (request, response) => {
           bitrate: source.bitrate,
           itag: source.itag,
           userAgent: source.userAgent,
+          origin: source.origin,
           referer: source.referer,
           clientType: source.clientType,
           expiresAt: source.expiresAt,

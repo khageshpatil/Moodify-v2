@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +32,8 @@ import com.example.myapplication.ui.screens.AboutScreen
 import com.example.myapplication.ui.screens.CatalogDetailScreen
 import com.example.myapplication.ui.screens.ModernHomeScreen
 import com.example.myapplication.ui.screens.ModernLibraryScreen
-import com.example.myapplication.ui.theme.DarkBackground
 import com.example.myapplication.ui.theme.MoodifyTheme
+import androidx.core.view.WindowCompat
 
 class MainActivity : ComponentActivity() {
 
@@ -56,8 +57,8 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
         )
 
         // ── Android 13+ runtime notification permission ────────────────────
@@ -71,8 +72,23 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MoodifyTheme {
-                MoodifyApp()
+            val preferences = remember { getSharedPreferences("moodify-ui", MODE_PRIVATE) }
+            val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            var darkTheme by rememberSaveable { mutableStateOf(preferences.getBoolean("dark-theme", systemDark)) }
+            SideEffect {
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !darkTheme
+                    isAppearanceLightNavigationBars = !darkTheme
+                }
+            }
+            MoodifyTheme(darkTheme = darkTheme) {
+                MoodifyApp(
+                    darkTheme = darkTheme,
+                    onDarkThemeChange = { next ->
+                        darkTheme = next
+                        preferences.edit().putBoolean("dark-theme", next).apply()
+                    }
+                )
             }
         }
     }
@@ -80,7 +96,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MoodifyApp(
-    viewModel: MainViewModel = viewModel()
+    viewModel: MainViewModel = viewModel(),
+    darkTheme: Boolean = true,
+    onDarkThemeChange: (Boolean) -> Unit = {}
 ) {
     var currentRoute by remember { mutableStateOf(NavTab.Home.route) }
     var isPlayerExpanded by remember { mutableStateOf(false) }
@@ -93,7 +111,11 @@ fun MoodifyApp(
     val searchCatalog by viewModel.searchCatalog.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val favoriteTracks by viewModel.favoriteTracks.collectAsState()
+    val historyTracks by viewModel.historyTracks.collectAsState()
+    val playlists by viewModel.playlists.collectAsState()
+    val isLoadingCatalog by viewModel.isLoading.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val exploreCatalog by viewModel.exploreCatalog.collectAsState()
     val homeCatalog by viewModel.homeCatalog.collectAsState()
@@ -112,10 +134,11 @@ fun MoodifyApp(
     }
 
     Scaffold(
-        containerColor = DarkBackground,
+        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.background,
         topBar = {
             TopHeader(
                 onSearchClick = { currentRoute = NavTab.Discover.route },
+                onHistoryClick = { currentRoute = NavTab.Library.route },
                 onAboutClick = { currentRoute = "about" }
             )
         },
@@ -151,6 +174,7 @@ fun MoodifyApp(
                         },
                         catalogSections = homeCatalog?.sections.orEmpty(),
                         currentTrack = playbackState.currentTrack,
+                        isLoadingCatalog = isLoadingCatalog,
                         onTrackSelect = { track ->
                             viewModel.playTrack(track, catalogTracks.ifEmpty { listOf(track) })
                             isPlayerExpanded = true
@@ -177,6 +201,9 @@ fun MoodifyApp(
                         onBrowseClick = viewModel::openBrowse,
                         searchType = searchType,
                         onSearchTypeChange = viewModel::onSearchTypeChange,
+                        canLoadMore = !searchCatalog?.nextCursor.isNullOrBlank(),
+                        isLoadingMore = isLoadingMore,
+                        onLoadMore = viewModel::loadMoreSearchResults,
                         onQueryChange = viewModel::onSearchQueryChange,
                         onTrackSelect = { track ->
                             viewModel.playTrack(track, catalogTracks.ifEmpty { listOf(track) })
@@ -189,18 +216,30 @@ fun MoodifyApp(
                 NavTab.Library.route -> {
                     ModernLibraryScreen(
                         favoriteTracks = favoriteTracks,
+                        historyTracks = historyTracks,
+                        playlists = playlists,
+                        queueTracks = playbackState.queue,
                         currentTrack = playbackState.currentTrack,
                         onTrackSelect = { track ->
                             viewModel.playTrack(track, favoriteTracks)
                             isPlayerExpanded = true
                         },
-                        onFavoriteToggle = viewModel::toggleFavorite
+                        onFavoriteToggle = viewModel::toggleFavorite,
+                        onClearHistory = viewModel::clearHistory,
+                        onCreatePlaylist = viewModel::createPlaylist,
+                        onDeletePlaylist = viewModel::deletePlaylist,
+                        onPlaylistTrackSelect = { playlist, track ->
+                            viewModel.playTrack(track, playlist.tracks)
+                            isPlayerExpanded = true
+                        }
                     )
                 }
 
                 "about" -> {
                     AboutScreen(
-                        onBack = { currentRoute = NavTab.Home.route }
+                        onBack = { currentRoute = NavTab.Home.route },
+                        darkTheme = darkTheme,
+                        onDarkThemeChange = onDarkThemeChange
                     )
                 }
             }
@@ -233,12 +272,25 @@ fun MoodifyApp(
                         viewModel.playbackManager.playTrack(track, playbackState.queue)
                     },
                     onRemoveFromQueue = { index -> viewModel.playbackManager.removeFromQueue(index) },
+                    onMoveQueueItem = { from, to -> viewModel.playbackManager.moveQueueItem(from, to) },
+                    onClearQueue = { viewModel.playbackManager.clearQueue() },
                     onSetSpeed = { speed -> viewModel.playbackManager.setPlaybackSpeed(speed) },
                     onSetPitch = { pitch -> viewModel.playbackManager.setPitch(pitch) },
                     onDownload = {
                         playbackState.currentTrack?.let { track ->
                             playerScope.launch {
                                 runCatching { viewModel.playbackManager.downloadTrack(track) }
+                            }
+                        }
+                    },
+                    playlists = playlists,
+                    onAddToPlaylist = { playlistId ->
+                        playbackState.currentTrack?.let { viewModel.addToPlaylist(playlistId, it) }
+                    },
+                    onCreatePlaylistAndAdd = { name ->
+                        playbackState.currentTrack?.let { track ->
+                            viewModel.createPlaylist(name)?.let { playlist ->
+                                viewModel.addToPlaylist(playlist.id, track)
                             }
                         }
                     },

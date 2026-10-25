@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,11 +35,12 @@ fun TrackRowItem(
     onTrackClick: (Track) -> Unit,
     onFavoriteToggle: (Track) -> Unit = {}
 ) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(2.dp))
-            .background(if (isPlayingCurrent) PrimaryPurple.copy(alpha = 0.08f) else Color.Transparent)
+            .background(if (isPlayingCurrent) colors.primary.copy(alpha = 0.08f) else Color.Transparent)
             .clickable { onTrackClick(track) }
             .padding(vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -71,7 +73,7 @@ fun TrackRowItem(
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = "Playing",
-                            tint = PrimaryPurple,
+                            tint = colors.primary,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -85,7 +87,7 @@ fun TrackRowItem(
                     text = track.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isPlayingCurrent) PrimaryPurple else Color.White,
+                    color = if (isPlayingCurrent) colors.primary else colors.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -93,7 +95,7 @@ fun TrackRowItem(
                 Text(
                     text = track.artist,
                     fontSize = 13.sp,
-                    color = com.example.myapplication.ui.theme.TextSecondary,
+                    color = colors.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -104,7 +106,7 @@ fun TrackRowItem(
             Icon(
                 imageVector = if (track.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                 contentDescription = "Favorite",
-                tint = if (track.isFavorite) NeonPink else Color.Gray,
+                tint = if (track.isFavorite) colors.primary else colors.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         }

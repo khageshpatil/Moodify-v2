@@ -13,8 +13,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,17 +25,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.ui.theme.PrimaryPurple
-import com.example.myapplication.ui.theme.SignalBorder
-import com.example.myapplication.ui.theme.SurfaceCard
-import com.example.myapplication.ui.theme.TextPrimary
-import com.example.myapplication.ui.theme.TextSecondary
 
 @Composable
 fun TopHeader(
     onSearchClick: () -> Unit = {},
+    onHistoryClick: () -> Unit = {},
     onAboutClick: () -> Unit = {}
 ) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -48,10 +47,10 @@ fun TopHeader(
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .background(PrimaryPurple, CircleShape),
+                    .background(colors.primary, CircleShape),
                 contentAlignment = Alignment.Center
             ) { }
-            Text(text = "Moodify", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Text(text = "Moodify", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
         }
 
         Row(
@@ -62,13 +61,27 @@ fun TopHeader(
                 onClick = onSearchClick,
                 modifier = Modifier
                     .size(48.dp)
-                    .background(SurfaceCard, CircleShape)
+                    .background(colors.surfaceVariant, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = TextSecondary,
+                    tint = colors.onSurfaceVariant,
                     modifier = Modifier.size(21.dp)
+                )
+            }
+
+            IconButton(
+                onClick = onHistoryClick,
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(colors.surfaceVariant, CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "Listening history",
+                    tint = colors.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
@@ -81,7 +94,7 @@ fun TopHeader(
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "Profile",
-                    tint = TextSecondary,
+                    tint = colors.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }

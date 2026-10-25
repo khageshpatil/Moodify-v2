@@ -29,7 +29,7 @@ export const ProviderHomeRail = ({ page, onTrackSelect, onOpenCatalog }: Provide
   if (!sections.length && !fallbackTracks.length) return null;
 
   return (
-    <section className="provider-home" aria-labelledby="provider-home-heading">
+    <section className="provider-home archive-shelves" aria-labelledby="provider-home-heading">
       <div className="provider-home-heading">
         <div>
           <span className="catalog-eyebrow"><Sparkles size={13} aria-hidden="true" /> Live catalog</span>

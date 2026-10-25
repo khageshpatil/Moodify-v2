@@ -19,6 +19,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,23 +29,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.BuildConfig
-import com.example.myapplication.ui.theme.DarkBackground
-import com.example.myapplication.ui.theme.PrimaryPurple
-import com.example.myapplication.ui.theme.SurfaceCard
-import com.example.myapplication.ui.theme.TextPrimary
-import com.example.myapplication.ui.theme.TextSecondary
 
 private const val APK_DOWNLOAD_URL =
     "https://github.com/khageshpatil/Moodify-v2/releases/latest/download/Moodify.apk"
 
 @Composable
-fun AboutScreen(onBack: () -> Unit) {
+fun AboutScreen(
+    onBack: () -> Unit,
+    darkTheme: Boolean = true,
+    onDarkThemeChange: (Boolean) -> Unit = {}
+) {
     val context = LocalContext.current
+    val colors = androidx.compose.material3.MaterialTheme.colorScheme
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colors.background)
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
@@ -53,12 +54,12 @@ fun AboutScreen(onBack: () -> Unit) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = TextPrimary
+                    tint = colors.onBackground
                 )
             }
             Text(
                 text = "About Moodify",
-                color = TextPrimary,
+                color = colors.onBackground,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -67,19 +68,19 @@ fun AboutScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceCard, RoundedCornerShape(20.dp))
+                .background(colors.surface, RoundedCornerShape(20.dp))
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(Icons.Default.Info, contentDescription = null, tint = PrimaryPurple)
-            Text("Moodify", color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Icon(Icons.Default.Info, contentDescription = null, tint = colors.primary)
+            Text("Moodify", color = colors.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Text(
                 "A mood-first music experience with background playback.",
-                color = TextSecondary,
+                color = colors.onSurfaceVariant,
                 fontSize = 14.sp,
                 lineHeight = 21.sp
             )
-            Text("Version ${BuildConfig.VERSION_NAME}", color = TextSecondary, fontSize = 12.sp)
+            Text("Version ${BuildConfig.VERSION_NAME}", color = colors.onSurfaceVariant, fontSize = 12.sp)
         }
 
         Column(
@@ -89,10 +90,23 @@ fun AboutScreen(onBack: () -> Unit) {
                 .padding(top = 4.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Get the latest Android build", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Appearance", color = colors.onBackground, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Switch(
+                    checked = darkTheme,
+                    onCheckedChange = onDarkThemeChange,
+                    modifier = Modifier
+                )
+            }
+            Text(if (darkTheme) "Night Signal" else "Daylight Paper", color = colors.onSurfaceVariant, fontSize = 13.sp)
+            Text("Get the latest Android build", color = colors.onBackground, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 "Download the latest Moodify APK from GitHub.",
-                color = TextSecondary,
+                color = colors.onSurfaceVariant,
                 fontSize = 13.sp
             )
             Button(
@@ -100,8 +114,8 @@ fun AboutScreen(onBack: () -> Unit) {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(APK_DOWNLOAD_URL)))
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryPurple,
-                    contentColor = DarkBackground
+                    containerColor = colors.primary,
+                    contentColor = colors.onPrimary
                 ),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -113,12 +127,12 @@ fun AboutScreen(onBack: () -> Unit) {
 
         Text(
             "The download opens in your browser. Android may ask you to allow installation from that source.",
-            color = TextSecondary,
+            color = colors.onSurfaceVariant,
             fontSize = 12.sp,
             lineHeight = 18.sp,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceCard, RoundedCornerShape(14.dp))
+                .background(colors.surface, RoundedCornerShape(14.dp))
                 .padding(14.dp)
         )
     }

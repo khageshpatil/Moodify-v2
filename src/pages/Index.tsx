@@ -31,6 +31,7 @@ import { fetchDiscoveryHome, searchMoodifyTracks, toDiscoveryPlaybackRequest, ty
 import { useDiscoverySidecar } from "@/hooks/useDiscoverySidecar";
 import type { Track } from "@/data/mockMusic";
 import { getVibeWorld } from "@/data/vibeWorlds";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { DiscoveryContext } from '@/listening/listeningTypes';
 import {
   discoveryContextForDirect,
@@ -589,7 +590,7 @@ const Index = () => {
             <nav className="phase4-primary-nav" aria-label="Primary navigation">
               {[{ id: 'moods' as const, label: 'Home' }, { id: 'search' as const, label: 'Search' }, { id: 'library' as const, label: 'Library' }, { id: 'social' as const, label: 'Social' }].map((item) => <button key={item.id} className={(!vibeId && currentView === item.id) || (item.id === 'moods' && !vibeId && currentView === 'moods') || (item.id === 'library' && ['playlists', 'queue', 'favorites', 'history', 'discover'].includes(currentView)) ? 'active' : ''} onClick={() => { navigate('/'); setCurrentView(item.id); }}>{item.label}</button>)}
             </nav>
-            <div className="phase4-top-actions"><button className="top-action-button" onClick={() => setListenTogetherOpen(true)} aria-label="Open listen together"><Users size={17} aria-hidden="true" /></button><button className="profile-button" onClick={() => setCurrentView('identity')} aria-label="Open profile"><User size={16} aria-hidden="true" /> <span>{identity?.displayName || 'You'}</span></button></div>
+            <div className="phase4-top-actions"><ThemeToggle /><button className="top-action-button" onClick={() => setCurrentView('history')} aria-label="Open listening history"><Clock size={17} aria-hidden="true" /></button><button className="top-action-button" onClick={() => setListenTogetherOpen(true)} aria-label="Open listen together"><Users size={17} aria-hidden="true" /></button><button className="profile-button" onClick={() => setCurrentView('identity')} aria-label="Open profile"><User size={16} aria-hidden="true" /> <span>{identity?.displayName || 'You'}</span></button></div>
           </div>
           <h1 className="legacy-brand text-4xl sm:text-5xl md:text-7xl font-medium mb-3 md:mb-4 fade-in" style={{ 
             color: 'var(--text-primary)',
@@ -774,6 +775,29 @@ const Index = () => {
         <main className="max-w-7xl mx-auto px-4 md:px-6 pb-32 md:pb-40">
           {renderContent()}
         </main>
+
+        <nav className="archive-bottom-nav" aria-label="Main navigation">
+          {[
+            { id: 'moods' as const, label: 'Home', icon: Home },
+            { id: 'search' as const, label: 'Search', icon: Search },
+            { id: 'library' as const, label: 'Library', icon: ListMusic },
+          ].map((item) => {
+            const Icon = item.icon;
+            const selected = currentView === item.id && !vibeId;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={selected ? 'is-selected' : ''}
+                aria-current={selected ? 'page' : undefined}
+                onClick={() => { navigate('/'); setCurrentView(item.id); }}
+              >
+                <Icon size={20} aria-hidden="true" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       <MoodifyPlayer

@@ -4,12 +4,15 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.myapplication.data.LyricsDocument
+import com.example.myapplication.data.LocalPlaylist
 import com.example.myapplication.player.PlaybackState
 import com.example.myapplication.ui.theme.*
 
@@ -53,17 +58,24 @@ fun FullScreenPlayerSheet(
     onRetry: () -> Unit,
     onQueueItemClick: (com.example.myapplication.data.Track) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
+    onMoveQueueItem: (Int, Int) -> Unit = { _, _ -> },
+    onClearQueue: () -> Unit = {},
     onSetSpeed: (Float) -> Unit,
     onSetPitch: (Float) -> Unit,
     onDownload: () -> Unit,
-    lyrics: String?,
+    playlists: List<LocalPlaylist> = emptyList(),
+    onAddToPlaylist: (String) -> Unit = {},
+    onCreatePlaylistAndAdd: (String) -> Unit = {},
+    lyrics: LyricsDocument?,
     isLoadingLyrics: Boolean,
     onLoadLyrics: () -> Unit
 ) {
     val track = state.currentTrack ?: return
+    val colors = MaterialTheme.colorScheme
     var showQueue by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
+    var showPlaylistPicker by remember { mutableStateOf(false) }
 
     val imageScale by animateFloatAsState(
         targetValue = if (state.isPlaying) 1f else 0.92f,
@@ -72,7 +84,7 @@ fun FullScreenPlayerSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = DarkBackground,
+        containerColor = colors.background,
         dragHandle = {
             Box(
                 modifier = Modifier
@@ -80,7 +92,7 @@ fun FullScreenPlayerSheet(
                     .width(40.dp)
                     .height(4.dp)
                     .clip(CircleShape)
-                    .background(Color.Gray.copy(alpha = 0.5f))
+                    .background(colors.onSurfaceVariant.copy(alpha = 0.5f))
             )
         }
     ) {
@@ -105,7 +117,7 @@ fun FullScreenPlayerSheet(
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = "Dismiss",
-                        tint = Color.White,
+                        tint = colors.onSurface,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -114,18 +126,18 @@ fun FullScreenPlayerSheet(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,
-                    color = PrimaryPurple
+                    color = colors.primary
                 )
                 IconButton(onClick = { showQueue = !showQueue }) {
                     Icon(
                         imageVector = Icons.Default.QueueMusic,
                         contentDescription = "Queue",
-                        tint = Color.White
+                        tint = colors.onSurface
                     )
                 }
                 Box {
                     IconButton(onClick = { showSettings = !showSettings }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Player settings", tint = Color.White)
+                        Icon(Icons.Default.MoreVert, contentDescription = "Player settings", tint = colors.onSurface)
                     }
                     DropdownMenu(
                         expanded = showSettings,
@@ -161,6 +173,11 @@ fun FullScreenPlayerSheet(
                             onClick = { onDownload(); showSettings = false }
                         )
                         DropdownMenuItem(
+                            text = { Text("Add to playlist") },
+                            enabled = playlists.isNotEmpty(),
+                            onClick = { showPlaylistPicker = true; showSettings = false }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Lyrics") },
                             onClick = { showLyrics = true; onLoadLyrics(); showSettings = false }
                         )
@@ -168,11 +185,28 @@ fun FullScreenPlayerSheet(
                 }
             }
 
+            if (showPlaylistPicker) {
+                PlaylistPickerDialog(
+                    playlists = playlists,
+                    onDismiss = { showPlaylistPicker = false },
+                    onSelect = { playlistId ->
+                        onAddToPlaylist(playlistId)
+                        showPlaylistPicker = false
+                    },
+                    onCreate = { name ->
+                        onCreatePlaylistAndAdd(name)
+                        showPlaylistPicker = false
+                    }
+                )
+            }
+
             if (showLyrics) {
                 LyricsPanel(
                     lyrics = lyrics,
                     isLoading = isLoadingLyrics,
-                    onClose = { showLyrics = false }
+                    onClose = { showLyrics = false },
+                    positionMs = state.positionMs,
+                    onSeekTo = onSeekTo,
                 )
             }
 
@@ -180,7 +214,9 @@ fun FullScreenPlayerSheet(
                 QueuePreview(
                     state = state,
                     onQueueItemClick = onQueueItemClick,
-                    onRemoveFromQueue = onRemoveFromQueue
+                    onRemoveFromQueue = onRemoveFromQueue,
+                    onMoveQueueItem = onMoveQueueItem,
+                    onClearQueue = onClearQueue,
                 )
             }
 
@@ -190,7 +226,7 @@ fun FullScreenPlayerSheet(
                     .size(280.dp)
                     .scale(imageScale)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(SurfaceCard),
+                    .background(colors.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
@@ -210,7 +246,7 @@ fun FullScreenPlayerSheet(
                     text = track.title,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = colors.onSurface,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -219,7 +255,7 @@ fun FullScreenPlayerSheet(
                 Text(
                     text = track.artist,
                     fontSize = 15.sp,
-                    color = Color.Gray,
+                    color = colors.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -232,7 +268,7 @@ fun FullScreenPlayerSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(2.dp),
-                    color = NeonPink,
+                    color = colors.secondary,
                     trackColor = Color.Transparent
                 )
             }
@@ -242,12 +278,12 @@ fun FullScreenPlayerSheet(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = state.errorMessage,
-                        color = NeonPink,
+                        color = colors.secondary,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    TextButton(onClick = onRetry) { Text("Retry", color = PrimaryPurple) }
+                    TextButton(onClick = onRetry) { Text("Retry", color = colors.primary) }
                 }
             }
 
@@ -265,9 +301,9 @@ fun FullScreenPlayerSheet(
                     onValueChangeFinished = { onSeekTo(sliderPosition.toLong()) },
                     valueRange = 0f..totalDuration,
                     colors = SliderDefaults.colors(
-                        thumbColor = NeonPink,
-                        activeTrackColor = PrimaryPurple,
-                        inactiveTrackColor = Color.Gray.copy(alpha = 0.3f)
+                        thumbColor = colors.secondary,
+                        activeTrackColor = colors.primary,
+                        inactiveTrackColor = colors.onSurfaceVariant.copy(alpha = 0.3f)
                     )
                 )
                 Row(
@@ -277,12 +313,12 @@ fun FullScreenPlayerSheet(
                     Text(
                         text = formatTime(state.positionMs),
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = colors.onSurfaceVariant
                     )
                     Text(
                         text = formatTime(state.durationMs),
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = colors.onSurfaceVariant
                     )
                 }
             }
@@ -297,7 +333,7 @@ fun FullScreenPlayerSheet(
                     Icon(
                         imageVector = Icons.Default.Shuffle,
                         contentDescription = "Shuffle",
-                        tint = if (state.isShuffle) PrimaryPurple else Color.Gray,
+                        tint = if (state.isShuffle) colors.primary else colors.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -306,7 +342,7 @@ fun FullScreenPlayerSheet(
                     Icon(
                         imageVector = Icons.Default.SkipPrevious,
                         contentDescription = "Previous",
-                        tint = Color.White,
+                        tint = colors.onSurface,
                         modifier = Modifier.size(36.dp)
                     )
                 }
@@ -315,7 +351,7 @@ fun FullScreenPlayerSheet(
                     modifier = Modifier
                         .size(68.dp)
                         .clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(PrimaryPurple, NeonPink))),
+                    .background(Brush.linearGradient(listOf(colors.primary, colors.secondary))),
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = onTogglePlayPause) {
@@ -323,7 +359,7 @@ fun FullScreenPlayerSheet(
                             imageVector = if (state.isPlaying) Icons.Default.Pause
                             else Icons.Default.PlayArrow,
                             contentDescription = "Play/Pause",
-                            tint = Color.White,
+                            tint = colors.onPrimary,
                             modifier = Modifier.size(38.dp)
                         )
                     }
@@ -333,7 +369,7 @@ fun FullScreenPlayerSheet(
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Next",
-                        tint = Color.White,
+                        tint = colors.onSurface,
                         modifier = Modifier.size(36.dp)
                     )
                 }
@@ -342,7 +378,7 @@ fun FullScreenPlayerSheet(
                     Icon(
                         imageVector = Icons.Default.Repeat,
                         contentDescription = "Repeat",
-                        tint = if (state.isRepeat) PrimaryPurple else Color.Gray,
+                        tint = if (state.isRepeat) colors.primary else colors.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -352,17 +388,75 @@ fun FullScreenPlayerSheet(
 }
 
 @Composable
+private fun PlaylistPickerDialog(
+    playlists: List<LocalPlaylist>,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit,
+    onCreate: (String) -> Unit,
+) {
+    var newName by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Save to playlist") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                playlists.forEach { playlist ->
+                    TextButton(
+                        onClick = { onSelect(playlist.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 4.dp),
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(playlist.name)
+                            Text("${playlist.tracks.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("New playlist") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onCreate(newName); newName = "" },
+                enabled = newName.isNotBlank(),
+            ) { Text("Create and save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
 private fun QueuePreview(
     state: PlaybackState,
     onQueueItemClick: (com.example.myapplication.data.Track) -> Unit,
-    onRemoveFromQueue: (Int) -> Unit
+    onRemoveFromQueue: (Int) -> Unit,
+    onMoveQueueItem: (Int, Int) -> Unit,
+    onClearQueue: () -> Unit,
 ) {
+    val colors = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = 190.dp)
     ) {
-        Text("UP NEXT", color = PrimaryPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("UP NEXT", color = colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            TextButton(
+                onClick = onClearQueue,
+                enabled = state.queue.size > 1,
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+            ) { Text("Clear", fontSize = 12.sp) }
+        }
         androidx.compose.foundation.lazy.LazyColumn {
             items(state.queue.size) { index ->
                 val queuedTrack = state.queue[index]
@@ -375,18 +469,35 @@ private fun QueuePreview(
                 ) {
                     Text(
                         text = if (index == state.currentIndex) "▶" else "${index + 1}",
-                        color = if (index == state.currentIndex) PrimaryPurple else Color.Gray,
+                        color = if (index == state.currentIndex) colors.primary else colors.onSurfaceVariant,
                         modifier = Modifier.width(30.dp)
                     )
                     Text(
                         text = queuedTrack.title,
-                        color = Color.White,
+                        color = colors.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
+                    if (index != state.currentIndex) {
+                        IconButton(
+                            onClick = {
+                                val target = if (index > state.currentIndex) index - 1 else index + 1
+                                if (target in state.queue.indices && target != state.currentIndex) {
+                                    onMoveQueueItem(index, target)
+                                }
+                            },
+                            modifier = Modifier.size(34.dp),
+                        ) {
+                            Icon(
+                                imageVector = if (index > state.currentIndex) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (index > state.currentIndex) "Move earlier" else "Move later",
+                                tint = colors.onSurfaceVariant,
+                            )
+                        }
+                    }
                     IconButton(onClick = { onRemoveFromQueue(index) }) {
-                        Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.Gray)
+                        Icon(Icons.Default.Close, contentDescription = "Remove", tint = colors.onSurfaceVariant)
                     }
                 }
             }
@@ -396,15 +507,36 @@ private fun QueuePreview(
 
 @Composable
 private fun LyricsPanel(
-    lyrics: String?,
+    lyrics: LyricsDocument?,
     isLoading: Boolean,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    positionMs: Long,
+    onSeekTo: (Long) -> Unit,
 ) {
+    val colors = MaterialTheme.colorScheme
+    val activeIndex = remember(lyrics, positionMs) {
+        if (lyrics?.isSynced == true) {
+            lyrics.lines.indexOfLast { line ->
+                val start = line.startMs ?: return@indexOfLast false
+                start <= positionMs
+            }
+        } else {
+            -1
+        }
+    }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    LaunchedEffect(activeIndex, lyrics?.isSynced) {
+        if (activeIndex >= 0 && lyrics?.isSynced == true) {
+            listState.animateScrollToItem((activeIndex - 2).coerceAtLeast(0))
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 240.dp)
-            .background(SurfaceCard, RoundedCornerShape(16.dp))
+            .heightIn(max = 360.dp)
+            .background(colors.surfaceVariant, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         Row(
@@ -412,15 +544,54 @@ private fun LyricsPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("LYRICS", color = PrimaryPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            TextButton(onClick = onClose) { Text("Close", color = Color.Gray) }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("LYRICS", color = colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                if (lyrics?.isSynced == true) {
+                    Text(
+                        text = "LIVE · ${lyrics.source}",
+                        color = colors.onSurfaceVariant,
+                        fontSize = 10.sp,
+                        letterSpacing = 0.8.sp,
+                    )
+                }
+            }
+            TextButton(onClick = onClose) { Text("Close", color = colors.onSurfaceVariant) }
         }
         when {
-            isLoading -> CircularProgressIndicator(color = PrimaryPurple, modifier = Modifier.size(24.dp))
-            lyrics.isNullOrBlank() -> Text("Lyrics are not available for this track.", color = Color.Gray, fontSize = 13.sp)
-            else -> androidx.compose.foundation.lazy.LazyColumn {
-                item {
-                    Text(lyrics, color = Color.White, fontSize = 14.sp, lineHeight = 22.sp)
+            isLoading -> CircularProgressIndicator(color = colors.primary, modifier = Modifier.size(24.dp))
+            lyrics == null || lyrics.lines.isEmpty() -> Text(
+                "Lyrics are not available for this track.",
+                color = colors.onSurfaceVariant,
+                fontSize = 13.sp,
+            )
+            else -> {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    itemsIndexed(
+                        items = lyrics.lines,
+                        key = { index, line -> "${index}:${line.startMs}:${line.text.hashCode()}" },
+                    ) { index, line ->
+                        val isActive = index == activeIndex
+                        val startMs = line.startMs
+                        Text(
+                            text = line.text,
+                            color = if (isActive) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                            fontSize = if (isActive) 18.sp else 15.sp,
+                            lineHeight = if (isActive) 24.sp else 21.sp,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isActive) colors.primaryContainer else Color.Transparent)
+                                .clickable(enabled = startMs != null) {
+                                    startMs?.let(onSeekTo)
+                                }
+                                .padding(horizontal = 12.dp, vertical = 9.dp),
+                        )
+                    }
                 }
             }
         }
