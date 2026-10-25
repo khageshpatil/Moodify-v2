@@ -581,15 +581,24 @@ export class InnerTubeProviderAdapter {
     }
 
     let poToken;
-    try {
-      // GVS playback tokens are video-bound and must be minted for every
-      // video. Without this token YouTube can return a perfectly valid-looking
-      // format URL that later fails with HTTP 403 at googlevideo.com.
-      const tokenClient = await this.getClient();
-      poToken = await this.withTimeout(getPoToken(tokenClient, id), 30_000);
-    } catch (error) {
-      diagnostics('playback.po_token.failed', { id, error: error.message });
-    }
+    let poTokenAttempted = false;
+    const getOptionalPoToken = async () => {
+      if (poTokenAttempted) return poToken;
+      poTokenAttempted = true;
+      try {
+        // GVS playback tokens are video-bound. They are only needed for web
+        // clients, so do not block native Android playback on BotGuard during
+        // every request. Render/datacenter environments can spend 30 seconds
+        // in this challenge even when the Android player URL is immediately
+        // available.
+        const tokenClient = await this.getClient();
+        poToken = await this.withTimeout(getPoToken(tokenClient, id), 7_000);
+      } catch (error) {
+        diagnostics('playback.po_token.failed', { id, error: error.message });
+        poToken = undefined;
+      }
+      return poToken;
+    };
 
     const loadBasicInfo = (client) => client.getBasicInfo(
       id,
@@ -624,6 +633,7 @@ export class InnerTubeProviderAdapter {
       let candidateClient;
       try {
         candidateClient = await this.getClient(attempt.clientType === undefined ? attempt.name : attempt.clientType);
+        if (['MWEB', 'WEB'].includes(attempt.name)) await getOptionalPoToken();
         info = await this.withRetry(() => this.withTimeout(attempt.load(candidateClient)));
       } catch (error) {
         lastPlaybackError = error;
