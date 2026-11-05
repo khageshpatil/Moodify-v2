@@ -806,7 +806,7 @@ internal object CatalogRendererParser {
             text(renderer.opt("subtitle")),
         )
         val artist = firstNonBlank(
-            artistFromPlayLabel(renderer),
+            artistFromPlayLabel(renderer, title),
             artistFromMetadata(metadata),
             text(renderer.opt("subtitle")),
             flexColumnText(renderer, 1),
@@ -1124,7 +1124,7 @@ internal object CatalogRendererParser {
         )
     }
 
-    private fun artistFromPlayLabel(renderer: JSONObject): String? {
+    private fun artistFromPlayLabel(renderer: JSONObject, title: String): String? {
         val label = renderer
             .optJSONObject("overlay")
             ?.optJSONObject("musicItemThumbnailOverlayRenderer")
@@ -1138,9 +1138,16 @@ internal object CatalogRendererParser {
         if (label.isBlank()) return null
         // Labels look like "Play <title> - <artist>", but YouTube Music also
         // emits "Play <title> - 3 minutes, 49 seconds"; never treat that as an artist.
-        return label.substringAfterLast(" - ", "")
-            .trim()
-            .takeIf { it.isNotBlank() && !isSpokenDurationOrDate(it) }
+        // Strip the known title rather than splitting on the last " - ": titles like
+        // "Veezha Veera (From "OM: Udhiram - The Blood Wood")" contain " - " themselves.
+        val knownPrefix = "Play $title - "
+        val artist = if (label.startsWith(knownPrefix, ignoreCase = true)) {
+            label.substring(knownPrefix.length)
+        } else {
+            // A tail that is really the end of the title is not an artist.
+            label.substringAfterLast(" - ", "").takeUnless { tail -> tail.isNotBlank() && title.endsWith(tail.trim()) }.orEmpty()
+        }
+        return artist.trim().takeIf { it.isNotBlank() && !isSpokenDurationOrDate(it) }
     }
 
     private fun artistFromMetadata(metadata: String?): String? {

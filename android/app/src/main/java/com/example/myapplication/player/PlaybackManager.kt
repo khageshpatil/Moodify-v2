@@ -215,8 +215,16 @@ class PlaybackManager private constructor(context: Context) {
                     httpStatusCode = null,
                     recoveryAction = null,
                 )
-                historyRecordedForTrack = null
-                refreshAttempts.remove(track.id)
+                // Recovery reloads the same song with setMediaItem, which reports a
+                // PLAYLIST_CHANGED transition. Resetting the retry budget (and the
+                // "already counted this play" flag) there would retry a dead stream
+                // forever and count every recovery as a new play. User-started plays
+                // (playTrack/retryCurrent) reset these themselves.
+                val movedToNewSong = reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
+                if (movedToNewSong) {
+                    historyRecordedForTrack = null
+                    refreshAttempts.remove(track.id)
+                }
                 val resolvedDurationMs = streamContracts[cacheKey]?.durationMs
                 _state.update {
                     it.copy(
@@ -231,7 +239,7 @@ class PlaybackManager private constructor(context: Context) {
                             ?: (track.durationSeconds * 1000L),
                         errorMessage = null,
                         isResolving = false,
-                        recoveryAttempt = 0,
+                        recoveryAttempt = if (movedToNewSong) 0 else it.recoveryAttempt,
                     )
                 }
                 publishProgress(positionMs = 0L)
@@ -290,6 +298,9 @@ class PlaybackManager private constructor(context: Context) {
                             _state.update { it.copy(sleepAtEndOfTrack = false) }
                             persistState()
                         } else if (current.isRepeat && current.currentTrack != null) {
+                            // A repeat is a fresh play: fresh retry budget, counted again.
+                            historyRecordedForTrack = null
+                            refreshAttempts.remove(current.currentTrack.id)
                             loadAndPlay(current.currentTrack, ++loadGeneration)
                         } else if (current.isShuffle || current.currentIndex < current.queue.lastIndex) {
                             playNext()
@@ -486,6 +497,7 @@ class PlaybackManager private constructor(context: Context) {
         ensureServiceStarted()
 
         refreshAttempts.remove(track.id)
+        historyRecordedForTrack = null
         activePlaybackRoute = PlaybackRoute.NONE
         persistState()
         loadAndPlay(track, ++loadGeneration)
@@ -635,17 +647,22 @@ class PlaybackManager private constructor(context: Context) {
     fun playNext() {
         val current = _state.value
         if (current.queue.isEmpty()) return
-        val nextIndex = if (current.isShuffle) {
-            current.queue.indices.filter { it != current.currentIndex }.randomOrNull()
-                ?: current.currentIndex
-        } else {
-            current.currentIndex + 1
-        }
-        val nextTrack = current.queue.getOrNull(nextIndex) ?: return
         val queuedNext = exoPlayer.nextMediaItemIndex
             .takeIf { it != C.INDEX_UNSET }
             ?.let(exoPlayer::getMediaItemAt)
-        if (!current.isShuffle && queuedNext?.mediaId == nextTrack.id) {
+        // preloadNext keeps the item after the current one in sync with the
+        // queue (including the shuffle pick), so prefer it when present.
+        val preloaded = queuedNext?.let { item -> current.queue.firstOrNull { it.id == item.mediaId } }
+        val nextTrack = preloaded ?: run {
+            val nextIndex = if (current.isShuffle) {
+                current.queue.indices.filter { it != current.currentIndex }.randomOrNull()
+                    ?: current.currentIndex
+            } else {
+                current.currentIndex + 1
+            }
+            current.queue.getOrNull(nextIndex)
+        } ?: return
+        if (queuedNext?.mediaId == nextTrack.id) {
             // The next item has already been resolved and prepared while the
             // current song was playing. Handoff through ExoPlayer's timeline
             // instead of resolving and preparing a new player item.
@@ -695,16 +712,34 @@ class PlaybackManager private constructor(context: Context) {
     fun toggleShuffle() {
         _state.update { it.copy(isShuffle = !it.isShuffle) }
         persistState()
+        preloadNext()
     }
 
     fun toggleRepeat() {
         _state.update { it.copy(isRepeat = !it.isRepeat) }
         persistState()
+        preloadNext()
     }
 
     fun addToQueue(track: Track, playNext: Boolean = false) {
         _state.update { current ->
-            if (current.queue.any { it.id == track.id }) return@update current
+            val existingIndex = current.queue.indexOfFirst { it.id == track.id }
+            if (existingIndex >= 0) {
+                // Already queued: "Play next" moves it up behind the current song;
+                // a plain "Add to queue" leaves the queue as it is.
+                if (!playNext || existingIndex == current.currentIndex) return@update current
+                val queue = current.queue.toMutableList()
+                val moved = queue.removeAt(existingIndex)
+                val currentIndex = if (existingIndex < current.currentIndex) current.currentIndex - 1 else current.currentIndex
+                val insertAt = currentIndex + 1
+                queue.add(insertAt, moved)
+                // Keep the "Autoplay" boundary on the same first radio song.
+                val autoplayFrom = current.autoplayFromIndex?.let { from ->
+                    val afterRemoval = if (existingIndex < from) from - 1 else from
+                    if (insertAt <= afterRemoval) afterRemoval + 1 else afterRemoval
+                }
+                return@update current.copy(queue = queue, currentIndex = currentIndex, autoplayFromIndex = autoplayFrom)
+            }
             val insertionIndex = if (playNext) {
                 (current.currentIndex + 1).coerceIn(0, current.queue.size)
             } else {
@@ -715,6 +750,7 @@ class PlaybackManager private constructor(context: Context) {
             )
         }
         persistState()
+        preloadNext()
     }
 
     fun removeFromQueue(index: Int) {
@@ -733,6 +769,7 @@ class PlaybackManager private constructor(context: Context) {
             )
         }
         persistState()
+        preloadNext()
     }
 
     /** Re-inserts [track] at [index] (used to undo a removal). No-op if it is already queued. */
@@ -1225,25 +1262,46 @@ class PlaybackManager private constructor(context: Context) {
         }
         .build()
 
+    /**
+     * Keeps ExoPlayer's playlist as exactly [current song, the song that should
+     * play next] and warms that next song's stream.
+     *
+     * ExoPlayer auto-advances to whatever item follows the current one, so the
+     * slot after it must always mirror the queue: call this after every queue,
+     * shuffle or repeat change. With repeat on the slot stays empty, so the song
+     * ends and STATE_ENDED replays it.
+     */
     private fun preloadNext() {
-        val current = _state.value
-        val nextIndex = if (current.isShuffle) {
-            current.queue.indices.filter { it != current.currentIndex }.randomOrNull()
-        } else {
-            current.currentIndex + 1
-        }
-        val nextTrack = current.queue.getOrNull(nextIndex ?: -1) ?: return
-        val currentTrackId = current.currentTrack?.id ?: return
+        val currentTrackId = _state.value.currentTrack?.id ?: return
         preloadJob?.cancel()
         preloadJob = scope.launch {
-            if (_state.value.currentTrack?.id != currentTrackId ||
+            val current = _state.value
+            if (current.currentTrack?.id != currentTrackId ||
                 exoPlayer.currentMediaItem?.mediaId != currentTrackId
             ) {
                 return@launch
             }
-            val alreadyQueued = (0 until exoPlayer.mediaItemCount).any {
-                exoPlayer.getMediaItemAt(it).mediaId == nextTrack.id
+            val currentMediaIndex = exoPlayer.currentMediaItemIndex
+            val upcomingId = (currentMediaIndex + 1)
+                .takeIf { it < exoPlayer.mediaItemCount }
+                ?.let { exoPlayer.getMediaItemAt(it).mediaId }
+            val nextTrack: Track? = when {
+                current.isRepeat -> null
+                current.isShuffle ->
+                    // Keep an earlier shuffle pick while it is still queued, so
+                    // re-syncing does not reshuffle (and re-resolve) every time.
+                    current.queue.firstOrNull { it.id == upcomingId && it.id != currentTrackId }
+                        ?: current.queue.filterIndexed { i, _ -> i != current.currentIndex }.randomOrNull()
+                else -> current.queue.getOrNull(current.currentIndex + 1)
             }
+            // Drop everything after the current item that is not the desired next song.
+            for (i in exoPlayer.mediaItemCount - 1 downTo currentMediaIndex + 1) {
+                if (i != currentMediaIndex + 1 || exoPlayer.getMediaItemAt(i).mediaId != nextTrack?.id) {
+                    exoPlayer.removeMediaItem(i)
+                }
+            }
+            nextTrack ?: return@launch
+            val alreadyQueued = exoPlayer.mediaItemCount > currentMediaIndex + 1
             val downloaded = downloadManager.get(nextTrack.id)
             val cacheKey = if (downloaded != null) "moodify:${nextTrack.id}:download" else streamCacheKey(nextTrack.id)
             if (!alreadyQueued) {

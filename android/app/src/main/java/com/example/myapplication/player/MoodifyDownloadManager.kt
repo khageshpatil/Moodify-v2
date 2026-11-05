@@ -7,6 +7,8 @@ import com.moodify.app.data.Track
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import com.moodify.app.data.OnceGate
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -74,13 +76,31 @@ class MoodifyDownloadManager(
         val stream = resolvedStream ?: resolver.resolve(track.id)
         val temporaryFile = File(downloadDirectory, "${track.id}.part")
         val targetFile = File(downloadDirectory, "${track.id}.${extensionFor(stream.mimeType)}")
-        val resumeAt = temporaryFile.takeIf { it.isFile }?.length()?.coerceAtLeast(0L) ?: 0L
+        val metaFile = File(downloadDirectory, "${track.id}.part.meta")
         val knownLength = stream.contentLength?.takeIf { it > 0L }
-        if (knownLength != null) {
-            downloadInChunks(stream, temporaryFile, resumeAt.coerceAtMost(knownLength), knownLength, onProgress)
-        } else {
-            downloadInOneRequest(stream, temporaryFile, resumeAt, onProgress)
+        val signature = "${stream.itag}|${stream.mimeType}|${knownLength ?: -1L}"
+        var resumeAt = temporaryFile.takeIf { it.isFile }?.length()?.coerceAtLeast(0L) ?: 0L
+        // Only resume a partial file written for the exact same stream format.
+        val sameStream = runCatching { metaFile.takeIf { it.isFile }?.readText() }.getOrNull() == signature
+        if (resumeAt > 0L && (!sameStream || (knownLength != null && resumeAt > knownLength))) {
+            temporaryFile.delete()
+            resumeAt = 0L
         }
+        metaFile.writeText(signature)
+        try {
+            if (knownLength != null) {
+                downloadInChunks(stream, temporaryFile, resumeAt, knownLength, onProgress)
+            } else {
+                downloadInOneRequest(stream, temporaryFile, resumeAt, onProgress)
+            }
+            // The user may have cancelled/removed the download while the last bytes were in flight.
+            currentCoroutineContext().ensureActive()
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            temporaryFile.delete()
+            metaFile.delete()
+            throw cancelled
+        }
+        metaFile.delete()
         if (!temporaryFile.renameTo(targetFile)) {
             temporaryFile.delete()
             throw IOException("Could not finalize downloaded audio")
@@ -96,8 +116,10 @@ class MoodifyDownloadManager(
             filePath = targetFile.absolutePath,
             mimeType = stream.mimeType
         )
-        records[track.id] = record
+        // Persist first: if the job is cancelled during the write, the in-memory
+        // map must not claim a download that has no stored record.
         saveRecord(record)
+        records[track.id] = record
         record
     }
 
@@ -105,6 +127,7 @@ class MoodifyDownloadManager(
         ensureLoaded()
         records.remove(id)?.let { File(it.filePath).delete() }
         File(downloadDirectory, "$id.part").delete()
+        File(downloadDirectory, "$id.part.meta").delete()
         dao.deleteDownload(id)
     }
 
@@ -173,7 +196,7 @@ class MoodifyDownloadManager(
      * speed. Bounded range requests are served at full speed, so a known-size
      * file is fetched in [CHUNK_BYTES] pieces (resuming from [startAt]).
      */
-    private fun downloadInChunks(
+    private suspend fun downloadInChunks(
         stream: InnerTubeStreamResolver.ResolvedStream,
         temporaryFile: File,
         startAt: Long,
@@ -182,9 +205,11 @@ class MoodifyDownloadManager(
     ) {
         var position = startAt
         var lastReportedProgress = -1
+        val context = currentCoroutineContext()
         FileOutputStream(temporaryFile, startAt > 0L).use { output ->
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
             while (position < totalBytes) {
+                context.ensureActive()
                 val end = minOf(position + CHUNK_BYTES, totalBytes) - 1
                 val request = Request.Builder()
                     .url(stream.url)
@@ -199,6 +224,7 @@ class MoodifyDownloadManager(
                     val body = response.body ?: throw IOException("Download returned no body")
                     body.byteStream().use { input ->
                         while (true) {
+                            context.ensureActive()
                             val read = input.read(buffer)
                             if (read < 0) break
                             output.write(buffer, 0, read)
@@ -217,12 +243,14 @@ class MoodifyDownloadManager(
     }
 
     /** Fallback when the size is unknown: one request, resuming a partial file if possible. */
-    private fun downloadInOneRequest(
+    private suspend fun downloadInOneRequest(
         stream: InnerTubeStreamResolver.ResolvedStream,
         temporaryFile: File,
         resumeAt: Long,
         onProgress: (Int) -> Unit,
     ) {
+        val context = currentCoroutineContext()
+        context.ensureActive()
         val request = Request.Builder()
             .url(stream.url)
             .header("User-Agent", stream.userAgent)
@@ -242,6 +270,7 @@ class MoodifyDownloadManager(
                     var completedBytes = startBytes
                     var lastReportedProgress = -1
                     while (true) {
+                        context.ensureActive()
                         val read = input.read(buffer)
                         if (read < 0) break
                         output.write(buffer, 0, read)

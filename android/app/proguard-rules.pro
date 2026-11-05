@@ -38,8 +38,16 @@
 -keep class * implements com.google.gson.TypeAdapterFactory
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
-# Keep all Moodify data model classes used with Gson
--keep class com.example.myapplication.data.** { *; }
+# Keep the fields of every Moodify class that Gson reads or writes. Their JSON
+# is persisted (Room rows, queue snapshots, WorkManager tags, catalog cache), so
+# renaming a field would make data written by one build unreadable by the next.
+# Note: sources live under com/example/myapplication but the package is com.moodify.app.
+-keep class com.moodify.app.data.** { *; }
+-keep class com.moodify.app.player.DownloadedTrack { *; }
+-keep class com.moodify.app.player.ListeningHistoryEntry { *; }
+# Generic types read through TypeToken (List<Track>, Map<String, DownloadedTrack>…).
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
 
 # ─── Media3 / ExoPlayer ──────────────────────────────────────────────────────
 -keep class androidx.media3.** { *; }

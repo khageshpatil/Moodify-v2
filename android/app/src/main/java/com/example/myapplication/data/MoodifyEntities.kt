@@ -271,6 +271,9 @@ interface MoodifyDao {
     @Query("DELETE FROM lyrics_cache WHERE trackId = :trackId")
     suspend fun deleteLyrics(trackId: String)
 
+    @Query("DELETE FROM lyrics_cache")
+    suspend fun clearLyrics()
+
     @Query("SELECT * FROM downloads")
     suspend fun downloads(): List<DownloadEntity>
 

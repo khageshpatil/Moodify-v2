@@ -48,7 +48,12 @@ class NativeLyricsRepository(
         // those variants even when the canonical song has lyrics. Search all
         // providers and prefer a close-matching synced result over plain text.
         val candidates = search(track.title, track.artist, track.album, track.durationSeconds, track.id)
-        selectBestSearchResult(track, candidates)?.document ?: exactMatch
+        // LRCLIB's exact endpoint already matched title, artist and length (±2 s),
+        // so it competes as a fully trusted candidate rather than a last resort.
+        val exactCandidate = exactMatch?.let {
+            LyricsSearchResult(track.title, track.artist, track.album, track.durationSeconds, it)
+        }
+        selectBestSearchResult(track, listOfNotNull(exactCandidate) + candidates)?.document ?: exactMatch
     }
 
     suspend fun search(
@@ -82,7 +87,25 @@ class NativeLyricsRepository(
         candidates: List<LyricsSearchResult>,
     ): LyricsSearchResult? = candidates
         .filter { matchScore(track, it.title, it.artist) > 0 }
+        .map { it.withTrustworthyTiming(track) }
         .maxByOrNull { lyricsResultRank(track, it) }
+
+    /**
+     * Keeps a result's timestamps only when it was timed against a recording of
+     * the same length; otherwise the words are still right but the timing would
+     * drift, so it is shown as plain (unsynced) lyrics instead.
+     */
+    private fun LyricsSearchResult.withTrustworthyTiming(track: Track): LyricsSearchResult {
+        val lengthDiffers = track.durationSeconds > 0 && durationSeconds > 0 &&
+            kotlin.math.abs(track.durationSeconds - durationSeconds) > MAX_SYNC_LENGTH_DIFFERENCE_SECONDS
+        if (!document.isSynced || !lengthDiffers) return this
+        return copy(
+            document = document.copy(
+                lines = document.lines.map { it.copy(startMs = null, endMs = null, words = null) },
+                isSynced = false,
+            ),
+        )
+    }
 
     private fun lyricsResultRank(track: Track, result: LyricsSearchResult): Int {
         val titleArtistScore = matchScore(track, result.title, result.artist)
@@ -429,23 +452,53 @@ class NativeLyricsRepository(
         .trim()
         .equals("probe", ignoreCase = true)
 
+    /**
+     * How well a provider's title/artist matches the song; 0 means "not this song".
+     * The title must match: the same artist's other songs have the wrong lyrics.
+     */
     private fun matchScore(track: Track, titleValue: String, artistValue: String): Int {
         val title = normalize(titleValue)
-        val artist = normalize(artistValue)
         val requestedTitle = normalize(track.title)
-        val requestedArtist = normalize(track.artist)
-        var score = 0
-        if (title == requestedTitle) score += 5
-        else if (title.contains(requestedTitle) || requestedTitle.contains(title)) score += 3
-        if (artist == requestedArtist) score += 4
-        else if (artist.contains(requestedArtist) || requestedArtist.contains(artist)) score += 2
-        return score
+        // An empty normalised title (e.g. only punctuation) must never match everything.
+        if (title.isEmpty() || requestedTitle.isEmpty()) return 0
+        val titleScore = when {
+            title == requestedTitle -> 5
+            " $title ".contains(" $requestedTitle ") || " $requestedTitle ".contains(" $title ") -> 3
+            else -> return 0
+        }
+        return titleScore + artistScore(track.artist, artistValue)
     }
 
-    private fun normalize(value: String): String = value
-        .lowercase()
+    /** Credits are compared as sets: "A, B & C" matches "C/A/B" and "A, B, C and D". */
+    private fun artistScore(requested: String, found: String): Int {
+        val requestedNames = artistNames(requested)
+        val foundNames = artistNames(found)
+        if (requestedNames.isEmpty() || foundNames.isEmpty()) return 0
+        return when {
+            requestedNames == foundNames -> 4
+            requestedNames.any { it in foundNames } -> 3
+            normalize(found).contains(normalize(requested)) || normalize(requested).contains(normalize(found)) -> 2
+            else -> 0
+        }
+    }
+
+    private fun artistNames(value: String): Set<String> = value.lowercase()
+        .split(ARTIST_SEPARATORS)
+        .map(::normalize)
+        .filter(String::isNotBlank)
+        .toSet()
+
+    /**
+     * Comparable form of a title or name: lower case, Latin accents folded,
+     * bracketed extras ("(From …)", "[Live]") dropped. Letters of every script
+     * are kept, so Hindi or Punjabi titles stay comparable instead of collapsing
+     * to an empty string.
+     */
+    private fun normalize(value: String): String = java.text.Normalizer
+        .normalize(value.lowercase(), java.text.Normalizer.Form.NFD)
+        .replace(LATIN_ACCENTS, "")
         .replace(Regex("\\([^)]*\\)|\\[[^]]*]"), " ")
-        .replace(Regex("[^a-z0-9]+"), " ")
+        .replace(Regex("[^\\p{L}\\p{N}\\p{M}]+"), " ")
         .trim()
         .replace(Regex("\\s+"), " ")
 
@@ -454,6 +507,13 @@ class NativeLyricsRepository(
         const val SYNCED_LYRICS_RANK_BONUS = 250
         const val WORD_SYNCED_LYRICS_RANK_BONUS = 500
         const val DURATION_RANK_PENALTY_CAP_SECONDS = 25
+        /**
+         * Timings from a recording whose length differs by more than this are
+         * for a different version (video cut, radio edit, slowed…) and drift.
+         */
+        const val MAX_SYNC_LENGTH_DIFFERENCE_SECONDS = 3
+        val LATIN_ACCENTS = Regex("[\\u0300-\\u036f]")
+        val ARTIST_SEPARATORS = Regex("\\s*(?:,|&|/|;|\\||\\bfeat\\.?|\\bft\\.?|\\band\\b|\\bwith\\b|\\bx\\b)\\s*")
         const val PLAIN_LYRICS_QUALITY = 0
         const val LINE_SYNCED_QUALITY = 1
         const val WORD_SYNCED_QUALITY = 2

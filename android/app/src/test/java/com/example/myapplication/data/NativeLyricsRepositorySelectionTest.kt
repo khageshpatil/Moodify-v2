@@ -115,4 +115,50 @@ class NativeLyricsRepositorySelectionTest {
 
         assertEquals("BetterLyrics", selected?.document?.source)
     }
+
+    private fun synced(title: String, artist: String, seconds: Int, source: String = "LRCLIB") = LyricsSearchResult(
+        title = title,
+        artist = artist,
+        album = "",
+        durationSeconds = seconds,
+        document = requireNotNull(LyricsParser.parse("[00:10.00]Line one\n[00:15.00]Line two", source = source)),
+    )
+
+    @Test
+    fun picksTheSyncedVersionWhoseLengthMatchesTheSong() {
+        // LRCLIB really has "Sakhiyaan" timed for both a 199 s video cut and the 179 s audio.
+        val track = Track(id = "v", title = "Sakhiyaan", artist = "Maninder Buttar", durationSeconds = 179)
+        val selected = repository.selectBestSearchResult(
+            track,
+            listOf(synced("Sakhiyaan", "Maninder Buttar", 199, "video-cut"), synced("Sakhiyaan", "Maninder Buttar", 179, "audio")),
+        )
+        assertEquals("audio", selected?.document?.source)
+        assertTrue(selected?.document?.isSynced == true)
+    }
+
+    @Test
+    fun neverShowsTimingsFromADifferentLengthVersion() {
+        // Only a 206 s version is timed; its timestamps would drift ~30 s on the 175 s song.
+        val track = Track(id = "v", title = "Banda Bamb", artist = "Jordan Sandhu, Gur Sidhu & Kaptaan", durationSeconds = 175)
+        val selected = repository.selectBestSearchResult(track, listOf(synced("Banda Bamb", "Jordan Sandhu, Gur Sidhu, Kaptaan", 206)))
+        assertEquals("Line one\nLine two", selected?.document?.plainText)
+        assertFalse(selected?.document?.isSynced == true)
+    }
+
+    @Test
+    fun nonLatinTitlesDoNotMatchUnrelatedSongs() {
+        val track = Track(id = "v", title = "आईने के सौ टुकड़े", artist = "Shreya Ghoshal", durationSeconds = 240)
+        val unrelated = synced("Shape of You", "Ed Sheeran", 240)
+        assertEquals(null, repository.selectBestSearchResult(track, listOf(unrelated)))
+        val same = synced("आईने के सौ टुकड़े", "Shreya Ghoshal", 240, "same")
+        assertEquals("same", repository.selectBestSearchResult(track, listOf(unrelated, same))?.document?.source)
+    }
+
+    @Test
+    fun artistCreditsMatchRegardlessOfOrderAndSeparators() {
+        val track = Track(id = "v", title = "Gehra Hua (From \"Dhurandhar\")", artist = "Shashwat Sachdev, Arijit Singh, Armaan Khan", durationSeconds = 362)
+        val reordered = synced("Gehra Hua", "Irshad Kamil/Shashwat Sachdev/Arijit Singh/Armaan Khan", 362, "reordered")
+        val otherArtist = synced("Gehra Hua", "Someone Else", 362, "other")
+        assertEquals("reordered", repository.selectBestSearchResult(track, listOf(otherArtist, reordered))?.document?.source)
+    }
 }

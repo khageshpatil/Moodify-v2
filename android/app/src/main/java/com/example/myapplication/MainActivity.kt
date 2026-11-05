@@ -352,23 +352,28 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val bottomPadding = chromeHeight + navInset + Spacing.sm
 
     val homeState = remember(homeCatalog, history, favorites, trending, forYou, playback.currentTrack, playlists, isLoadingCatalog, catalogStale, catalogError, settings.favoriteMoods, personal, homeChips, selectedChip, isLoadingHomeMore, downloads) {
-        val jump = playback.currentTrack ?: history.firstOrNull()
+        // The mini-player already shows (and resumes) the current song, so Home
+        // has no "now playing" card; just don't deal that song into the picks.
+        val playingId = playback.currentTrack?.id
+        // Taste (from your plays) blended with YouTube's Quick picks for your region.
+        val discover = com.moodify.app.data.DiscoverBlend
+            .blend(forYou, com.moodify.app.data.DiscoverBlend.regionalPicks(homeCatalog))
+            .filterNot { it.id == playingId }
         HomeUiState(
             sections = homeCatalog?.sections.orEmpty().ifEmpty { exploreCatalog?.sections.orEmpty() },
-            quickPicks = forYou.filterNot { it.id == jump?.id }.ifEmpty {
-                (history.drop(if (playback.currentTrack == null) 1 else 0) + favorites + trending)
+            quickPicks = discover.ifEmpty {
+                (history + favorites + trending)
                     .distinctBy { it.id }
-                    .filterNot { it.id == jump?.id }
+                    .filterNot { it.id == playingId }
                     .take(16)
             },
-            quickPicksArePersonal = forYou.isNotEmpty(),
-            jumpBackIn = jump,
+            quickPicksArePersonal = discover.isNotEmpty(),
             pinnedPlaylists = playlists.filter { it.isPinned && it.tracks.isNotEmpty() },
             isLoading = isLoadingCatalog,
             isStale = catalogStale,
             error = catalogError,
             favoriteMoods = settings.favoriteMoods,
-            keepListening = personal.keepListening.filterNot { it.id == jump?.id },
+            keepListening = personal.keepListening.filterNot { it.id == playingId },
             forgotten = personal.forgotten,
             becauseArtist = personal.becauseArtist,
             becauseTracks = personal.becauseTracks,
@@ -420,10 +425,6 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onSelectChip = viewModel::selectHomeChip,
                         onLoadMore = viewModel::loadMoreHome,
                         onRefreshDiscover = viewModel::refreshForYou,
-                        onResume = { track ->
-                            if (playback.currentTrack?.id == track.id) manager.togglePlayPause()
-                            else actions.play(track, history.ifEmpty { listOf(track) })
-                        },
                     )
                 }
                 screen<SearchRoute>(

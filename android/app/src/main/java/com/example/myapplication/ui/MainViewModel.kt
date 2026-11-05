@@ -45,14 +45,23 @@ data class UiMessage(val text: String, val actionLabel: String? = null, val acti
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsStore = AppGraph.settingsStore
-    val appSettings = settingsStore.settings.stateIn(
-        viewModelScope,
-        SharingStarted.Eagerly,
-        AppSettings(),
-    )
+    private val _appSettings = MutableStateFlow(AppSettings())
+    val appSettings: StateFlow<AppSettings> = _appSettings.asStateFlow()
+    private val _settingsReady = MutableStateFlow(false)
     /** False until stored settings are read, so the first frame uses the user's real theme. */
-    val settingsReady: StateFlow<Boolean> = settingsStore.settings.map { true }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val settingsReady: StateFlow<Boolean> = _settingsReady.asStateFlow()
+
+    init {
+        // Assign the value before flipping ready, so ready never races ahead of real settings.
+        viewModelScope.launch {
+            // Before the first read, so the first catalogue load already uses the right country.
+            runCatching { settingsStore.migrateRegionToAutomatic() }
+            settingsStore.settings.collect { settings ->
+                _appSettings.value = settings
+                _settingsReady.value = true
+            }
+        }
+    }
 
     private val repository = AppGraph.repository
     private val persistence = AppGraph.persistence
@@ -235,8 +244,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _favoriteTrackIds.value = records.mapTo(mutableSetOf()) { it.trackId }
             }
         }
-        loadTrendingTracks()
-        loadCatalogSurfaces()
+        // Wait for stored settings so the first fetch/cache read uses the user's locale.
+        viewModelScope.launch {
+            settingsReady.first { it }
+            val settings = appSettings.value
+            AppGraph.catalogLocale = CatalogLocale(settings.language, settings.region).normalized()
+            loadTrendingTracks()
+            loadCatalogSurfaces()
+        }
 
         // Build For-you picks once there is something to base them on.
         viewModelScope.launch {
@@ -276,6 +291,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // reload region-sensitive shelves and let the Room page cache select
         // only entries written for the new language/country.
         viewModelScope.launch {
+            settingsReady.first { it }
             appSettings
                 .map { it.language to it.region }
                 .distinctUntilChanged()

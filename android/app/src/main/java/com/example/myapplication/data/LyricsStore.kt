@@ -17,7 +17,15 @@ class LyricsStore(
     private val legacyImport = OnceGate()
 
     /** Visible for tests: completes the one-time legacy import. */
-    suspend fun ensureImported() = legacyImport.run { migrateLegacySnapshot() }
+    suspend fun ensureImported() = legacyImport.run {
+        migrateLegacySnapshot()
+        // Lyrics cached before matching version 2 may belong to another song or
+        // carry another recording's timings; drop them once so they are re-fetched.
+        if (preferences.getInt(KEY_MATCHING_VERSION, 1) < MATCHING_VERSION) {
+            withContext(Dispatchers.IO) { dao.clearLyrics() }
+            preferences.edit().putInt(KEY_MATCHING_VERSION, MATCHING_VERSION).apply()
+        }
+    }
 
     suspend fun read(trackId: String): LyricsDocument? = withContext(Dispatchers.IO) {
         ensureImported()
@@ -85,5 +93,7 @@ class LyricsStore(
 
     private companion object {
         const val MAX_AGE_MS = 7L * 24L * 60L * 60L * 1_000L
+        const val KEY_MATCHING_VERSION = "lyrics_matching_version"
+        const val MATCHING_VERSION = 2
     }
 }

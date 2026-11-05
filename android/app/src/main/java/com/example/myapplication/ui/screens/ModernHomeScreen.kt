@@ -97,7 +97,6 @@ data class HomeUiState(
     val quickPicks: List<Track> = emptyList(),
     /** True when [quickPicks] are personal recommendations rather than a recap. */
     val quickPicksArePersonal: Boolean = false,
-    val jumpBackIn: Track? = null,
     val pinnedPlaylists: List<LocalPlaylist> = emptyList(),
     val isLoading: Boolean = false,
     val isStale: Boolean = false,
@@ -126,7 +125,6 @@ fun HomeScreen(
     onOpenSearch: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPlaylist: (LocalPlaylist) -> Unit,
-    onResume: (Track) -> Unit,
     onSelectChip: (com.moodify.app.data.CatalogChip) -> Unit = {},
     onLoadMore: () -> Unit = {},
     onRefreshDiscover: () -> Unit = {},
@@ -180,11 +178,6 @@ fun HomeScreen(
                         item(key = "offlineShelf") {
                             TrackShelf(title = "Available offline", eyebrow = "Your downloads", tracks = state.offlineTracks)
                         }
-                    }
-                }
-                state.jumpBackIn?.let { track ->
-                    item(key = "jump") {
-                        JumpBackInCard(track = track, onPlay = { onResume(track) })
                     }
                 }
                 if (state.quickPicks.isNotEmpty()) {
@@ -346,86 +339,6 @@ private fun MoodRow(moods: List<MoodOption>, onMood: (MoodOption) -> Unit) {
                 Icon(mood.icon, contentDescription = null, tint = mood.hue, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(Spacing.sm))
                 Text(mood.label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
-            }
-        }
-    }
-}
-
-/** Large card for the song you were last listening to, wrapped in its own colours. */
-@Composable
-private fun JumpBackInCard(track: Track, onPlay: () -> Unit) {
-    val nowPlaying = LocalNowPlaying.current
-    val isCurrent = nowPlaying.trackId == track.id
-    val artwork = LocalArtworkColors.current
-    Column(Modifier.padding(horizontal = Spacing.gutter)) {
-        Text(
-            when {
-                isCurrent && nowPlaying.isPlaying -> "NOW PLAYING"
-                isCurrent -> "PICK UP WHERE YOU LEFT OFF"
-                else -> "JUMP BACK IN"
-            },
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(Spacing.sm))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(168.dp)
-                .shadow(24.dp, RoundedCornerShape(Radii.lg), ambientColor = artwork.glow, spotColor = artwork.glow)
-                .clip(RoundedCornerShape(Radii.lg))
-                .background(artwork.playerTop)
-                .pressable(pressedScale = 0.97f, haptic = true, onClick = onPlay),
-        ) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                AsyncImage(
-                    model = track.albumArtUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { scaleX = 1.4f; scaleY = 1.4f }
-                        .blur(48.dp),
-                    alpha = 0.6f,
-                )
-            }
-            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.55f)))))
-            Row(Modifier.fillMaxSize().padding(Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
-                ArtworkImage(
-                    url = track.albumArtUrl,
-                    contentDescription = null,
-                    placeholderKey = track.id,
-                    shape = RoundedCornerShape(Radii.md),
-                    modifier = Modifier
-                        .size(136.dp)
-                        .shadow(16.dp, RoundedCornerShape(Radii.md)),
-                )
-                Spacer(Modifier.width(Spacing.lg))
-                Column(Modifier.weight(1f)) {
-                    Text(track.title, style = MaterialTheme.typography.titleLarge, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(track.artist, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.75f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.height(Spacing.md))
-                    Surface(shape = CircleShape, color = artwork.playerAccent) {
-                        Row(Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (isCurrent && nowPlaying.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = null,
-                                tint = artwork.onPlayerAccent,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                when {
-                                    isCurrent && nowPlaying.isPlaying -> "Pause"
-                                    isCurrent -> "Resume"
-                                    else -> "Play"
-                                },
-                                style = MaterialTheme.typography.labelLarge,
-                                color = artwork.onPlayerAccent,
-                            )
-                        }
-                    }
-                }
             }
         }
     }

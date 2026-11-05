@@ -13,7 +13,10 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 data class AppSettings(
     val language: String = "en",
+    /** Effective catalogue country: the user's pick, or the detected one when [regionIsAutomatic]. */
     val region: String = "US",
+    /** True when the user has not picked a country and [region] follows [RegionDetector]. */
+    val regionIsAutomatic: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.DARK,
     val recentSearches: List<String> = emptyList(),
     /** Keep playing similar songs when the queue ends. */
@@ -33,10 +36,15 @@ private val Context.moodifySettingsDataStore by preferencesDataStore(name = "moo
 
 /** Durable app configuration boundary; catalog clients read this rather than UI preferences. */
 class SettingsStore(private val context: Context) {
+    /** Country the device is in; read once per process (network/SIM rarely change mid-session). */
+    val detectedRegion: String by lazy { RegionDetector.detect(context) }
+
     val settings: Flow<AppSettings> = context.moodifySettingsDataStore.data.map { values ->
+        val pickedRegion = values[REGION]?.trim()?.uppercase()?.takeIf { it.length == 2 }
         AppSettings(
             language = values[LANGUAGE].orEmpty().ifBlank { "en" },
-            region = values[REGION].orEmpty().ifBlank { "US" },
+            region = pickedRegion ?: detectedRegion,
+            regionIsAutomatic = pickedRegion == null,
             // Older builds stored a dark-mode boolean; honour it until the
             // user picks a mode in the new three-way setting.
             themeMode = values[THEME_MODE]?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } }
@@ -58,11 +66,34 @@ class SettingsStore(private val context: Context) {
         )
     }
 
+    /** [region] blank (or [AUTOMATIC_REGION]) means "follow the device's country". */
     suspend fun setLocale(language: String, region: String) {
         context.moodifySettingsDataStore.edit { values ->
             values[LANGUAGE] = language.lowercase().take(8).ifBlank { "en" }
-            values[REGION] = region.uppercase().take(2).ifBlank { "US" }
+            putRegion(values, region)
         }
+    }
+
+    /**
+     * One-time fix for installs made before automatic regions existed: the old
+     * default (and the onboarding pre-selection) copied the phone's language
+     * country, e.g. "US" on an English (United States) phone in India. Such a
+     * value was almost never a deliberate choice, so hand it back to detection.
+     */
+    suspend fun migrateRegionToAutomatic() {
+        context.moodifySettingsDataStore.edit { values ->
+            if (values[REGION_AUTO_MIGRATED] == "true") return@edit
+            val stored = values[REGION]
+            if (stored == null || stored.equals(java.util.Locale.getDefault().country, ignoreCase = true)) {
+                values.remove(REGION)
+            }
+            values[REGION_AUTO_MIGRATED] = "true"
+        }
+    }
+
+    private fun putRegion(values: androidx.datastore.preferences.core.MutablePreferences, region: String) {
+        val code = region.trim().uppercase()
+        if (code.isBlank() || code == AUTOMATIC_REGION) values.remove(REGION) else values[REGION] = code.take(2)
     }
 
     suspend fun setAutoplay(enabled: Boolean) {
@@ -76,7 +107,7 @@ class SettingsStore(private val context: Context) {
     suspend fun completeOnboarding(language: String, region: String, moods: List<String>) {
         context.moodifySettingsDataStore.edit { values ->
             values[LANGUAGE] = language.lowercase().take(8).ifBlank { "en" }
-            values[REGION] = region.uppercase().take(2).ifBlank { "US" }
+            putRegion(values, region)
             values[FAVORITE_MOODS] = moods.joinToString(",")
             values[ONBOARDING_DONE] = "true"
         }
@@ -137,9 +168,12 @@ class SettingsStore(private val context: Context) {
         context.moodifySettingsDataStore.edit { values -> values[VISITOR_DATA] = normalized }
     }
 
-    private companion object {
-        val LANGUAGE = stringPreferencesKey("language")
-        val REGION = stringPreferencesKey("region")
+    companion object {
+        /** Pass as the region to follow the device's country instead of a fixed one. */
+        const val AUTOMATIC_REGION = "AUTO"
+        private val LANGUAGE = stringPreferencesKey("language")
+        private val REGION = stringPreferencesKey("region")
+        private val REGION_AUTO_MIGRATED = stringPreferencesKey("region_auto_migrated")
         val DARK_THEME = stringPreferencesKey("dark_theme")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")

@@ -60,3 +60,19 @@ class QuickPicksRankerTest {
         assertEquals(listOf("m1", "m2", "r1", "l1", "l2", "l3"), seeds.map { it.id })
     }
 }
+
+class DiscoverBlendTest {
+    private fun t(id: String) = Track(id = id, title = id, artist = "a")
+
+    @org.junit.Test
+    fun interleavesTwoPersonalPicksWithOneRegionalPick() {
+        val deck = DiscoverBlend.blend(listOf(t("p1"), t("p2"), t("p3"), t("p4")), listOf(t("r1"), t("r2")))
+        org.junit.Assert.assertEquals(listOf("p1", "p2", "r1", "p3", "p4", "r2"), deck.map { it.id })
+    }
+
+    @org.junit.Test
+    fun newListenerWithNoHistoryStillGetsRegionalPicksAndNoDuplicates() {
+        org.junit.Assert.assertEquals(listOf("r1", "r2"), DiscoverBlend.blend(emptyList(), listOf(t("r1"), t("r2"), t("r1"))).map { it.id })
+        org.junit.Assert.assertEquals(listOf("p1", "r2"), DiscoverBlend.blend(listOf(t("p1")), listOf(t("p1"), t("r2"))).map { it.id })
+    }
+}

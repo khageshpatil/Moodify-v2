@@ -77,7 +77,7 @@ class PlaylistStore(
                     playlistId = id,
                     trackId = track.id,
                     trackJson = gson.toJson(track.copy(isFavorite = false)),
-                    position = existing.size,
+                    position = (existing.maxOfOrNull { it.position } ?: -1) + 1,
                 ),
             ),
         )

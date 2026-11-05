@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.moodify.app.BuildConfig
 import com.moodify.app.data.AppSettings
+import com.moodify.app.data.SettingsStore
 import com.moodify.app.data.ThemeMode
 import com.moodify.app.player.PlaybackDiagnostics
 import com.moodify.app.ui.designsystem.pressable
@@ -150,10 +151,20 @@ fun SettingsScreen(
                 )
                 Spacer(Modifier.height(Spacing.md))
                 Text("Country", style = MaterialTheme.typography.labelLarge)
+                // Keep "automatic" when only the language changes.
+                val regionChoice = if (settings.regionIsAutomatic) SettingsStore.AUTOMATIC_REGION else settings.region
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    FilterChip(
+                        selected = settings.regionIsAutomatic,
+                        onClick = { actions.onLocale(settings.language, SettingsStore.AUTOMATIC_REGION) },
+                        label = {
+                            Text(if (settings.regionIsAutomatic) "📍 Automatic · ${flagOf(settings.region)} ${settings.region}" else "📍 Automatic")
+                        },
+                        shape = CircleShape,
+                    )
                     REGIONS.forEach { code ->
                         FilterChip(
-                            selected = settings.region.equals(code, ignoreCase = true),
+                            selected = !settings.regionIsAutomatic && settings.region.equals(code, ignoreCase = true),
                             onClick = { actions.onLocale(settings.language, code) },
                             label = { Text("${flagOf(code)} $code") },
                             shape = CircleShape,
@@ -166,7 +177,7 @@ fun SettingsScreen(
                     LANGUAGES.forEach { (code, name) ->
                         FilterChip(
                             selected = settings.language.equals(code, ignoreCase = true),
-                            onClick = { actions.onLocale(code, settings.region) },
+                            onClick = { actions.onLocale(code, regionChoice) },
                             label = { Text(name) },
                             shape = CircleShape,
                         )

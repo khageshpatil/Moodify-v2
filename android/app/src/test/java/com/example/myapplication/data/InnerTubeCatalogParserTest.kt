@@ -559,6 +559,33 @@ class InnerTubeCatalogParserTest {
     }
 
     @Test
+    fun titleContainingADashDoesNotLeakIntoTheArtist() {
+        val title = "Veezha Veera (From \\\"OM Chapter 1: Udhiram - The Blood Wood\\\") [Tamil]"
+        val root = JSONObject(
+            """
+            {"items":[{"musicResponsiveListItemRenderer":{
+              "playlistItemData":{"videoId":"9IzKueQ2ZxY"},
+              "overlay":{"musicItemThumbnailOverlayRenderer":{"content":{
+                "musicPlayButtonRenderer":{"accessibilityPlayData":{"accessibilityData":{
+                  "label":"Play $title - Sai Abhyankkar, Tippu & Arun Srinivas"
+                }}}
+              }}},
+              "flexColumns":[
+                {"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"$title"}]}}},
+                {"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"Song"},{"text":" • "},{"text":"3:33"}]}}}
+              ]
+            }}]}
+            """.trimIndent(),
+        )
+
+        val track = CatalogRendererParser
+            .parse(root, "search", "Search", CatalogLocale("en", "US"))
+            .sections.single().items.single().track
+
+        assertEquals("Sai Abhyankkar, Tippu & Arun Srinivas", track?.artist)
+    }
+
+    @Test
     fun parsesMoodsAndGenresGridButtonsWithBrowseParametersAndAccentColors() {
         val root = JSONObject(
             """
