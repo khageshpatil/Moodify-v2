@@ -1,20 +1,24 @@
-package com.example.myapplication.player
+package com.moodify.app.player
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.moodify.app.data.CatalogLocale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
-import com.example.myapplication.BuildConfig
 
 /**
  * Resolves a YouTube video id to a short-lived audio CDN URL using InnerTube.
@@ -24,11 +28,11 @@ import com.example.myapplication.BuildConfig
  * egress which is routinely bot-challenged by YouTube.
  *
  * Architecture notes:
- * - Primary client chain: IOS → ANDROID_MUSIC → ANDROID → MWEB → ANDROID_VR → TVHTML5_SIMPLY
- * - Every candidate media URL is passed through the backend /api/decipher
- *   endpoint (pure JS, no media bytes). YouTube can require its player
- *   transformation even when the JSON contains a direct-looking `url` and no
- *   visible cipher field.
+ * - Visitor identity is bootstrapped from YouTube Music's sw.js_data endpoint
+ *   and persisted before profile fallback begins; player responses can refresh it.
+ * - Fully materialized URLs stay on-device. Ciphered formats are transformed
+ *   locally with the current YouTube player script; Moodify's server is not
+ *   part of stream resolution.
  * - Resolved streams are cached with expiry awareness; callers should check
  *   [ResolvedStream.isExpired] before handing a cached stream to ExoPlayer.
  * - Preview-length clips (< 90 % of declared video duration) are rejected so
@@ -36,14 +40,31 @@ import com.example.myapplication.BuildConfig
  */
 class InnerTubeStreamResolver(
     private val httpClient: OkHttpClient = defaultHttpClient(),
-    private val serverBaseUrl: String = BuildConfig.MOODIFY_SERVER_URL
+    private val localeProvider: () -> CatalogLocale = { CatalogLocale.fromDefault() },
+    private val loadVisitorDataFromStore: suspend () -> String? = { null },
+    private val saveVisitorDataToStore: suspend (String) -> Unit = {},
+    private val playerRuntimeSource: () -> String? = { null },
+    poTokenRuntimeSource: () -> String? = { null },
+    context: Context? = null,
 ) {
+    private val playerScriptResolver = LocalPlayerScriptResolver(httpClient, playerRuntimeSource)
+    private val poTokenProvider = context?.let {
+        PlaybackPoTokenProvider(it, httpClient, localeProvider, poTokenRuntimeSource)
+    }
 
     @Volatile
     private var visitorData: String? = null
 
-    private val poTokenCache = java.util.concurrent.ConcurrentHashMap<String, CachedPoToken>()
-    private val signatureTimestampCache = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val visitorDataMutex = Mutex()
+
+    @Volatile
+    private var visitorDataRetryAfterMs = 0L
+
+    @Volatile
+    private var cachedPlayerScriptUrl: String? = null
+
+    @Volatile
+    private var cachedPlayerScriptUrlExpiresAtMs: Long = 0L
 
     // A resolved URL is useful only until its CDN expiry. Keep the cache
     // bounded by video/profile key and invalidate it on transport failures.
@@ -74,14 +95,109 @@ class InnerTubeStreamResolver(
     fun invalidate(videoId: String) {
         resolvedCache.keys.removeIf { it.startsWith("$videoId:") }
         inFlight.keys.removeIf { it.startsWith("$videoId:") }
-        poTokenCache.remove(videoId)
+        poTokenProvider?.invalidate(videoId)
+    }
+
+    fun invalidateAll() {
+        resolvedCache.clear()
+        inFlight.clear()
+        poTokenProvider?.invalidateAll()
+    }
+
+    /** Number of distinct InnerTube client contracts in the fallback chain. */
+    fun profileCount(): Int = CLIENT_PROFILES.size
+
+    /** Return the index of a named profile in the resolver's stable preference order. */
+    fun profileOffset(profileName: String): Int? {
+        val index = orderedProfiles(0).indexOfFirst { it.name == profileName }
+        return index.takeIf { it >= 0 }
+    }
+
+    /** Return the first profile index after the client that produced a rejected CDN contract. */
+    fun nextProfileOffset(profileName: String): Int? {
+        val index = orderedProfiles(0).indexOfFirst { it.name == profileName }
+        return index.takeIf { it >= 0 }?.plus(1)
     }
 
     /** Resolve ahead of playback without making the player wait for it. */
     suspend fun preload(videoId: String): ResolvedStream? =
         runCatching { resolve(videoId) }
-            .onFailure { Log.d(TAG, "Preload skipped for $videoId: ${it.message}") }
+            .onFailure { Log.d(TAG, "Preload skipped (${it::class.simpleName})") }
             .getOrNull()
+
+    /** Establish a visitor/session identity before querying playback clients. */
+    private suspend fun ensureVisitorData(): String? = visitorDataMutex.withLock {
+        visitorData
+            ?.takeIf { VISITOR_DATA_PATTERN.matches(it) }
+            ?.let { return@withLock it }
+
+        val persisted = try {
+            loadVisitorDataFromStore()
+        } catch (failure: Exception) {
+            Log.w(TAG, "Could not read persisted visitor context (${failure::class.simpleName})")
+            null
+        }?.trim()?.takeIf { VISITOR_DATA_PATTERN.matches(it) }
+        if (persisted != null) {
+            visitorData = persisted
+            Log.d(TAG, "Loaded persisted YouTube visitor context")
+            return@withLock persisted
+        }
+
+        if (System.currentTimeMillis() < visitorDataRetryAfterMs) return@withLock null
+
+        val fetched = try {
+            fetchVisitorData()
+        } catch (failure: Exception) {
+            visitorDataRetryAfterMs = System.currentTimeMillis() + VISITOR_DATA_RETRY_MS
+            Log.w(TAG, "Could not bootstrap YouTube visitor context (${failure::class.simpleName})")
+            null
+        }
+        if (fetched != null) {
+            visitorData = fetched
+            visitorDataRetryAfterMs = 0L
+            try {
+                saveVisitorDataToStore(fetched)
+            } catch (failure: Exception) {
+                Log.w(TAG, "Could not persist YouTube visitor context (${failure::class.simpleName})")
+            }
+            Log.d(TAG, "Bootstrapped YouTube visitor context")
+        }
+        fetched
+    }
+
+    private suspend fun fetchVisitorData(): String = withContext(Dispatchers.IO) {
+        val locale = localeProvider().normalized()
+        val request = Request.Builder()
+            .url(YOUTUBE_MUSIC_SW_DATA_URL)
+            .header("Accept", "*/*")
+            .header("Accept-Language", locale.acceptLanguage)
+            .header("User-Agent", SW_DATA_USER_AGENT)
+            .header("Referer", "https://music.youtube.com/")
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw IOException("sw.js_data HTTP ${response.code}")
+            }
+            val body = response.body?.string().orEmpty()
+            parseVisitorDataFromSwJsData(body)
+                ?: throw ResolveException("sw.js_data contained no visitorData")
+        }
+    }
+
+    private suspend fun rememberVisitorData(value: String?) {
+        val normalized = value?.trim()?.takeIf { VISITOR_DATA_PATTERN.matches(it) } ?: return
+        visitorDataMutex.withLock {
+            if (visitorData == normalized) return@withLock
+            visitorData = normalized
+            try {
+                saveVisitorDataToStore(normalized)
+            } catch (failure: Exception) {
+                Log.w(TAG, "Could not persist refreshed YouTube visitor context (${failure::class.simpleName})")
+            }
+        }
+    }
 
     /**
      * Validate the resolved CDN contract before ExoPlayer opens a long-lived
@@ -140,90 +256,71 @@ class InnerTubeStreamResolver(
         }
     }
 
-    /**
-     * Ask Moodify only for a freshly resolved, tokenized CDN URL.  The
-     * response contains no audio bytes; ExoPlayer still downloads the media
-     * directly from the device.  This mirrors ArchiveTune's separation
-     * between stream resolution and media transport and is useful when a
-     * native anonymous InnerTube client is challenged by YouTube.
-     */
-    suspend fun resolveFromServer(videoId: String): ResolvedStream = withContext(Dispatchers.IO) {
-        val request = Request.Builder()
-            .url("${serverBaseUrl.trimEnd('/')}/api/stream/$videoId")
-            .header("Accept", "application/json")
-            .build()
-
-        httpClient.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            val root = runCatching { JSONObject(body) }.getOrElse {
-                throw ResolveException("Server stream endpoint returned invalid JSON", it)
-            }
-            if (!response.isSuccessful || root.optBoolean("ok", false).not()) {
-                throw ResolveException(
-                    "Server stream resolution HTTP ${response.code}: " +
-                        root.optString("message").ifBlank { root.optString("error") }
-                )
-            }
-
-            val url = root.optString("url").takeIf { it.isNotBlank() }
-                ?: throw ResolveException("Server stream endpoint returned no URL")
-            val expiresAt = root.optLong("expiresAt", 0L).takeIf { it > 0L }
-                ?: (System.currentTimeMillis() + URL_EXPIRY_SAFETY_MS)
-            val referer = root.optString("referer").takeIf { it.isNotBlank() }
-
-            ResolvedStream(
-                url = url,
-                mimeType = root.optString("mimeType").ifBlank { "audio/mp4" },
-                bitrate = root.optInt("bitrate", 0),
-                contentLength = root.optLong("contentLength", 0L).takeIf { it > 0L },
-                itag = root.optInt("itag", -1),
-                durationMs = null,
-                userAgent = root.optString("userAgent").ifBlank { "Moodify-Android/1.0" },
-                requestHeaders = buildMap {
-                    root.optString("userAgent").takeIf { it.isNotBlank() }?.let { put("User-Agent", it) }
-                    root.optString("origin").takeIf { it.isNotBlank() }?.let { put("Origin", it) }
-                    referer?.let { put("Referer", it) }
-                },
-                profileName = root.optString("clientType").ifBlank { "SERVER" },
-                clientName = root.optString("clientType").takeIf { it.isNotBlank() },
-                expiresAtMs = expiresAt,
-            )
-        }
-    }
-
-    private fun resolveUncached(videoId: String, profileOffset: Int): ResolvedStream {
+    private suspend fun resolveUncached(videoId: String, profileOffset: Int): ResolvedStream {
         var lastFailure: Throwable? = null
+
+        ensureVisitorData()
 
         for (profile in orderedProfiles(profileOffset)) {
             try {
-                val poToken = if (profile.requiresPlaybackPoToken) fetchPoToken(videoId) else null
-                val signatureTimestamp = if (profile.useSignatureTimestamp) {
-                    fetchSignatureTimestamp(profile.name)
+                val poToken = if (profile.requiresPlaybackPoToken) {
+                    val provider = poTokenProvider
+                        ?: throw ResolveException("${profile.name}: local PO-token provider is unavailable")
+                    val token = provider.tokenFor(videoId, visitorData)
+                    rememberVisitorData(token.visitorData)
+                    token.value
                 } else {
                     null
                 }
+                val signatureTimestamp = if (profile.useSignatureTimestamp) {
+                    val scriptUrl = discoverPlayerScriptUrl(videoId)
+                    if (scriptUrl == null) {
+                        null
+                    } else {
+                        runCatching { playerScriptResolver.signatureTimestamp(scriptUrl) }
+                            .onFailure {
+                                Log.w(TAG, "${profile.name}: could not read player signature timestamp")
+                            }
+                            .getOrNull()
+                    }
+                } else {
+                    null
+                }
+                if (profile.useSignatureTimestamp && signatureTimestamp == null) {
+                    Log.w(TAG, "${profile.name}: player signature timestamp unavailable")
+                }
+                Log.d(
+                    TAG,
+                    "${profile.name} player request: clientVersion=${profile.version}, " +
+                        "poToken=${poToken != null}, signatureTimestamp=${signatureTimestamp ?: "none"}, " +
+                        "visitorData=${!visitorData.isNullOrBlank()}",
+                )
                 val resolved = requestPlayer(profile, videoId, poToken, signatureTimestamp)
-                Log.d(TAG, "Resolved $videoId via ${profile.name}: mime=${resolved.mimeType} itag=${resolved.itag} len=${resolved.contentLength}")
+                Log.d(
+                    TAG,
+                    "Resolved stream via ${profile.name}: mime=${resolved.mimeType} " +
+                        "itag=${resolved.itag} len=${resolved.contentLength}"
+                )
                 return resolved
             } catch (failure: Exception) {
                 lastFailure = failure
-                Log.w(TAG, "${profile.name} failed for $videoId: ${failure.message}")
+                Log.w(TAG, "${profile.name} failed (${failure::class.simpleName})")
             }
         }
 
         throw ResolveException(
-            "InnerTube could not resolve $videoId" +
-                (lastFailure?.message?.let { ": $it" } ?: "."),
+            "InnerTube could not resolve playback with the available clients.",
             lastFailure
         )
     }
 
-    private fun requestPlayer(
+    private suspend fun requestPlayer(
         profile: ClientProfile,
         videoId: String,
         poToken: String?,
         signatureTimestamp: Int?,
     ): ResolvedStream {
+        val locale = localeProvider().normalized()
         val request = Request.Builder()
             .url(
                 "https://youtubei.googleapis.com/youtubei/v1/player" +
@@ -232,7 +329,7 @@ class InnerTubeStreamResolver(
             .headers(
                 okhttp3.Headers.Builder()
                     .add("Accept", "*/*")
-                    .add("Accept-Language", "en-US")
+                    .add("Accept-Language", locale.acceptLanguage)
                     .add("Content-Type", "application/json")
                     .add("X-YouTube-Client-Name", profile.clientNameId)
                     .add("X-YouTube-Client-Version", profile.version)
@@ -245,7 +342,7 @@ class InnerTubeStreamResolver(
                     }
                     .build()
             )
-            .post(buildPlayerBody(profile, videoId, poToken, signatureTimestamp).toString().toRequestBody(JSON))
+            .post(buildPlayerBody(profile, videoId, poToken, signatureTimestamp, locale).toString().toRequestBody(JSON))
             .build()
 
         httpClient.newCall(request).execute().use { response ->
@@ -264,19 +361,22 @@ class InnerTubeStreamResolver(
             root.optJSONObject("responseContext")
                 ?.optString("visitorData")
                 ?.takeIf { it.isNotBlank() }
-                ?.let { visitorData = it }
+                ?.let { rememberVisitorData(it) }
 
             val playability = root.optJSONObject("playabilityStatus")
             val status = playability?.optString("status").orEmpty()
             if (status != "OK") {
-                val reason = playability?.optString("reason")
-                    ?.takeIf { it.isNotBlank() }
-                    ?: "status=$status"
-                throw ResolveException("${profile.name}: $reason")
+                Log.w(TAG, "${profile.name} playability status=$status")
+                throw ResolveException("${profile.name}: playability status $status")
             }
 
             val streamingData = root.optJSONObject("streamingData")
                 ?: throw ResolveException("${profile.name}: no streamingData")
+            val playerScriptUrl = root.optJSONObject("assets")
+                ?.optString("js")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { if (it.startsWith("http")) it else "https://www.youtube.com$it" }
+                ?: discoverPlayerScriptUrl(videoId)
             val formats = streamingData.optJSONArray("adaptiveFormats")
                 ?: throw ResolveException("${profile.name}: no adaptive audio formats")
 
@@ -330,21 +430,15 @@ class InnerTubeStreamResolver(
                     // server's JavaScript decipher endpoint in this case;
                     // Render may be bot-challenged even though YouTube
                     // accepted the original request from the device.
-                    // Ciphered formats still use the server only for the
-                    // JavaScript transform.
-                    val playableUrl = if (
-                        !candidateUrl.isNullOrBlank() &&
-                        candidate.signatureCipher.isNullOrBlank() &&
-                        candidate.cipher.isNullOrBlank()
-                    ) {
-                        candidateUrl
-                    } else {
-                        decipherOnServer(
-                            url = candidateUrl,
-                            signatureCipher = candidate.signatureCipher,
-                            cipher = candidate.cipher,
-                        )
-                    }
+                    // Direct URLs stay on the device. Ciphered formats are
+                    // transformed locally in a sandboxed player-script
+                    // runtime; they never go to a Moodify endpoint.
+                    val playableUrl = playerScriptResolver.resolve(
+                        playerScriptUrl = playerScriptUrl,
+                        directUrl = candidateUrl,
+                        signatureCipher = candidate.signatureCipher,
+                        cipher = candidate.cipher,
+                    )
                     if (!playableUrl.isNullOrBlank()) {
                         selected = candidate
                         resolvedUrl = playableUrl
@@ -352,13 +446,12 @@ class InnerTubeStreamResolver(
                     }
                 } catch (failure: Exception) {
                     lastDecipherFailure = failure
-                    Log.w(TAG, "${profile.name}: unable to decipher itag=${candidate.itag}: ${failure.message}")
+                    Log.w(TAG, "${profile.name}: unable to decipher itag=${candidate.itag} (${failure::class.simpleName})")
                 }
             }
 
             val selectedFormat = selected ?: throw ResolveException(
-                "${profile.name}: no playable audio URL" +
-                    (lastDecipherFailure?.message?.let { ": $it" } ?: ""),
+                "${profile.name}: no playable audio URL",
                 lastDecipherFailure,
             )
             var finalUrl = resolvedUrl ?: throw ResolveException("${profile.name}: empty audio URL")
@@ -379,7 +472,17 @@ class InnerTubeStreamResolver(
                 ?.toLongOrNull()
                 ?.times(1_000L)
 
+            // YouTube reports how loud this track is relative to its reference
+            // level; Moodify uses it to even out volume between songs.
+            val loudnessDb = root.optJSONObject("playerConfig")
+                ?.optJSONObject("audioConfig")
+                ?.let { config ->
+                    config.optDouble("loudnessDb", Double.NaN).takeIf { it.isFinite() }
+                        ?: config.optDouble("perceptualLoudnessDb", Double.NaN).takeIf { it.isFinite() }
+                }
+
             return ResolvedStream(
+                loudnessDb = loudnessDb,
                 url = finalUrl,
                 mimeType = selectedFormat.mimeType,
                 bitrate = selectedFormat.bitrate,
@@ -395,53 +498,12 @@ class InnerTubeStreamResolver(
                 profileName = profile.name,
                 clientName = profile.clientNameId,
                 clientVersion = profile.version,
+                sourceWasCiphered = !selectedFormat.signatureCipher.isNullOrBlank() ||
+                    !selectedFormat.cipher.isNullOrBlank(),
                 // Refresh before the CDN URL reaches its actual expiry.
                 expiresAtMs = System.currentTimeMillis() +
                     expiresInSeconds * 1_000L - URL_EXPIRY_SAFETY_MS
             )
-        }
-    }
-
-    private fun decipherOnServer(
-        url: String?,
-        signatureCipher: String?,
-        cipher: String?,
-    ): String {
-        val query = buildList {
-            url?.let { add("url=${Uri.encode(it)}") }
-            signatureCipher?.let { add("signatureCipher=${Uri.encode(it)}") }
-            cipher?.let { add("cipher=${Uri.encode(it)}") }
-        }.joinToString("&")
-        if (query.isBlank()) throw ResolveException("No URL or cipher was provided")
-
-        val request = Request.Builder()
-            .url("${serverBaseUrl.trimEnd('/')}/api/decipher?$query")
-            .get()
-            .header("Accept", "application/json")
-            .build()
-
-        return try {
-            httpClient.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    throw ResolveException("Decipher endpoint HTTP ${response.code}: ${shorten(body)}")
-                }
-                val resolved = runCatching { JSONObject(body).optString("url") }.getOrNull()
-                    ?.takeIf { it.isNotBlank() }
-                resolved ?: throw ResolveException("Decipher endpoint returned no URL")
-            }
-        } catch (failure: Exception) {
-            // IOS/visionOS/TV responses commonly contain a fully materialized
-            // URL with no signature cipher. Keep device playback independent
-            // of a stale Render deployment in that case. Ciphered formats
-            // still fail closed because returning them would produce a false
-            // ExoPlayer source and a much less useful 403 later.
-            if (!url.isNullOrBlank() && signatureCipher.isNullOrBlank() && cipher.isNullOrBlank()) {
-                Log.w(TAG, "Decipher service unavailable; using direct InnerTube URL")
-                url
-            } else {
-                throw failure
-            }
         }
     }
 
@@ -450,19 +512,20 @@ class InnerTubeStreamResolver(
         videoId: String,
         poToken: String?,
         signatureTimestamp: Int?,
+        locale: CatalogLocale,
     ): JSONObject {
         val client = JSONObject()
             .put("clientName", profile.name)
             .put("clientVersion", profile.version)
-            .put("hl", "en")
-            .put("gl", "US")
+            .put("hl", locale.language)
+            .put("gl", locale.region)
             .put("osName", profile.osName)
             .put("osVersion", profile.osVersion)
             .put("platform", profile.platform)
             .put("clientFormFactor", "SMALL_FORM_FACTOR")
             .put("userAgent", profile.userAgent)
             .put("originalUrl", "https://www.youtube.com/watch?v=$videoId")
-            .put("timeZone", "Asia/Calcutta")
+            .put("timeZone", java.util.TimeZone.getDefault().id)
         visitorData?.takeIf { it.isNotBlank() }?.let { client.put("visitorData", it) }
 
         profile.androidSdkVersion?.let { client.put("androidSdkVersion", it) }
@@ -471,82 +534,78 @@ class InnerTubeStreamResolver(
 
         val context = JSONObject().put("client", client)
 
+        val contentPlaybackContext = JSONObject()
+            .put("vis", 0)
+            .put("splay", false)
+            .put("lactMilliseconds", "-1")
+            .apply { signatureTimestamp?.takeIf { it > 0 }?.let { put("signatureTimestamp", it) } }
+
         return JSONObject()
             .put("context", context)
             .put("videoId", videoId)
             .put("contentCheckOk", true)
             .put("racyCheckOk", true)
+            .put("playbackContext", JSONObject().put("contentPlaybackContext", contentPlaybackContext))
             .apply {
-                signatureTimestamp?.takeIf { it > 0 }?.let {
-                    put(
-                        "playbackContext",
-                        JSONObject().put(
-                            "contentPlaybackContext",
-                            JSONObject()
-                                .put("signatureTimestamp", it)
-                                .put("html5Preference", "HTML5_PREF_WANTS")
-                                .put("vis", 0)
-                                .put("splay", false)
-                                .put("lactMilliseconds", "-1")
-                        )
-                    )
-                }
                 if (!poToken.isNullOrBlank()) {
                     put("serviceIntegrityDimensions", JSONObject().put("poToken", poToken))
                 }
             }
     }
 
-    private fun fetchSignatureTimestamp(profileName: String): Int? {
-        signatureTimestampCache[profileName]?.let { return it }
-        val request = Request.Builder()
-            .url(
-                "${serverBaseUrl.trimEnd('/')}/api/playback-config" +
-                    "?client=${Uri.encode(profileName)}"
-            )
-            .header("Accept", "application/json")
-            .build()
-        return runCatching {
-            httpClient.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    throw ResolveException("Playback config HTTP ${response.code}: ${shorten(body)}")
-                }
-                val timestamp = JSONObject(body).optInt("signatureTimestamp", 0)
-                    .takeIf { it > 0 }
-                    ?: throw ResolveException("Playback config returned no signature timestamp")
-                signatureTimestampCache[profileName] = timestamp
-                timestamp
-            }
-        }.onFailure {
-            Log.w(TAG, "Signature timestamp unavailable for $profileName: ${it.message}")
-        }.getOrNull()
-    }
+    private fun discoverPlayerScriptUrl(videoId: String): String? {
+        val now = System.currentTimeMillis()
+        cachedPlayerScriptUrl
+            ?.takeIf { cachedPlayerScriptUrlExpiresAtMs > now }
+            ?.let { return it }
 
-    private fun fetchPoToken(videoId: String): String? {
-        val cached = poTokenCache[videoId]
-        if (cached != null && cached.expiresAtMs > System.currentTimeMillis()) return cached.token
-
-        val request = Request.Builder()
-            .url("${serverBaseUrl.trimEnd('/')}/api/po-token/$videoId")
-            .header("Accept", "application/json")
-            .build()
-        return runCatching {
-            httpClient.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) throw ResolveException("Playback token HTTP ${response.code}: ${shorten(body)}")
-                val root = JSONObject(body)
-                val token = root.optString("poToken").takeIf { it.isNotBlank() }
-                    ?: throw ResolveException("Playback token endpoint returned no token")
-                val expiresAt = root.optLong("expiresAt", 0L).takeIf { it > System.currentTimeMillis() }
-                    ?: (System.currentTimeMillis() + 5 * 60 * 1000L)
-                poTokenCache[videoId] = CachedPoToken(token, expiresAt)
-                token
+        val playerIdPattern = Regex("/s/player/([A-Za-z0-9_-]{1,80})/")
+        val userAgent = "Mozilla/5.0 (Android 15; Mobile) AppleWebKit/537.36 Chrome/141.0.0.0 Mobile Safari/537.36"
+        val discovered = runCatching {
+            val iframeRequest = Request.Builder()
+                .url("https://www.youtube.com/iframe_api")
+                .header("Accept", "*/*")
+                .header("User-Agent", userAgent)
+                .build()
+            val iframeSource = httpClient.newCall(iframeRequest).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("iframe_api HTTP ${response.code}")
+                response.body?.string().orEmpty().replace("\\/", "/")
             }
-        }.onFailure { Log.w(TAG, "PO token unavailable for $videoId: ${it.message}") }.getOrNull()
+            val playerId = playerIdPattern.find(iframeSource)?.groupValues?.getOrNull(1)
+                ?: throw ResolveException("Could not identify the current YouTube player script")
+            "https://www.youtube.com/s/player/$playerId/player_es6.vflset/en_US/base.js"
+        }.recoverCatching {
+            val request = Request.Builder()
+                .url("https://www.youtube.com/watch?v=$videoId&hl=en")
+                .header("Accept", "text/html")
+                .header("User-Agent", userAgent)
+                .build()
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("watch page HTTP ${response.code}")
+                val html = response.body?.string().orEmpty()
+                val raw = listOf(
+                    Regex("\\\"jsUrl\\\":\\\"([^\\\"]+)\\\""),
+                    Regex("\\\"PLAYER_JS_URL\\\":\\\"([^\\\"]+)\\\""),
+                ).asSequence()
+                    .mapNotNull { it.find(html)?.groupValues?.getOrNull(1) }
+                    .firstOrNull()
+                    ?: throw ResolveException("YouTube watch page did not contain a player script URL")
+                raw.replace("\\u0026", "&")
+                    .replace("\\/", "/")
+                    .let { if (it.startsWith("http")) it else "https://www.youtube.com$it" }
+            }
+        }.onFailure { Log.d(TAG, "Player script discovery skipped (${it::class.simpleName})") }
+            .getOrNull()
+        return discovered
+            ?.also { discovered ->
+                cachedPlayerScriptUrl = discovered
+                cachedPlayerScriptUrlExpiresAtMs = now + PLAYER_SCRIPT_URL_TTL_MS
+            }
     }
 
     data class ResolvedStream(
+        /** Track loudness relative to YouTube's target (positive = louder), if known. */
+        val loudnessDb: Double? = null,
         val url: String,
         val mimeType: String,
         val bitrate: Int,
@@ -559,6 +618,7 @@ class InnerTubeStreamResolver(
         val profileName: String = "UNKNOWN",
         val clientName: String? = null,
         val clientVersion: String? = null,
+        val sourceWasCiphered: Boolean = false,
     ) {
         val isExpired: Boolean
             get() = expiresAtMs <= System.currentTimeMillis() + URL_EXPIRY_SAFETY_MS
@@ -602,15 +662,52 @@ class InnerTubeStreamResolver(
         val useSignatureTimestamp: Boolean = false,
     )
 
-    private data class CachedPoToken(val token: String, val expiresAtMs: Long)
-
     companion object {
         private const val TAG = "InnerTubeResolver"
         private const val URL_EXPIRY_SAFETY_MS = 30_000L
+        private const val VISITOR_DATA_RETRY_MS = 60_000L
+        private const val PLAYER_SCRIPT_URL_TTL_MS = 6L * 60L * 60L * 1_000L
         private const val VALIDATION_RANGE_LENGTH = 8L * 1024L * 1024L
         private const val VALIDATION_RANGE_PROBE_POSITION = 8L * 1024L * 1024L
         private const val INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+        private const val YOUTUBE_MUSIC_SW_DATA_URL = "https://music.youtube.com/sw.js_data"
+        private const val SW_DATA_USER_AGENT =
+            "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+        private val VISITOR_DATA_PATTERN = Regex("^Cg[ts][A-Za-z0-9_=-]{20,}$")
         private val JSON = "application/json; charset=utf-8".toMediaType()
+
+        /** Parse YouTube's XSSI-prefixed service-worker data without logging the identity value. */
+        internal fun parseVisitorDataFromSwJsData(payload: String): String? {
+            val jsonStart = payload.indexOfFirst { it == '[' || it == '{' }
+            if (jsonStart < 0) return null
+            val root = runCatching {
+                when (payload[jsonStart]) {
+                    '[' -> JSONArray(payload.substring(jsonStart))
+                    '{' -> JSONObject(payload.substring(jsonStart))
+                    else -> return null
+                }
+            }.getOrNull() ?: return null
+            return findVisitorData(root)
+        }
+
+        private fun findVisitorData(value: Any?): String? {
+            when (value) {
+                is JSONArray -> {
+                    for (index in 0 until value.length()) {
+                        findVisitorData(value.opt(index))?.let { return it }
+                    }
+                }
+                is JSONObject -> {
+                    val keys = value.keys()
+                    while (keys.hasNext()) {
+                        findVisitorData(value.opt(keys.next()))?.let { return it }
+                    }
+                }
+                is String -> value.trim().takeIf { VISITOR_DATA_PATTERN.matches(it) }?.let { return it }
+            }
+            return null
+        }
 
         private fun formatPreference(format: AudioFormat): Int = when {
             format.itag == 251 -> 600
@@ -689,7 +786,8 @@ class InnerTubeStreamResolver(
                 deviceModel = "Pixel 9 Pro",
                 origin = "https://m.youtube.com",
                 referer = "https://m.youtube.com/",
-                requiresPlaybackPoToken = true
+                requiresPlaybackPoToken = true,
+                useSignatureTimestamp = true
             ),
             ClientProfile(
                 name = "ANDROID_VR",
@@ -779,18 +877,16 @@ class InnerTubeStreamResolver(
 
         private fun orderedProfiles(offset: Int): List<ClientProfile> {
             if (CLIENT_PROFILES.isEmpty()) return emptyList()
-            // Prefer native clients first. The request must originate from
-            // the device IP; Render is intentionally only a discovery and
-            // optional decipher service because YouTube challenges cloud
-            // egress. Web/VR profiles remain fallbacks for videos where the
-            // native profile has no usable audio formats.
             val preferredOrder = listOf(
+                // Live emulator/device evidence shows this client returns a
+                // directly playable stream without a token, avoiding several
+                // known-dead profile attempts on the common path.
+                "VISIONOS",
+                "ANDROID_VR",
                 "ANDROID_MUSIC",
                 "ANDROID",
                 "IOS",
                 "ANDROID_TESTSUITE",
-                "ANDROID_VR",
-                "VISIONOS",
                 "MWEB",
                 "WEB_REMIX",
                 "WEB",
@@ -801,13 +897,10 @@ class InnerTubeStreamResolver(
             val profiles = preferredOrder.mapNotNull { name ->
                 CLIENT_PROFILES.firstOrNull { it.name == name }
             }
-            if (offset <= 0) return profiles
-            val start = offset.coerceAtMost(profiles.size - 1)
-            // Do not wrap back to a client that already produced a rejected
-            // CDN URL.  A retry must be a genuinely different InnerTube
-            // contract; the server/tokenized path handles the final fallback.
-            return (profiles.drop(start) + profiles.take(start))
-                .take(profiles.size - offset.coerceAtMost(profiles.size))
+            // An offset is an index into this stable preference order. Never
+            // rotate and wrap: a rejected client must not reappear later in
+            // the same fallback pass.
+            return profiles.drop(offset.coerceIn(0, profiles.size))
         }
 
         private fun defaultHttpClient(): OkHttpClient = OkHttpClient.Builder()

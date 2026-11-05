@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moodify — Standalone Android Architecture Plan</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --surface-2: #f0f2f7;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #dfe4ee;
+      --accent: #6557e8;
+      --accent-2: #12a889;
+      --warm: #e88255;
+      --danger: #c54f68;
+      --shadow: 0 16px 48px rgba(28, 38, 62, .09);
+      --radius: 22px;
+    }
+    [data-theme="dark"] {
+      --bg: #111522;
+      --surface: #191e2d;
+      --surface-2: #242b3d;
+      --ink: #edf0f8;
+      --muted: #a9b0c2;
+      --line: #343d54;
+      --accent: #a29aff;
+      --accent-2: #5de0c2;
+      --warm: #ffad80;
+      --danger: #ff91a7;
+      --shadow: 0 16px 48px rgba(0, 0, 0, .25);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 85% 0%, rgba(101, 87, 232, .10), transparent 31rem),
+        var(--bg);
+      font: 15px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .shell { width: min(1420px, calc(100% - 48px)); margin: 0 auto; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      backdrop-filter: blur(18px);
+      background: color-mix(in srgb, var(--bg) 84%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    }
+    .topbar-inner { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.03em; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: grid; place-items: center; color: white;
+      background: linear-gradient(135deg, var(--accent), #9c91ff);
+      box-shadow: 0 8px 18px rgba(101, 87, 232, .25);
+    }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    button {
+      border: 1px solid var(--line); border-radius: 999px;
+      background: var(--surface); color: var(--ink);
+      padding: 9px 14px; font: inherit; cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .badge { border-radius: 999px; padding: 5px 10px; font-size: 12px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+    .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 38px; padding: 52px 0 90px; }
+    aside { position: sticky; top: 96px; align-self: start; }
+    .side-title { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .13em; margin: 0 0 12px; }
+    .side-nav { display: grid; gap: 4px; }
+    .side-nav a { color: var(--muted); border-left: 2px solid transparent; padding: 7px 12px; }
+    .side-nav a:hover, .side-nav a.active { color: var(--ink); border-color: var(--accent); background: var(--surface-2); text-decoration: none; border-radius: 0 10px 10px 0; }
+    main { min-width: 0; }
+    .eyebrow { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 12px 0 18px; font-size: clamp(40px, 6vw, 78px); line-height: .96; letter-spacing: -.075em; max-width: 850px; }
+    h2 { margin: 0 0 12px; font-size: clamp(25px, 3vw, 38px); letter-spacing: -.045em; line-height: 1.08; }
+    h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.02em; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    .lead { font-size: 19px; max-width: 780px; }
+    section { scroll-margin-top: 94px; margin-top: 94px; }
+    .hero { margin-top: 20px; }
+    .hero-note { display: flex; align-items: center; gap: 12px; margin: 30px 0 34px; color: var(--muted); }
+    .hero-note .dot { width: 9px; height: 9px; background: var(--accent-2); border-radius: 50%; box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-2) 15%, transparent); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .stat, .panel, .card, .milestone { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .stat { padding: 20px; }
+    .stat strong { display: block; font-size: 30px; letter-spacing: -.05em; }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .panel { padding: clamp(22px, 4vw, 42px); }
+    .panel + .panel { margin-top: 16px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+    .section-head p { max-width: 610px; margin: 0; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .card { padding: 22px; box-shadow: none; }
+    .card .icon { color: var(--accent); font-size: 24px; margin-bottom: 14px; }
+    .card p { font-size: 14px; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+    .tag { color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
+    .diagram {
+      overflow-x: auto; margin-top: 22px; padding: 18px;
+      background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px;
+    }
+    .mermaid-panel { overflow-x: auto; margin-top: 20px; padding: 24px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px; }
+    .mermaid { min-width: 900px; color: var(--ink); text-align: center; }
+    .comparison-note { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+    .comparison-note .card { padding: 17px; }
+    .comparison-note strong { display: block; margin-bottom: 5px; }
+    .detail-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; }
+    .detail-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+    .detail-table th, .detail-table td { text-align: left; vertical-align: top; padding: 13px 14px; border-bottom: 1px solid var(--line); }
+    .detail-table tr:last-child td { border-bottom: 0; }
+    .detail-table th { color: var(--muted); background: var(--surface-2); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+    .detail-table td { color: var(--muted); }
+    .detail-table td:first-child { color: var(--ink); font-weight: 750; }
+    .detail-table code, .mono { font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--accent); }
+    .flowbook { display: grid; gap: 12px; }
+    .flow-card { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); overflow: hidden; }
+    .flow-card summary { list-style: none; cursor: pointer; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .flow-card summary::-webkit-details-marker { display: none; }
+    .flow-card summary:hover { background: var(--surface-2); }
+    .flow-card[open] summary { border-bottom: 1px solid var(--line); }
+    .flow-name { display: flex; align-items: center; gap: 12px; font-weight: 800; }
+    .flow-num { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); font-size: 12px; }
+    .flow-summary { color: var(--muted); font-size: 13px; font-weight: 500; }
+    .flow-body { padding: 20px; display: grid; grid-template-columns: 1.3fr .7fr; gap: 24px; }
+    .step-list { display: grid; gap: 9px; counter-reset: flowstep; }
+    .step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; color: var(--muted); }
+    .step::before { counter-increment: flowstep; content: counter(flowstep); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; color: var(--accent); background: color-mix(in srgb, var(--accent) 11%, var(--surface)); font-size: 11px; font-weight: 800; }
+    .step strong { color: var(--ink); }
+    .flow-meta { display: grid; gap: 10px; align-content: start; }
+    .flow-meta > div { padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+    .flow-meta strong { display: block; color: var(--ink); font-size: 12px; margin-bottom: 3px; }
+    .flow-meta span { color: var(--muted); font-size: 13px; }
+    .owner-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .owner-grid .card { min-height: 150px; }
+    .status-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+    .status { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; }
+    .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); }
+    .status.warn::before { background: var(--warm); }
+    .status.danger::before { background: var(--danger); }
+    .callout { margin-top: 16px; padding: 16px 18px; border-left: 3px solid var(--accent); border-radius: 0 14px 14px 0; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .evidence-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .evidence { padding: 15px; border: 1px dashed var(--line); border-radius: 14px; background: var(--surface-2); }
+    .evidence strong { display: block; margin-bottom: 5px; }
+    .evidence p { font-size: 13px; margin: 0; }
+    svg { display: block; min-width: 720px; width: 100%; height: auto; }
+    .svg-box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+    .svg-box-accent { fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); stroke: var(--accent); stroke-width: 1.5; }
+    .svg-box-green { fill: color-mix(in srgb, var(--accent-2) 12%, var(--surface)); stroke: var(--accent-2); stroke-width: 1.5; }
+    .svg-label { fill: var(--ink); font: 600 14px Inter, system-ui, sans-serif; }
+    .svg-small { fill: var(--muted); font: 12px Inter, system-ui, sans-serif; }
+    .svg-line { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .milestone-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 15px; }
+    .milestone-toolbar button.active { color: white; background: var(--accent); border-color: var(--accent); }
+    .milestones { display: grid; gap: 12px; }
+    .milestone { overflow: hidden; box-shadow: none; }
+    .milestone[hidden] { display: none; }
+    .milestone summary { list-style: none; cursor: pointer; padding: 22px 24px; display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+    .milestone summary::-webkit-details-marker { display: none; }
+    .milestone summary:hover { background: var(--surface-2); }
+    .milestone-num { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); font-weight: 800; }
+    .milestone-title { font-weight: 800; font-size: 17px; }
+    .milestone-outcome { color: var(--muted); font-size: 13px; }
+    .milestone-state { color: var(--accent-2); white-space: nowrap; font-size: 13px; font-weight: 700; }
+    .milestone-body { border-top: 1px solid var(--line); padding: 24px 24px 26px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; }
+    .milestone-body ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); }
+    .milestone-body li + li { margin-top: 7px; }
+    .accept { border-left: 3px solid var(--accent-2); padding-left: 17px; }
+    .accept strong { display: block; color: var(--ink); margin-bottom: 9px; }
+    .flow-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .11em; font-weight: 800; margin: 23px 0 9px; }
+    .checklist { display: grid; gap: 9px; }
+    .check { display: flex; gap: 11px; align-items: start; color: var(--muted); padding: 10px 12px; border-radius: 11px; background: var(--surface-2); }
+    .check input { accent-color: var(--accent); margin-top: 4px; }
+    .risk-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .risk-table th, .risk-table td { text-align: left; vertical-align: top; padding: 13px 12px; border-bottom: 1px solid var(--line); }
+    .risk-table th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
+    .risk-table td { color: var(--muted); }
+    .risk-table td:first-child { color: var(--ink); font-weight: 700; width: 25%; }
+    .sources { display: flex; flex-wrap: wrap; gap: 10px; }
+    .source { padding: 11px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    footer { color: var(--muted); text-align: center; padding: 0 0 45px; font-size: 13px; }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { position: static; }
+      .side-nav { display: flex; flex-wrap: wrap; }
+      .side-nav a { border-left: 0; border-bottom: 2px solid transparent; border-radius: 0; }
+      .side-nav a:hover, .side-nav a.active { border-bottom-color: var(--accent); border-radius: 0; }
+    }
+    @media (max-width: 700px) {
+      .shell { width: min(100% - 28px, 1420px); }
+      .topbar-inner { height: 60px; }
+      .stats, .grid-2, .grid-3, .owner-grid, .evidence-grid, .comparison-note, .milestone-body, .flow-body { grid-template-columns: 1fr; }
+      .milestone summary { grid-template-columns: 44px minmax(0, 1fr); }
+      .milestone-state { grid-column: 2; }
+      .panel { padding: 22px 17px; }
+      .section-head { display: block; }
+      .section-head p { margin-top: 10px; }
+      .risk-table { display: block; overflow-x: auto; min-width: 640px; }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand"><span class="brand-mark">M</span><span>Moodify architecture brief</span><span class="badge">planning only</span></div>
+      <div class="top-actions">
+        <button id="themeBtn" type="button">Dark mode</button>
+        <button id="expandBtn" type="button">Expand all</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell layout">
+    <aside>
+      <p class="side-title">On this page</p>
+      <nav class="side-nav">
+        <a href="#target">Target</a>
+        <a href="#architecture-compare">Architecture compare</a>
+        <a href="#system-model">System model</a>
+        <a href="#apk-audit">APK audit</a>
+        <a href="#research">Research</a>
+        <a href="#contract">Parity contract</a>
+        <a href="#milestones">Milestones</a>
+        <a href="#flows">Data flows</a>
+        <a href="#flowbook">Flowbook</a>
+        <a href="#contracts">Contracts</a>
+        <a href="#verification">Verification</a>
+        <a href="#cutover">Cutover</a>
+        <a href="#risks">Risks</a>
+      </nav>
+    </aside>
+
+    <main>
+      <section class="hero" id="target">
+        <div class="eyebrow">Standalone Android direction</div>
+        <h1>Android should know the catalog itself.</h1>
+        <p class="lead">Move catalog, search, details, discovery, lyrics, and playback into a native InnerTube client. Keep the Node service for the web until the browser path has its own deliberate migration.</p>
+        <div class="hero-note"><span class="dot"></span><span>This is the architectural boundary that stops the Android app from failing whenever the Render service or its YouTube session breaks.</span></div>
+        <div class="stats">
+          <div class="stat"><strong>6</strong><span>meaningful milestones</span></div>
+          <div class="stat"><strong>0</strong><span>time estimates in this plan — gates over guesses</span></div>
+          <div class="stat"><strong>0</strong><span>Android calls to Moodify backend after cutover</span></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="panel">
+          <div class="section-head">
+            <div><div class="eyebrow">The boundary</div><h2>Two clients, two network realities.</h2></div>
+            <p>Android can make direct device requests and own Media3. The browser still needs the backend for CORS, browser media policy, and relay behavior.</p>
+          </div>
+          <div class="grid-3">
+            <article class="card"><div class="icon">◈</div><h3>Android standalone</h3><p>Native catalog repositories, player resolver, token/session state, Room cache, and MediaSession all live in the APK.</p><div class="tag-row"><span class="tag">InnerTube</span><span class="tag">Media3</span><span class="tag">Room</span></div></article>
+            <article class="card"><div class="icon">◎</div><h3>Web remains separate</h3><p>The React app continues to consume the Node service until a browser-specific migration is designed and tested.</p><div class="tag-row"><span class="tag">React</span><span class="tag">CORS</span><span class="tag">relay</span></div></article>
+            <article class="card"><div class="icon">↗</div><h3>Backend is not deleted</h3><p>Remove Android callers only after the invalid-backend test passes. Keep web routes operational during the transition.</p><div class="tag-row"><span class="tag">safe cutover</span><span class="tag">web compatibility</span></div></article>
+          </div>
+          <div class="diagram">
+            <svg viewBox="0 0 900 300" role="img" aria-label="Target architecture diagram">
+              <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="currentColor"></path></marker></defs>
+              <rect class="svg-box-accent" x="28" y="30" rx="16" width="250" height="230"></rect>
+              <text class="svg-label" x="52" y="63">Moodify Android</text>
+              <text class="svg-small" x="52" y="87">Compose + ViewModels</text>
+              <rect class="svg-box" x="52" y="106" rx="10" width="200" height="39"></rect><text class="svg-small" x="72" y="130">Catalog repositories</text>
+              <rect class="svg-box" x="52" y="155" rx="10" width="200" height="39"></rect><text class="svg-small" x="72" y="179">Native InnerTube core</text>
+              <rect class="svg-box" x="52" y="204" rx="10" width="200" height="39"></rect><text class="svg-small" x="72" y="228">Resolver + MediaSession</text>
+              <rect class="svg-box-green" x="350" y="72" rx="16" width="220" height="155"></rect>
+              <text class="svg-label" x="382" y="105">YouTube services</text>
+              <text class="svg-small" x="382" y="132">InnerTube catalog</text>
+              <text class="svg-small" x="382" y="157">Player JavaScript</text>
+              <text class="svg-small" x="382" y="182">Googlevideo CDN</text>
+              <path class="svg-line" d="M278 130 L350 130"></path><path class="svg-line" d="M278 213 L350 190"></path>
+              <rect class="svg-box" x="650" y="72" rx="16" width="220" height="155"></rect>
+              <text class="svg-label" x="690" y="105">React web app</text>
+              <text class="svg-small" x="690" y="132">uses Moodify backend</text>
+              <text class="svg-small" x="690" y="157">browser-specific path</text>
+              <text class="svg-small" x="690" y="182">migrated separately</text>
+              <path class="svg-line" d="M570 130 L650 130"></path>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture-compare">
+        <div class="section-head"><div><div class="eyebrow">Mermaid comparison</div><h2>From backend-coupled to native.</h2></div><p>The important change is the ownership boundary: Android stops asking Moodify to be its catalog and playback runtime. The web backend remains a separate browser service.</p></div>
+        <div class="panel">
+          <div class="mermaid-panel">
+            <pre class="mermaid">
+flowchart LR
+    subgraph NOW["Moodify today"]
+        W1["React web"] --> B1["Moodify Node backend"]
+        A1["Android APK"] --> B1
+        B1 --> Y1["YouTube / InnerTube"]
+        A1 -. "partial direct player path" .-> Y1
+        B1 --> R1["web media relay"]
+        R1 --> W1
+    end
+
+    subgraph AFTER["Moodify after plan"]
+        W2["React web"] --> B2["Moodify backend<br/>web-only"]
+        B2 --> Y2["YouTube / InnerTube"]
+        A2["Android APK"] --> C2["Native catalog core"]
+        A2 --> S2["Room + DataStore"]
+        C2 --> Y2
+        A2 --> R2["Native resolver"]
+        R2 --> J2["Player JS + PO tokens"]
+        R2 --> Y2
+        R2 --> D2["Googlevideo CDN"]
+        M2["MediaSession / Media3"] --> D2
+        A2 --> M2
+    end
+
+    subgraph AT["ArchiveTune"]
+        A3["Native Android app"] --> C3["core InnerTube"]
+        A3 --> DB3["Room / local state"]
+        C3 --> Y3["YouTube services"]
+        A3 --> R3["youtubei resolver"]
+        R3 --> Q3["QuickJS + bundled player JS"]
+        R3 --> D3["Googlevideo CDN"]
+        S3["MediaSession service"] --> D3
+        A3 --> S3
+    end
+
+    AFTER -. "same ownership pattern" .-> AT
+            </pre>
+          </div>
+          <div class="comparison-note">
+            <article class="card"><strong>Now</strong><p>Android depends on the backend for catalog and still has server playback fallbacks. The app does not own the complete resolver runtime.</p></article>
+            <article class="card"><strong>After</strong><p>Android owns catalog, session state, resolver, Media3, queue, and local data. The backend remains only for the web client.</p></article>
+            <article class="card"><strong>ArchiveTune reference</strong><p>Native InnerTube core, QuickJS player runtime, local database, and MediaSession are first-class modules inside the APK.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section id="system-model">
+        <div class="section-head"><div><div class="eyebrow">Implementation map</div><h2>Every subsystem has one owner.</h2></div><p>This is the boundary to implement. A screen may request work, but it must not know how InnerTube, player JavaScript, PO tokens, CDN URLs, or Media3 work.</p></div>
+        <div class="owner-grid">
+          <article class="card"><div class="icon">01</div><h3>Presentation</h3><p>Compose screens, navigation, ViewModels, immutable UiState, loading/error/empty states, and user intents. No raw JSON, URLs, cookies, or resolver code.</p><div class="tag-row"><span class="tag">UI-only</span><span class="tag">state flow</span></div></article>
+          <article class="card"><div class="icon">02</div><h3>Domain</h3><p>Track, artist, album, playlist, browse section, queue item, lyric document, and use-case policies. This is the stable contract shared by every screen.</p><div class="tag-row"><span class="tag">typed IDs</span><span class="tag">use cases</span></div></article>
+          <article class="card"><div class="icon">03</div><h3>Data</h3><p>Native catalog repositories combine Room cache, InnerTube transport, mappers, continuations, locale, retry policy, and stale-while-refresh behavior.</p><div class="tag-row"><span class="tag">cache first</span><span class="tag">typed pages</span></div></article>
+          <article class="card"><div class="icon">04</div><h3>Playback</h3><p>ResolverCoordinator owns session state, player JS, transforms, PO tokens, fallback clients, URL expiry, re-resolution, Media3, queue, and MediaSession.</p><div class="tag-row"><span class="tag">one service</span><span class="tag">no backend</span></div></article>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Target module and ownership graph</h3>
+          <div class="mermaid-panel">
+            <pre class="mermaid">
+flowchart TB
+    UI["Compose UI<br/>screens + navigation"] --> VM["ViewModels<br/>UiState + intents"]
+    VM --> UC["Domain use cases<br/>search / browse / play / lyrics"]
+    UC --> CAT["CatalogRepository<br/>cache-first + typed mapping"]
+    UC --> QUEUE["QueueCoordinator<br/>canonical TrackKey"]
+    UC --> PLAY["PlaybackController<br/>one process-wide owner"]
+
+    CAT --> DB["Room + DataStore<br/>entities / settings / history"]
+    CAT --> IT["Native InnerTube client<br/>client context + continuations"]
+    IT --> YT["YouTube catalog endpoints"]
+
+    PLAY --> SVC["MoodifyPlaybackService<br/>Media3 + MediaSession"]
+    SVC --> RES["ResolverCoordinator<br/>stream policy + recovery"]
+    RES --> AUTH["Session + token state<br/>visitor / PO / expiry"]
+    RES --> JS["Player JS runtime<br/>QuickJS + cached bundle"]
+    RES --> CDN["Googlevideo CDN<br/>audio bytes + ranges"]
+    SVC --> NOTIF["Notification / lockscreen<br/>audio focus / headset"]
+
+    WEB["React web"] --> WEBAPI["Moodify Node backend<br/>web-only boundary"]
+    WEBAPI --> YT
+    WEBAPI --> WEBMEDIA["Browser relay / CORS path"]
+    WEBMEDIA --> WEB
+            </pre>
+          </div>
+          <div class="callout"><strong>Ownership rule</strong><p>Only <span class="mono">CatalogRepository</span> talks to catalog transport, only <span class="mono">ResolverCoordinator</span> creates playable URLs, and only <span class="mono">MoodifyPlaybackService</span> owns the player. Every other layer consumes typed results.</p></div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>What remains web-only</h3>
+          <div class="detail-table-wrap">
+            <table class="detail-table">
+              <thead><tr><th>Capability</th><th>Android after cutover</th><th>Web path</th><th>Rule</th></tr></thead>
+              <tbody>
+                <tr><td>Catalog/search</td><td>Native InnerTube client + Room</td><td>Node backend API</td><td>Same domain concepts, separate transport implementations.</td></tr>
+                <tr><td>Playback</td><td>Native resolver + Media3 + MediaSession</td><td>Browser player/relay strategy</td><td>Never send Android to <span class="mono">/api/stream</span> or <span class="mono">/api/media</span>.</td></tr>
+                <tr><td>Lyrics</td><td>Provider interfaces + local cache</td><td>Existing web provider route</td><td>Response shape may be shared conceptually, not by Android network dependency.</td></tr>
+                <tr><td>Authentication</td><td>Explicit anonymous-first or account module</td><td>Web session/cookies</td><td>Do not silently share browser cookies with Android.</td></tr>
+                <tr><td>Diagnostics</td><td>Local redacted event log</td><td>Server logs/metrics</td><td>Never log raw stream URLs, cookies, PO tokens, or authorization headers.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="apk-audit">
+        <div class="section-head"><div><div class="eyebrow">Artifact audit</div><h2>The APKs confirm the real gap.</h2></div><p>This comparison is from the built debug artifacts, not assumptions from source filenames. It validates the direction, but an APK inspection cannot prove runtime playback.</p></div>
+        <div class="grid-3">
+          <article class="card"><div class="icon">M</div><h3>Moodify debug APK — 2026-10-28</h3><p>49.29 MiB · com.example.myapplication · version 1.0/code 1 · min SDK 24 · target SDK 35 · 11 dex files · QuickJS native libraries for arm64-v8a and x86_64 · bundled player-runtime asset.</p><div class="tag-row"><span class="tag">debug APK installed on API 37 emulator</span><span class="tag">production signing pending</span></div></article>
+          <article class="card"><div class="icon">A</div><h3>ArchiveTune debug APK</h3><p>71.66 MiB · moe.rukamori.archivetune.debug · version 15.1.0/code 142 · min SDK 26 · target SDK 37 · 38 dex files · 12 native libraries.</p><div class="tag-row"><span class="tag">libquickjs.so</span><span class="tag">download service</span></div></article>
+          <article class="card"><div class="icon">!</div><h3>Most important remaining difference</h3><p>Moodify now packages QuickJS and its local player-analysis runtime, and current live-script transforms pass in emulator checks. ArchiveTune still has a fuller resolver lifecycle, especially BotGuard PO-token minting, visitor/session binding, and expiry recovery.</p><div class="tag-row"><span class="tag">resolver completeness</span><span class="tag">PO-token gap</span></div></article>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>APK-level completion gates</h3>
+          <div class="checklist">
+            <label class="check"><input type="checkbox"> Build a release APK, not only app-debug.apk, with unique versionCode/versionName and verified signing.</label>
+            <label class="check"><input type="checkbox"> Confirm the final APK contains the native resolver runtime, player bundle, runtime polyfills, and required ABI libraries.</label>
+            <label class="check"><input type="checkbox"> Inspect the final manifest for one playback service, correct foreground media permissions, notification behavior, and media controls.</label>
+            <label class="check"><input type="checkbox"> Install the final APK on both a physical device and emulator with the backend host blocked.</label>
+            <label class="check"><input type="checkbox"> Capture runtime evidence: catalog request host, resolver client, stream format, first byte, seek, lockscreen, next track, and failure recovery.</label>
+            <label class="check"><input type="checkbox"> Do not treat APK size, number of dex files, or permission count as feature parity; use behavior and acceptance tests.</label>
+          </div>
+        </div>
+      </section>
+
+      <section id="research">
+        <div class="section-head"><div><div class="eyebrow">Research synthesis</div><h2>What ArchiveTune actually solves.</h2></div><p>Its advantage is not a magic API call. It is a complete native pipeline with typed data, resolver state, expiry handling, and a real media service.</p></div>
+        <div class="grid-2">
+          <article class="card"><h3>Catalog is a domain, not DTO plumbing</h3><p>Search, home, explore, charts, moods, genres, artists, albums, playlists, related tracks, queues, and continuations are typed and rendered as sections/entities. The UI does not need to understand raw InnerTube JSON.</p></article>
+          <article class="card"><h3>Playback is a resolver subsystem</h3><p>Player responses, client profiles, player JavaScript, signature and n transformations, PO tokens, headers, expiry, fallback clients, and re-resolution are coordinated before Media3 sees a URL.</p></article>
+          <article class="card"><h3>Device state is durable</h3><p>Room/DataStore own history, queue, library, lyrics, downloads, settings, and resolver cache metadata. The app does not ask a remote backend to remember how its player works.</p></article>
+          <article class="card"><h3>MediaSession owns the experience</h3><p>A foreground service owns queue transitions, notification metadata, lockscreen controls, seeking, preloading, audio focus, process death, and recovery.</p></article>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>ArchiveTune repository and dependency map verified from source</h3>
+          <div class="grid-2">
+            <article class="card"><h3><a href="https://github.com/rukamori/core">core</a></h3><p>Active Git submodule. Owns InnerTube client contexts, requests, typed parsing, auth/session state, and catalog/playback contracts. It integrates <a href="https://github.com/TeamNewPipe/NewPipeExtractor">NewPipe Extractor</a> for stream extraction and cipher support.</p></article>
+            <article class="card"><h3><a href="https://github.com/rukamori/morideobfuscator">morideobfuscator</a></h3><p>Active Git submodule. Its JavaScript module uses <code>youtubei.js</code> player analysis/extraction in a Kotlin QuickJS worker; the Android app separately owns the BotGuard/WebView PO-token lifecycle.</p></article>
+            <article class="card"><h3><a href="https://github.com/rukamori/lyrics">lyrics</a> and <a href="https://github.com/rukamori/IconPack">IconPack</a></h3><p>Active Git submodules for provider-based lyrics and community icon assets. Lyrics are split into provider modules rather than being a single catalog API.</p></article>
+            <article class="card"><h3>Other product modules</h3><p><code>lastfm</code>, <code>canvas</code>, <code>shazamkit</code>, and <code>spotifycore</code> are included Gradle modules in the app repository. Media-control source also references <a href="https://github.com/Moriafly/media-kit">Moriafly/media-kit</a> and <a href="https://github.com/Yos-X/FlamingoSank">FlamingoSank</a>; these are source-provenance references, not active Gradle dependencies.</p></article>
+          </div>
+          <div class="callout"><strong>Separate reference, not an ArchiveTune dependency</strong><p><a href="https://github.com/LuanRT/BgUtils">LuanRT/BgUtils</a> is a useful independent MIT PO-token reference. Its current example fetches an InnerTube attestation challenge and interpreter, then uses <code>BotGuardClient</code> and <code>WebPoMinter</code> in a browser-like runtime. It requires successful runtime attestation and is not a drop-in Android or QuickJS provider. It is not listed as an ArchiveTune submodule or dependency; ArchiveTune source contains its own Android WebView BotGuard lifecycle.</p></div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Moodify implementation status — 2026-11-02</h3>
+          <div class="checklist">
+            <label class="check"><input type="checkbox" checked disabled> Android catalog/search/detail requests are native InnerTube calls; Room/DataStore own cache and local state.</label>
+            <label class="check"><input type="checkbox" checked disabled> Android playback has no Moodify server fallback; Media3 consumes device-resolved CDN URLs and the web service remains separate.</label>
+            <label class="check"><input type="checkbox" checked disabled> Local signature and <code>n</code> transform passes against the current YouTube player script in System WebView V8 and QuickJS emulator runs.</label>
+            <label class="check"><input type="checkbox" checked disabled> Fresh APK launch loaded Home/Explore artwork; live in-app Adele search returned songs, artist suggestions, and thumbnails.</label>
+            <label class="check"><input type="checkbox" checked disabled> Device-local BotGuard/WebPO minted a video-bound token; MWEB resolved the previously failing track, returned a valid CDN range response, and advanced in Media3.</label>
+            <label class="check"><input type="checkbox" checked disabled> Fresh source verification passed on 2026-11-02: 41 Android unit tests and debug assembly; React/Node has 132 passing tests, typecheck, and production build.</label>
+            <label class="check"><input type="checkbox" checked disabled> Runtime dependency and license inventory, player assets, ABI libraries, manifest service/permissions, and Android backend-reference audit are recorded.</label>
+            <label class="check"><input type="checkbox" disabled> Still open: broad live playback/format coverage, real CDN 410/expiry recovery, catalog renderer/locale breadth, v4→v5 migration on device, physical-device lockscreen/headset evidence, and production signing. Downloads remain deferred.</label>
+          </div>
+        </div>
+      </section>
+
+      <section id="contract">
+        <div class="section-head"><div><div class="eyebrow">Adversarial correction</div><h2>Define “similar” before building.</h2></div><p>ArchiveTune is a mature product, not a single feature. Moodify must prove the native core first, then earn broader parity through independent gates.</p></div>
+        <div class="grid-3">
+          <article class="card"><div class="icon">01</div><h3>Core parity</h3><p>Native search, typed catalog, rich details, direct playback, background service, queue, seek, lyrics, local history, and playlists.</p><div class="tag-row"><span class="tag">current standalone target</span></div></article>
+          <article class="card"><div class="icon">02</div><h3>Product parity</h3><p>Region-aware home, explore, charts, moods, quick picks, account/library sync, playlist editing, translation, and Android Auto.</p><div class="tag-row"><span class="tag">after core proof</span></div></article>
+          <article class="card"><div class="icon">03</div><h3>Advanced parity</h3><p>SponsorBlock, Cast, Shazam, Canvas, Last.fm, backups, podcasts, together features, crossfade/effects, and deep customization.</p><div class="tag-row"><span class="tag">separate product backlog</span></div></article>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Non-negotiable release gates</h3>
+          <div class="checklist">
+            <label class="check"><input type="checkbox"> Backend-zero test <em>(partial: emulator host-block evidence exists; full lyrics/local-state sweep remains)</em>.</label>
+            <label class="check"><input type="checkbox"> Resolver-complete test <em>(partial: script transforms and WebPO pass; live expiry recovery is not proven)</em>.</label>
+            <label class="check"><input type="checkbox"> Transport test <em>(partial: WebM/range and forward seek pass; MP4/AAC and backward matrix remains)</em>.</label>
+            <label class="check"><input type="checkbox"> Catalog contract test <em>(partial: core pages pass; all renderer/continuation shapes remain)</em>.</label>
+            <label class="check"><input type="checkbox"> Locale test <em>(partial: settings and cache keys pass; regional-output breadth remains)</em>.</label>
+            <label class="check"><input type="checkbox" checked disabled> Session decision: anonymous-first; authenticated YouTube parity is explicitly out of this migration scope.</label>
+            <label class="check"><input type="checkbox"> State migration test <em>(partial: legacy imports and v1–v4 pass; v4→v5 device run remains)</em>.</label>
+            <label class="check"><input type="checkbox"> Single-owner test <em>(partial: service and emulator recovery pass; physical lockscreen matrix remains)</em>.</label>
+            <label class="check"><input type="checkbox"> Release matrix <em>(open: physical-device, expiry, network-loss, and format coverage)</em>.</label>
+            <label class="check"><input type="checkbox"> License gate <em>(runtime inventory is complete; clean-room/source-level decision remains)</em>.</label>
+          </div>
+        </div>
+      </section>
+
+      <section id="milestones">
+        <div class="section-head"><div><div class="eyebrow">Execution map</div><h2>Six milestones, one reliable cutover.</h2></div><p>These are intentionally broad outcomes. Smaller tickets belong inside them; completion is defined by observable gates, not calendar estimates.</p></div>
+        <div class="milestone-toolbar">
+          <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="now">Start here</button>
+          <button class="filter" data-filter="risk">Highest risk</button>
+        </div>
+        <div class="milestones">
+          <details class="milestone" data-kind="now" open>
+            <summary><span class="milestone-num">01</span><span><span class="milestone-title">Standalone InnerTube catalog core</span><br><span class="milestone-outcome">Search, home, explore, details, and continuations work with the backend unavailable.</span></span><span class="milestone-state">PASS: baseline</span></summary>
+            <div class="milestone-body"><div><h3>Build</h3><ul><li>Native Kotlin core for Ktor/OkHttp, JSON, compression, client contexts, locale, retries, and continuations.</li><li>Typed models for tracks, artists, albums, playlists, sections, browse pages, filters, suggestions, queues, lyrics entry points, and region state.</li><li>Migrate MusicRepository from MoodifyServerApi to native repositories with cache-first refresh.</li><li>Add fixture parser tests and live smoke tests for search, artist, album, playlist, browse, and continuation.</li></ul></div><div class="accept"><strong>Exit criteria</strong><p>MOODIFY_SERVER_URL may be blank or invalid. Android still searches, opens details, loads discovery, paginates, and never shows N/A where InnerTube has valid data.</p></div></div>
+          </details>
+          <details class="milestone" data-kind="risk">
+            <summary><span class="milestone-num">02</span><span><span class="milestone-title">Native playback resolver and recovery</span><br><span class="milestone-outcome">Direct device playback with player-script analysis, token binding, fallback clients, and re-resolution.</span></span><span class="milestone-state">PARTIAL: live matrix</span></summary>
+            <div class="milestone-body"><div><h3>Build</h3><ul><li>Player response retrieval with consistent visitor/session state.</li><li>Player JavaScript identification, versioned cache, sandboxed deciphering, signature and n transformation, and runtime prewarming.</li><li>PO-token state tracked by type, client, video/session binding, source, and expiry.</li><li>ResolvedAudioStream contract containing URL, headers, format, bitrate, expiry, client profile, and token binding.</li><li>Controlled 403/410 recovery and audio-only format selection. No artificial chunking.</li></ul></div><div class="accept"><strong>Exit criteria</strong><p>Playback passes the backend-blocked device matrix. Seeking does not restart. Lock-screen playback works. Expired or forbidden streams trigger controlled re-resolution rather than endless retries.</p></div></div>
+          </details>
+          <details class="milestone" data-kind="now">
+            <summary><span class="milestone-num">03</span><span><span class="milestone-title">Durable local state and MediaSession</span><br><span class="milestone-outcome">Queue, history, library, lyrics, notification, and recovery survive process changes.</span></span><span class="milestone-state">PARTIAL: device proof</span></summary>
+            <div class="milestone-body"><div><h3>Build</h3><ul><li>Room for entities, queue, history, library, lyrics, artwork, and resolver cache metadata.</li><li>DataStore for region, language, quality, cache, theme, and feature flags.</li><li>Single MoodifyPlaybackService owner for Media3, MediaSession, notification, transitions, position persistence, and callbacks.</li><li>Next-track preloading, audio-focus recovery, network loss handling, process death restoration, and cache invalidation.</li></ul></div><div class="accept"><strong>Exit criteria</strong><p>Restart restores queue and position. Notification and lockscreen controls are real. Next track is smooth when preloading succeeds, and recovers when it does not. Download/offline acquisition is deferred and does not block this gate.</p></div></div>
+          </details>
+          <details class="milestone">
+            <summary><span class="milestone-num">04</span><span><span class="milestone-title">ArchiveTune-style catalog experience</span><br><span class="milestone-outcome">Moodify becomes a typed, region-aware YouTube Music catalog instead of playlist-shaped mood tiles.</span></span><span class="milestone-state">PARTIAL: product depth</span></summary>
+            <div class="milestone-body"><div><h3>Build</h3><ul><li>Native home, explore, charts, new releases, moods, genres, quick picks, and region-aware shelves.</li><li>Shared section renderer for mixed shelves, entity rows, albums, playlists, and search filters.</li><li>Rich artist, album, playlist, related, up-next, and queue surfaces with continuation loading.</li><li>Mood worlds map explicitly to playlist IDs, browse IDs, charts, genres, or generated queues.</li><li>Local deterministic personalization from history, likes, pinned playlists, and continue listening.</li></ul></div><div class="accept"><strong>Exit criteria</strong><p>A first-time user sees useful content without seeded Moodify playlists. Every card has a typed source, opens a working destination, and plays through the same canonical track identity.</p></div></div>
+          </details>
+          <details class="milestone">
+            <summary><span class="milestone-num">05</span><span><span class="milestone-title">Lyrics, library, and optional integrations</span><br><span class="milestone-outcome">The app feels complete without making optional features part of the playback core.</span></span><span class="milestone-state">PARTIAL: providers</span></summary>
+            <div class="milestone-body"><div><h3>Build</h3><ul><li>Native transcript/lyrics plus LRCLIB behind provider interfaces, synced parsing, translation, caching, and seek alignment.</li><li>Liked tracks, saved albums, local playlists, import/export, and artwork cache.</li><li>Optional interfaces for SponsorBlock, Android Auto, Cast, Shazam, Last.fm, Canvas, backups, and CSV export.</li><li>Account synchronization only after anonymous/local behavior is reliable. Download/offline acquisition and storage controls are explicitly deferred.</li></ul></div><div class="accept"><strong>Exit criteria</strong><p>Lyrics and local library work without the backend. Optional integrations can be disabled safely. Downloads are not part of this migration's acceptance gate.</p></div></div>
+          </details>
+          <details class="milestone" data-kind="now">
+            <summary><span class="milestone-num">06</span><span><span class="milestone-title">Cutover, verification, and release hardening</span><br><span class="milestone-outcome">Evidence proves Android is standalone while the web backend remains healthy.</span></span><span class="milestone-state">PARTIAL: release proof</span></summary>
+            <div class="milestone-body"><div><h3>Build</h3><ul><li>Debug network audit that fails if Android calls Moodify during catalog, playback, lyrics, queue, or library operations.</li><li>Fixture tests, live smoke matrix, privacy-safe resolver metrics, and a diagnostic screen.</li><li>Bounded retries, backoff, cache expiry, no token/URL logging, and runtime prewarming.</li><li>Temporary native-vs-server flag only during rollout, followed by deletion of Android backend routes and config.</li><li>CI build, lint, instrumentation, release APK packaging, and physical-device verification.</li></ul></div><div class="accept"><strong>Exit criteria</strong><p>Backend can be stopped or misconfigured and Android still works. Web regression tests pass. A physical-device release APK completes the catalog/playback matrix.</p></div></div>
+          </details>
+        </div>
+      </section>
+
+      <section id="flows">
+        <div class="section-head"><div><div class="eyebrow">Data flows</div><h2>One identity from catalog to audio.</h2></div><p>The video ID joins catalog, queue, resolver, lyrics, history, and library—but the app retains the full typed track around it.</p></div>
+        <div class="panel">
+          <div class="flow-label">Search and details</div>
+          <div class="diagram">
+            <svg viewBox="0 0 960 170" role="img" aria-label="Search data flow">
+              <defs><marker id="arrow2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="currentColor"></path></marker></defs>
+              <path class="svg-line" marker-end="url(#arrow2)" d="M170 82 L270 82"></path><path class="svg-line" marker-end="url(#arrow2)" d="M410 82 L510 82"></path><path class="svg-line" marker-end="url(#arrow2)" d="M650 82 L750 82"></path>
+              <rect class="svg-box" x="30" y="43" rx="12" width="140" height="78"></rect><text class="svg-label" x="66" y="76">Compose UI</text><text class="svg-small" x="49" y="99">query + filter</text>
+              <rect class="svg-box-accent" x="270" y="43" rx="12" width="140" height="78"></rect><text class="svg-label" x="292" y="76">Repository</text><text class="svg-small" x="291" y="99">cache first</text>
+              <rect class="svg-box-green" x="510" y="43" rx="12" width="140" height="78"></rect><text class="svg-label" x="530" y="76">InnerTube</text><text class="svg-small" x="532" y="99">typed page</text>
+              <rect class="svg-box" x="750" y="43" rx="12" width="170" height="78"></rect><text class="svg-label" x="781" y="76">Room + screen</text><text class="svg-small" x="780" y="99">entities + next</text>
+            </svg>
+          </div>
+          <div class="flow-label">Playback and recovery</div>
+          <div class="diagram">
+            <svg viewBox="0 0 960 170" role="img" aria-label="Playback data flow">
+              <defs><marker id="arrow3" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="currentColor"></path></marker></defs>
+              <path class="svg-line" marker-end="url(#arrow3)" d="M160 82 L260 82"></path><path class="svg-line" marker-end="url(#arrow3)" d="M420 82 L520 82"></path><path class="svg-line" marker-end="url(#arrow3)" d="M680 82 L780 82"></path>
+              <rect class="svg-box" x="20" y="43" rx="12" width="140" height="78"></rect><text class="svg-label" x="52" y="76">MediaSession</text><text class="svg-small" x="48" y="99">videoId</text>
+              <rect class="svg-box-accent" x="260" y="43" rx="12" width="160" height="78"></rect><text class="svg-label" x="291" y="76">Resolver</text><text class="svg-small" x="283" y="99">tokens + script</text>
+              <rect class="svg-box-green" x="520" y="43" rx="12" width="160" height="78"></rect><text class="svg-label" x="545" y="76">Stream result</text><text class="svg-small" x="548" y="99">URL + headers</text>
+              <rect class="svg-box" x="780" y="43" rx="12" width="160" height="78"></rect><text class="svg-label" x="810" y="76">Media3 CDN</text><text class="svg-small" x="805" y="99">buffer + seek</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <section id="flowbook">
+        <div class="section-head"><div><div class="eyebrow">Flowbook</div><h2>Every important journey, step by step.</h2></div><p>These flows are the implementation contract. Each one names its owner, persistent state, network boundary, success result, and failure behavior.</p></div>
+        <div class="flowbook">
+          <details class="flow-card" open>
+            <summary><span class="flow-name"><span class="flow-num">01</span>Process startup and session bootstrap</span><span class="flow-summary">No work starts with an unknown region, stale player state, or duplicate service.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Process starts.</strong> Application creates one dependency graph; no Activity creates its own ExoPlayer or resolver.</div></div>
+              <div class="step"><div><strong>Load DataStore.</strong> Read region, language, quality, explicit-content preference, theme, last queue, and feature flags. Device locale is only the initial default.</div></div>
+              <div class="step"><div><strong>Run Room migrations.</strong> Preserve existing SharedPreferences history/library/queue data; migration is idempotent and recorded.</div></div>
+              <div class="step"><div><strong>Bootstrap InnerTube session.</strong> Build the selected client context, visitor/session identifiers, request headers, clock, and retry policy.</div></div>
+              <div class="step"><div><strong>Warm resolver lazily.</strong> Read player-script metadata and token state; do not block the first catalog screen on player JavaScript.</div></div>
+              <div class="step"><div><strong>Restore playback.</strong> PlaybackService restores the last queue and position only when the user or a media control requests continuation.</div></div>
+            </div><div class="flow-meta"><div><strong>Owners</strong><span>AppGraph · DataStore · Room · SessionState</span></div><div><strong>Persist</strong><span>settings, migration marker, visitor/session metadata, last queue snapshot</span></div><div><strong>Fail safely</strong><span>Use cached catalog; show offline state; never invent region or silently reset queue.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">02</span>Search and suggestions</span><span class="flow-summary">Query → typed sections → local cache → paginated results.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Normalize intent.</strong> Trim whitespace, preserve user-visible query, derive a stable query key, and cancel the previous in-flight search.</div></div>
+              <div class="step"><div><strong>Serve immediate state.</strong> Show recent searches and cached results if available; mark them stale instead of hiding them.</div></div>
+              <div class="step"><div><strong>Call native search.</strong> Send query, region, language, selected filter, and continuation token through the InnerTube client.</div></div>
+              <div class="step"><div><strong>Parse typed sections.</strong> Map songs, videos, artists, albums, playlists, channels, filters, and continuation actions into domain models.</div></div>
+              <div class="step"><div><strong>Persist normalized entities.</strong> Upsert by canonical IDs; keep provenance such as source page and result type.</div></div>
+              <div class="step"><div><strong>Render interaction.</strong> Every row has a stable action: play, enqueue, open detail, save, share, or load more.</div></div>
+            </div><div class="flow-meta"><div><strong>Input</strong><span>query, filter, region, language, continuation</span></div><div><strong>Output</strong><span>SearchPage(sections, filters, continuation)</span></div><div><strong>Failure</strong><span>Parser mismatch becomes a typed partial-result warning, not a blank screen or N/A data.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">03</span>Home, explore, charts, moods, and region-aware discovery</span><span class="flow-summary">Replace hardcoded playlist tiles with typed YouTube Music shelves.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Select surface.</strong> Home, Explore, Charts, New Releases, Moods, Genres, or user-defined worlds maps to a stable browse configuration.</div></div>
+              <div class="step"><div><strong>Resolve browse identity.</strong> The surface stores browseId/playlistId/entityId and source type; labels never act as IDs.</div></div>
+              <div class="step"><div><strong>Read cache and refresh.</strong> Render cached sections immediately, refresh in background, and retain continuation tokens per surface and locale.</div></div>
+              <div class="step"><div><strong>Flatten only at the UI boundary.</strong> Typed sections become reusable shelf components: album row, playlist row, artist row, track list, chart row, or mixed shelf.</div></div>
+              <div class="step"><div><strong>Open destinations.</strong> Tap behavior is determined by entity type; a playlist opens a playlist page, an artist opens an artist page, and a chart can open its source browse page.</div></div>
+              <div class="step"><div><strong>Personalize locally.</strong> Continue listening, recently played, pinned worlds, and taste signals are derived from Room without pretending they are server recommendations.</div></div>
+            </div><div class="flow-meta"><div><strong>Source of truth</strong><span>browseId, playlistId, channelId, albumId, videoId</span></div><div><strong>Region</strong><span>part of request and cache key; changing it invalidates region-sensitive pages.</span></div><div><strong>Failure</strong><span>Keep last good shelf with “could not refresh” state and retry action.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">04</span>Entity details and continuations</span><span class="flow-summary">Artist, album, playlist, track, related content, and up-next share one identity model.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Route by typed ID.</strong> Navigation receives EntityRef(type, id, optional params), never a display title alone.</div></div>
+              <div class="step"><div><strong>Read Room snapshot.</strong> Show known metadata and track list while the full page loads.</div></div>
+              <div class="step"><div><strong>Fetch native page.</strong> Use the correct InnerTube browse/player endpoint and persist continuation tokens with page context.</div></div>
+              <div class="step"><div><strong>Merge pages deterministically.</strong> Deduplicate by canonical ID, preserve order, and retain section labels and badges.</div></div>
+              <div class="step"><div><strong>Expose actions.</strong> Play all, shuffle, enqueue, save, share, open artist/album, and load more.</div></div>
+            </div><div class="flow-meta"><div><strong>Persist</strong><span>entity metadata, ordered child IDs, continuation cursor, last refresh</span></div><div><strong>UI contract</strong><span>loading, partial, ready, empty, restricted, unavailable</span></div><div><strong>Failure</strong><span>Preserve cached entity and explain which section failed; never discard a valid partial page.</span></div></div></div>
+          </details>
+
+          <details class="flow-card" open>
+            <summary><span class="flow-name"><span class="flow-num">05</span>Tap play: track identity to first audio byte</span><span class="flow-summary">The canonical path that must work with the Moodify backend blocked.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Receive PlayIntent.</strong> UI sends TrackKey plus origin, queue position, autoplay policy, and requested start position.</div></div>
+              <div class="step"><div><strong>Canonicalize.</strong> QueueCoordinator deduplicates the track by videoId, preserves metadata, and creates a stable MediaItem.</div></div>
+              <div class="step"><div><strong>Start service.</strong> PlaybackController hands the queue to MoodifyPlaybackService; Activity is no longer the owner.</div></div>
+              <div class="step"><div><strong>Resolve.</strong> ResolverCoordinator checks an in-memory valid result, then resolves locally through InnerTube/player runtime/token state.</div></div>
+              <div class="step"><div><strong>Prepare Media3.</strong> Attach only the resolved URL, required headers, mime/container metadata, and duration hints; no WebView or iframe.</div></div>
+              <div class="step"><div><strong>Publish state.</strong> MediaSession/notification receives title, artist, artwork, duration, buffering, playing, and error state.</div></div>
+              <div class="step"><div><strong>Persist proof.</strong> On first bytes/playing, record history and resolver telemetry without secrets.</div></div>
+            </div><div class="flow-meta"><div><strong>Success</strong><span>Media3 reaches READY/playing and position advances from the requested start.</span></div><div><strong>Bounded recovery</strong><span>One re-resolution for expiry/403, one controlled client fallback, then a user-readable error.</span></div><div><strong>Never</strong><span>Never fall back to server playback, hidden WebView, iframe, or arbitrary chunk slicing.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">06</span>Resolver lifecycle and stream selection</span><span class="flow-summary">Player response → transforms → token binding → expiring stream.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Select client profile.</strong> Use an ordered, instrumented profile list; separate catalog clients from playback clients and honor region/session capabilities.</div></div>
+              <div class="step"><div><strong>Fetch player response.</strong> Send videoId, visitor/session context, client version, playback context, and required token material through the native client.</div></div>
+              <div class="step"><div><strong>Ensure player JS.</strong> Detect the player version, load a verified cached bundle, or fetch and analyze the new player script inside the sandbox.</div></div>
+              <div class="step"><div><strong>Transform formats.</strong> Apply signature and n transformations only in the JS runtime; validate the transformed URL before returning it.</div></div>
+              <div class="step"><div><strong>Resolve PO-token state.</strong> Reuse only a token with matching type, client/session/video binding, and unexpired validity.</div></div>
+              <div class="step"><div><strong>Select audio.</strong> Prefer supported audio-only formats by policy: codec/container compatibility, bitrate, loudness/quality, and size constraints.</div></div>
+              <div class="step"><div><strong>Return immutable result.</strong> Include URL, headers, mime, codec, bitrate, content length if known, expiresAt, client profile, token binding, and resolver version.</div></div>
+            </div><div class="flow-meta"><div><strong>Cache</strong><span>Cache player analysis, not durable raw media URLs. Keep stream results memory-scoped and expiry-aware.</span></div><div><strong>Security</strong><span>Redact URL query strings and token values from logs and crash reports.</span></div><div><strong>Failure</strong><span>Classify no-format, transform, token, consent, bot, HTTP, and parser failures separately.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">07</span>Seek, buffer, 403/410, and network recovery</span><span class="flow-summary">Seeking is a transport concern; expiry is a resolver concern.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Normal seek.</strong> Media3 issues a range request against the same valid stream; service keeps the queue and media item stable.</div></div>
+              <div class="step"><div><strong>Detect failure.</strong> Classify HTTP 403/410, EOF, timeout, connection loss, unsupported container, and decoder error before deciding recovery.</div></div>
+              <div class="step"><div><strong>Capture position.</strong> Save the requested position and queue index before replacing the media source.</div></div>
+              <div class="step"><div><strong>Invalidate only what is stale.</strong> Remove the stream result for that video/client; do not wipe the player-script cache or all session state.</div></div>
+              <div class="step"><div><strong>Re-resolve once.</strong> Refresh session/token state if needed, select a fallback client, and return a new stream result.</div></div>
+              <div class="step"><div><strong>Resume.</strong> Prepare the replacement source at the saved position; if it fails again, stop retrying and expose a diagnostic error with retry action.</div></div>
+            </div><div class="flow-meta"><div><strong>Transport rule</strong><span>DefaultHttpDataSource/DefaultDataSource; no 512 KB artificial truncation.</span></div><div><strong>User experience</strong><span>Keep artwork/title/queue visible during recovery; show buffering only while work is active.</span></div><div><strong>Evidence</strong><span>Log error class, client profile, resolver version, and retry count—not the raw URL.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">08</span>Background, lockscreen, headset, and process death</span><span class="flow-summary">The service, not the screen, owns continuity.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Promote service.</strong> Start the foreground media service only for active playback or an explicit media action, with the correct notification permission behavior.</div></div>
+              <div class="step"><div><strong>Publish MediaSession.</strong> Expose metadata, playback state, queue navigation, seek, repeat, shuffle, and custom actions.</div></div>
+              <div class="step"><div><strong>Handle audio focus.</strong> Pause/duck/resume according to focus changes, noisy-audio broadcasts, Bluetooth/headset events, and phone calls.</div></div>
+              <div class="step"><div><strong>Persist checkpoints.</strong> Save current TrackKey, queue snapshot, position, repeat/shuffle, and last known playback state at controlled intervals and transitions.</div></div>
+              <div class="step"><div><strong>Recover after process death.</strong> Recreate service, restore queue, re-resolve the current stream if expired, and resume only when policy permits.</div></div>
+            </div><div class="flow-meta"><div><strong>Single owner</strong><span>PlaybackService owns ExoPlayer, MediaSession, notification, queue transitions, and resolver callbacks.</span></div><div><strong>Screen behavior</strong><span>Collect state; render controls; send intents; never call player methods directly from multiple screens.</span></div><div><strong>Failure</strong><span>Notification changes to a recoverable error state rather than “preparing your audio” forever.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">09</span>Lyrics, local library, and deferred downloads</span><span class="flow-summary">Current gate covers lyrics/library; download and offline playback are explicitly deferred.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Lyrics.</strong> Request by canonical TrackKey; try transcript/provider adapters in order, normalize lines/timestamps/translation, cache by provider and content version.</div></div>
+              <div class="step"><div><strong>Library.</strong> Likes, saves, local playlists, history, and pinned worlds write to Room through use cases; UI never mutates tables directly.</div></div>
+              <div class="step"><div><strong>Downloads — deferred.</strong> DownloadManager, media-file validation, progress/retry/delete, and storage controls are future work and are not part of the current standalone migration gate.</div></div>
+              <div class="step"><div><strong>Offline playback — deferred.</strong> Selecting a validated local media file before network resolution will be designed and verified in the later download milestone.</div></div>
+              <div class="step"><div><strong>Cleanup — deferred.</strong> Storage quotas, temporary-file cleanup, and artwork/download cleanup are future acceptance work.</div></div>
+            </div><div class="flow-meta"><div><strong>Canonical key</strong><span>videoId remains the join key; local file path is never the identity.</span></div><div><strong>Provider boundary</strong><span>Lyrics/download providers are replaceable and do not leak into catalog models.</span></div><div><strong>Failure</strong><span>Offline screens show cached entities and actionable missing-download states.</span></div></div></div>
+          </details>
+
+          <details class="flow-card">
+            <summary><span class="flow-name"><span class="flow-num">10</span>Web path and staged cutover</span><span class="flow-summary">Android becomes standalone without breaking the existing React app.</span></summary>
+            <div class="flow-body"><div class="step-list">
+              <div class="step"><div><strong>Keep server contracts for web.</strong> Node search/discovery/media behavior remains available to React while Android migrates.</div></div>
+              <div class="step"><div><strong>Separate configuration.</strong> Android has no required <span class="mono">MOODIFY_SERVER_URL</span>; web deployment keeps its own API base and health checks.</div></div>
+              <div class="step"><div><strong>Prove Android independence.</strong> Block the Render host at DNS/firewall/mock layer and run the full Android test matrix.</div></div>
+              <div class="step"><div><strong>Remove Android fallbacks.</strong> Delete server playback/catalog branches only after network-audit tests fail the build if they return.</div></div>
+              <div class="step"><div><strong>Keep web migration optional.</strong> A future web-native path is a separate design because browser CORS, autoplay, and media policy differ from Android.</div></div>
+            </div><div class="flow-meta"><div><strong>Cutover flag</strong><span>Only temporary, local, and removable; never ship a silent server fallback as “standalone.”</span></div><div><strong>Rollback</strong><span>Rollback means APK rollback or feature disablement, not restoring hidden backend coupling.</span></div><div><strong>Success</strong><span>Render outage affects web only; Android catalog and playback remain functional.</span></div></div></div>
+          </details>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Cross-flow state machine</h3>
+          <div class="mermaid-panel">
+            <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Resolving: play(TrackKey)
+    Resolving --> Preparing: valid stream result
+    Resolving --> Resolving: refresh session / fallback client
+    Resolving --> Error: no supported format / resolver failure
+    Preparing --> Buffering: Media3 prepare
+    Buffering --> Playing: first bytes + decoder ready
+    Buffering --> Recovering: 403 / 410 / network / EOF
+    Playing --> Paused: user / audio focus
+    Playing --> Seeking: seek(position)
+    Playing --> Recovering: stream expired
+    Seeking --> Buffering: range request
+    Recovering --> Resolving: invalidate stream once
+    Recovering --> Error: recovery exhausted
+    Paused --> Playing: resume
+    Playing --> Ended: item completed
+    Ended --> Resolving: next queue item
+    Error --> Resolving: user retry
+    Error --> Idle: dismiss
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="contracts">
+        <div class="section-head"><div><div class="eyebrow">Contracts and state</div><h2>Make the seams explicit before writing code.</h2></div><p>The following contracts prevent the same backend-shaped DTOs, hidden fallbacks, and unstable IDs from reappearing under new names.</p></div>
+        <div class="panel">
+          <h3>Canonical domain contracts</h3>
+          <div class="detail-table-wrap">
+            <table class="detail-table">
+              <thead><tr><th>Contract</th><th>Required fields</th><th>Owner</th><th>Rules</th></tr></thead>
+              <tbody>
+                <tr><td>TrackKey</td><td><code>videoId</code>, source, optional playlist/index</td><td>Domain</td><td><code>videoId</code> is the identity. Title, artwork, duration, and artist are display metadata and may refresh.</td></tr>
+                <tr><td>Track</td><td>TrackKey, title, artists, album, duration, artwork, explicit flag</td><td>Catalog mapper</td><td>Partial metadata is valid; UI must represent unknown fields explicitly rather than string “N/A” everywhere.</td></tr>
+                <tr><td>EntityRef</td><td>type, id, label, source</td><td>Navigation</td><td>Type controls the detail endpoint and renderer. Labels never substitute for IDs.</td></tr>
+                <tr><td>CatalogPage</td><td>sections, filters, continuation, source, fetchedAt, locale</td><td>CatalogRepository</td><td>Sections remain typed until the final UI renderer. Continuations are scoped to page and locale.</td></tr>
+                <tr><td>ResolveRequest</td><td>TrackKey, position, quality policy, region, session snapshot</td><td>ResolverCoordinator</td><td>Must be safe to repeat. Contains no UI object or Activity reference.</td></tr>
+                <tr><td>ResolvedAudioStream</td><td>uri, headers, mime, codec, bitrate, expiresAt, client, tokenBinding</td><td>ResolverCoordinator</td><td>Short-lived result. Query strings are sensitive; keep in memory or encrypted storage only when required.</td></tr>
+                <tr><td>PlaybackError</td><td>category, userMessage, retryAction, technicalCode, retryCount</td><td>PlaybackService</td><td>Distinguish resolver, HTTP, decoder, network, policy, and user-cancelled states.</td></tr>
+                <tr><td>LyricsDocument</td><td>TrackKey, lines, timestamps, language, provider, fetchedAt</td><td>LyricsRepository</td><td>Provider is metadata, not a UI branch. Synced and unsynced documents are different states.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:16px">
+          <div class="panel"><h3>Cache keys and invalidation</h3><div class="detail-table-wrap"><table class="detail-table"><thead><tr><th>Key</th><th>Stores</th><th>Invalidate when</th></tr></thead><tbody><tr><td><code>track:{videoId}</code></td><td>normalized metadata</td><td>newer page data or explicit user refresh</td></tr><tr><td><code>page:{type}:{id}:{locale}</code></td><td>typed page + continuation</td><td>locale change, parser version change, manual refresh</td></tr><tr><td><code>player:{playerVersion}</code></td><td>analyzed JS operations</td><td>player version changes or transform validation fails</td></tr><tr><td><code>session:{client}</code></td><td>visitor/session metadata</td><td>expiry, consent change, client change</td></tr><tr><td><code>stream:{videoId}:{policy}</code></td><td>short-lived stream metadata</td><td>expiresAt, 403/410, token mismatch; never global wipe</td></tr></tbody></table></div></div>
+          <div class="panel"><h3>State ownership rules</h3><div class="checklist"><label class="check"><input type="checkbox"> Room is the source of truth for history, local playlists, likes, downloads, and queue snapshots.</label><label class="check"><input type="checkbox"> DataStore is the source of truth for settings, region, language, quality, and feature flags.</label><label class="check"><input type="checkbox"> PlaybackService is the source of truth for live player position/state.</label><label class="check"><input type="checkbox"> ViewModels expose immutable state and send intents; they do not persist or resolve URLs.</label><label class="check"><input type="checkbox"> Network DTOs never leak into Compose or Media3 APIs.</label><label class="check"><input type="checkbox"> A cache miss is not an error; an invalid identity or parser failure is.</label></div></div>
+        </div>
+        <div class="panel" style="margin-top:16px"><h3>Current-to-target file responsibilities</h3><div class="detail-table-wrap"><table class="detail-table"><thead><tr><th>Current surface</th><th>Target responsibility</th><th>Required change</th></tr></thead><tbody><tr><td><code>MusicRepository.kt</code></td><td>CatalogRepository + entity mappers</td><td>Remove Retrofit/server dependency; call native InnerTube transport, Room, and typed page parsers.</td></tr><tr><td><code>InnerTubeStreamResolver.kt</code></td><td>ResolverCoordinator + SessionState + PlayerScriptRuntime</td><td>Delete <code>/api/*</code> calls; add local client context, player JS cache, transforms, token binding, expiry policy.</td></tr><tr><td><code>PlaybackManager.kt</code></td><td>PlaybackController + MoodifyPlaybackService</td><td>One process-wide Media3/MediaSession owner; remove server fallback and artificial chunking; preserve seek position across re-resolution.</td></tr><tr><td><code>android/app/build.gradle.kts</code></td><td>Runtime packaging contract</td><td>Add Room, Media3, QuickJS/native runtime, player assets, ABI verification, release signing/versioning.</td></tr><tr><td>React + Node server</td><td>Web-only product path</td><td>Keep routes stable; add web tests and health checks; do not use it as Android’s hidden dependency.</td></tr></tbody></table></div></div>
+      </section>
+
+      <section id="verification">
+        <div class="section-head"><div><div class="eyebrow">Verification plan</div><h2>Proof, not “it built.”</h2></div><p>Every gate produces evidence that can be attached to a release. Static APK inspection is useful, but only backend-blocked runtime tests prove standalone behavior.</p></div>
+        <div class="panel">
+          <h3>End-to-end acceptance matrix</h3>
+          <div class="detail-table-wrap"><table class="detail-table"><thead><tr><th>Scenario</th><th>Environment</th><th>Expected evidence</th><th>Failure that blocks release</th></tr></thead><tbody>
+            <tr><td>First launch</td><td>clean emulator + physical device</td><td>settings initialized, Room migration recorded, home has typed shelves</td><td>crash, blank home, hardcoded N/A, duplicate player owner</td></tr>
+            <tr><td>Search → detail</td><td>backend host blocked</td><td>search sections, filter, artist/album/playlist detail, continuation</td><td>any Android request to Moodify server or raw DTO reaching UI</td></tr>
+            <tr><td>Play short/long track</td><td>cold resolver cache</td><td>native resolution, first byte, playing state, correct metadata</td><td>WebView/iframe/server fallback, infinite preparing state</td></tr>
+            <tr><td>Seek</td><td>forward and backward positions</td><td>range request, position retained, no restart from zero</td><td>custom chunk EOF, decoder error, queue reset</td></tr>
+            <tr><td>403/410 recovery</td><td>expired/invalidated stream fixture</td><td>one re-resolution, same TrackKey/position, bounded retry</td><td>infinite loop, raw URL logged, wrong track or lost queue</td></tr>
+            <tr><td>Lockscreen/background</td><td>screen off, Activity killed</td><td>notification metadata, play/pause/seek/skip, audio focus recovery</td><td>Activity-owned player, “preparing” stuck notification</td></tr>
+            <tr><td>Process death</td><td>force-stop/relaunch</td><td>queue and position restored; current stream re-resolves if needed</td><td>silent queue loss or duplicate service/player</td></tr>
+            <tr><td>Region change</td><td>two configured regions</td><td>region-sensitive shelves and cache keys differ; settings persist</td><td>US/English hardcoded, stale page shown as current</td></tr>
+            <tr><td>Offline/download</td><td>Later milestone</td><td>Deferred by user direction; exclude from current standalone acceptance</td><td>Do not block current catalog/playback migration on downloads</td></tr>
+            <tr><td>Web regression</td><td>Render + local web environment</td><td>React search/playback routes still pass existing smoke tests</td><td>Android cutover breaks web API or deployment health</td></tr>
+          </tbody></table></div>
+        </div>
+        <div class="grid-3" style="margin-top:16px">
+          <div class="panel"><h3>Static proof</h3><div class="checklist"><label class="check"><input type="checkbox" checked disabled> Release APK contains player runtime, JS bundle, polyfills, and required ABI libraries.</label><label class="check"><input type="checkbox" checked disabled> Manifest has exactly one playback service and correct foreground media permissions.</label><label class="check"><input type="checkbox" checked disabled> APK has no production-required Moodify server URL.</label><label class="check"><input type="checkbox" checked disabled> Dependency/license report is generated and reviewed.</label></div></div>
+          <div class="panel"><h3>Runtime proof</h3><div class="checklist"><label class="check"><input type="checkbox"> Network audit fails on any Android request to Moodify host <em>(emulator host-block evidence exists; build-enforced sweep remains)</em>.</label><label class="check"><input type="checkbox" checked disabled> Redacted diagnostics identify client, resolver version, format, and recovery path.</label><label class="check"><input type="checkbox"> Resolver fixtures cover player-script change and token expiry <em>(expiry fixture/live trace remains)</em>.</label><label class="check"><input type="checkbox"> Physical-device audio, seek, lockscreen, and process-death evidence captured.</label></div></div>
+          <div class="panel"><h3>Product proof</h3><div class="checklist"><label class="check"><input type="checkbox" checked disabled> First-time home works without seeded Moodify playlists.</label><label class="check"><input type="checkbox" checked disabled> Worlds are typed native catalog destinations, not generic playlist cards.</label><label class="check"><input type="checkbox" checked disabled> Artists, albums, playlists, charts, moods, and genres have working detail paths.</label><label class="check"><input type="checkbox"> Light/dark, error, empty, loading, and offline states are intentional <em>(offline sweep remains)</em>.</label></div></div>
+        </div>
+        <div class="panel" style="margin-top:16px"><h3>Release evidence package</h3><div class="evidence-grid"><div class="evidence"><strong>Build identity</strong><p>Git commit, versionCode/versionName, signing fingerprint, ABI list, APK checksum.</p></div><div class="evidence"><strong>Network audit</strong><p>Host allowlist report proving Android contacted YouTube/CDN/local providers but not Moodify backend.</p></div><div class="evidence"><strong>Playback trace</strong><p>Redacted state timeline: resolve → prepare → first byte → play → seek → lockscreen → next track.</p></div><div class="evidence"><strong>Catalog trace</strong><p>Search, browse, artist, album, playlist, continuation, locale-change screenshots/logs.</p></div><div class="evidence"><strong>Failure trace</strong><p>403/410, network loss, parser mismatch, missing lyrics, and user-facing recovery outcomes.</p></div><div class="evidence"><strong>Web regression</strong><p>Node service health, React smoke run, and confirmation that Android removal did not remove web routes.</p></div></div></div>
+      </section>
+
+      <section id="cutover">
+        <div class="section-head"><div><div class="eyebrow">Cutover checklist</div><h2>Remove dependency safely.</h2></div><p>Delete callers after the native paths pass. Do not delete the backend while the web app still needs it.</p></div>
+        <div class="grid-2">
+          <div class="panel"><h3>Remove from Android</h3><div class="checklist"><label class="check"><input type="checkbox" checked disabled> MoodifyServerApi catalog/detail calls</label><label class="check"><input type="checkbox" checked disabled> /api/search and /api/discovery branches</label><label class="check"><input type="checkbox" checked disabled> /api/stream and /api/media playback fallbacks</label><label class="check"><input type="checkbox" checked disabled> /api/decipher, /api/po-token, /api/playback-config</label><label class="check"><input type="checkbox" checked disabled> MOODIFY_SERVER_URL as a production requirement</label><label class="check"><input type="checkbox" checked disabled> Backend-shaped DTOs and playlist-only mood assumptions</label></div></div>
+          <div class="panel"><h3>Keep for web</h3><div class="checklist"><label class="check"><input type="checkbox" checked disabled> Node search and discovery routes</label><label class="check"><input type="checkbox" checked disabled> Browser media relay and CORS behavior</label><label class="check"><input type="checkbox"> Render deployment and web operational logs <em>(not revalidated in this audit)</em>.</label><label class="check"><input type="checkbox" checked disabled> Separate web migration plan and smoke tests</label></div></div>
+        </div>
+      </section>
+
+      <section id="risks">
+        <div class="section-head"><div><div class="eyebrow">Reality check</div><h2>The hard part is not the catalog.</h2></div><p>Playback resolver maintenance is the main technical risk. The plan treats it as a subsystem with tests and observability.</p></div>
+        <div class="panel">
+          <table class="risk-table">
+            <thead><tr><th>Risk</th><th>Why it matters</th><th>Mitigation</th></tr></thead>
+            <tbody>
+              <tr><td>YouTube client changes</td><td>Working client profiles can change without notice.</td><td>Isolate profiles, use fixtures/live smoke tests, classify failures.</td></tr>
+              <tr><td>PO-token and BotGuard changes</td><td>Resolution can work on one device and fail on another.</td><td>Bind token state to client, video, and session; refresh and back off.</td></tr>
+              <tr><td>Player JavaScript changes</td><td>Cipher logic can invalidate streams.</td><td>Cache by player version and run analysis in a sandboxed runtime.</td></tr>
+              <tr><td>Expiring CDN URLs</td><td>A stream URL is not a durable media ID.</td><td>Store expiry, invalidate on 403/410, and re-resolve once.</td></tr>
+              <tr><td>Scope growth</td><td>ArchiveTune parity can consume the reliability budget.</td><td>Keep integrations behind interfaces and gate them after core acceptance.</td></tr>
+              <tr><td>GPL-3.0 source</td><td>Directly copying code creates licensing obligations.</td><td>Reimplement from observed architecture or make a deliberate compliance decision first.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="panel">
+          <div class="section-head"><div><div class="eyebrow">Research anchors</div><h2>What this plan is based on.</h2></div><p>Local source review of D:/Projects/ArchiveTune-main and Moodify, cross-checked against the upstream projects.</p></div>
+          <div class="sources">
+            <a class="source" href="https://github.com/rukamori/ArchiveTune" target="_blank" rel="noreferrer">ArchiveTune source</a>
+            <a class="source" href="https://github.com/rukamori/core" target="_blank" rel="noreferrer">ArchiveTune core</a>
+            <a class="source" href="https://github.com/rukamori/ArchiveTune/releases" target="_blank" rel="noreferrer">Playback releases</a>
+            <a class="source" href="https://github.com/LuanRT/YouTube.js/blob/main/src/core/Player.ts" target="_blank" rel="noreferrer">YouTube.js Player</a>
+            <a class="source" href="https://github.com/LuanRT/BgUtils/blob/main/README.md" target="_blank" rel="noreferrer">PO-token notes</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <footer class="shell">Moodify standalone architecture plan · planning artifact · no implementation changes</footer>
+
+  <script>
+    const body = document.body;
+    const themeBtn = document.getElementById('themeBtn');
+    const expandBtn = document.getElementById('expandBtn');
+    const milestones = [...document.querySelectorAll('.milestone')];
+    const filters = [...document.querySelectorAll('.filter')];
+
+    themeBtn.addEventListener('click', () => {
+      const dark = body.dataset.theme === 'dark';
+      body.dataset.theme = dark ? 'light' : 'dark';
+      themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+    });
+
+    expandBtn.addEventListener('click', () => {
+      const shouldExpand = expandBtn.textContent === 'Expand all';
+      milestones.forEach(item => item.open = shouldExpand);
+      expandBtn.textContent = shouldExpand ? 'Collapse all' : 'Expand all';
+    });
+
+    filters.forEach(button => {
+      button.addEventListener('click', () => {
+        filters.forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+        const filter = button.dataset.filter;
+        milestones.forEach(item => {
+          item.hidden = filter !== 'all' && !item.dataset.kind.split(' ').includes(filter);
+        });
+      });
+    });
+
+    const links = [...document.querySelectorAll('.side-nav a')];
+    const sections = links.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id));
+        }
+      });
+    }, { rootMargin: '-25% 0px -65% 0px' });
+    sections.forEach(section => observer.observe(section));
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'strict',
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#ffffff',
+        primaryTextColor: '#172033',
+        primaryBorderColor: '#6557e8',
+        lineColor: '#667085',
+        secondaryColor: '#eef0ff',
+        tertiaryColor: '#e5faf5',
+        fontFamily: 'Inter, system-ui, sans-serif'
+      }
+    });
+  </script>
+</body>
+</html>
+

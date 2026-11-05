@@ -1,7 +1,8 @@
-package com.example.myapplication.player
+package com.moodify.app.player
 
 import android.content.Context
 import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
@@ -16,6 +17,7 @@ import java.io.File
  * may change between resolutions, while the Media3 cache key supplied by the
  * player is stable per video/format.
  */
+@UnstableApi
 class PlaybackCache(context: Context) {
     private val cacheDirectory = File(context.cacheDir, "moodify-player-cache")
     private val databaseProvider = StandaloneDatabaseProvider(context.applicationContext)

@@ -1,4 +1,4 @@
-package com.example.myapplication.data
+package com.moodify.app.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -42,6 +42,21 @@ class LyricsParserTest {
         assertEquals("& hello", document.lines.single().text)
         assertEquals(1_250L, document.lines.single().startMs)
         assertEquals(3_000L, document.lines.single().endMs)
+    }
+
+    @Test
+    fun preservesTtmlRomanizationAndTranslationTracks() {
+        val document = LyricsParser.parse(
+            """<tt><body><p begin="00:00:01.250"><span>नमस्ते</span><span ttm:role="x-roman"><span>Nam</span><span>aste</span></span><span ttm:role="x-translation">Hello</span></p></body></tt>""",
+            source = "BetterLyrics",
+            format = "ttml",
+        )
+
+        requireNotNull(document)
+        assertEquals("नमस्ते", document.lines.single().text)
+        assertEquals("Namaste", document.lines.single().romanizedText)
+        assertEquals("Hello", document.lines.single().translation)
+        assertEquals(1_250L, document.lines.single().startMs)
     }
 
     @Test

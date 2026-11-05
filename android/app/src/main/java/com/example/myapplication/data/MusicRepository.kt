@@ -1,256 +1,148 @@
-package com.example.myapplication.data
+package com.moodify.app.data
 
-import com.example.myapplication.BuildConfig
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.Response
-import retrofit2.converter.gson.GsonConverterFactory
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import java.io.IOException
 
-class MoodifyApiException(message: String, val statusCode: Int? = null) : IOException(message)
-
-class MusicRepository {
-
-    private val serverBaseUrl = BuildConfig.MOODIFY_SERVER_URL.trimEnd('/')
-
-    private val api = Retrofit.Builder()
-        .baseUrl("$serverBaseUrl/")
-        .client(
-            OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .callTimeout(75, TimeUnit.SECONDS)
-                .addInterceptor(HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BASIC
-                })
-                .build()
-        )
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(MoodifyServerApi::class.java)
-
+/**
+ * Android catalog repository.
+ *
+ * The repository is provider-shaped at the boundary and
+ * Moodify-shaped everywhere else: UI code receives Track/CatalogPage and
+ * never sees Retrofit, server DTOs, cookies, or raw InnerTube JSON.
+ */
+class MusicRepository(
+    private val catalogClient: InnerTubeCatalogClient = InnerTubeCatalogClient(),
+    private val lyricsRepository: NativeLyricsRepository = NativeLyricsRepository(),
+    private val catalogCache: CatalogCacheStore? = null,
+    private val localeProvider: () -> CatalogLocale = { CatalogLocale.fromDefault() },
+) {
     suspend fun searchSongs(query: String): List<Track> {
-        val normalizedQuery = query.trim()
-        if (normalizedQuery.isBlank()) return emptyList()
-
-        var lastError: Exception? = null
-        repeat(3) { attempt ->
-            try {
-                val response = api.searchSongs(normalizedQuery)
-                if (!response.isSuccessful) {
-                    throw MoodifyApiException(
-                        "Moodify search failed (${response.code()})",
-                        response.code()
-                    )
-                }
-
-                val tracks = response.body()
-                    ?.getAsJsonArray("tracks")
-                    ?.mapNotNull { it.toTrackOrNull() }
-                    ?.distinctBy { it.id }
-                    ?.take(20)
-                    .orEmpty()
-
-                if (tracks.isEmpty()) throw MoodifyApiException("No songs found for \"$normalizedQuery\"")
-                return tracks
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                lastError = error
-                if (attempt < 2) delay(700L * (attempt + 1))
-            }
+        val page = searchCatalog(query)
+        val tracks = page.sections
+            .flatMap { section -> section.items.mapNotNull { it.track } }
+            .distinctBy { it.id }
+            .take(30)
+        if (tracks.isEmpty()) {
+            throw CatalogException("No songs found for \"${query.trim()}\"")
         }
-        throw lastError ?: MoodifyApiException("Moodify search failed")
+        return tracks
     }
 
-    suspend fun getTrendingSongs(): List<Track> = searchSongs("trending")
+    suspend fun searchSuggestions(query: String): SearchSuggestions =
+        catalogClient.searchSuggestions(query)
 
-    suspend fun getLyrics(trackId: String): String? {
-        val response = api.getLyrics(trackId)
-        if (!response.isSuccessful) {
-            if (response.code() == 404) return null
-            throw MoodifyApiException("Lyrics request failed (${response.code()})", response.code())
-        }
-        return response.body()?.get("lyrics")?.takeIf { it.isJsonPrimitive }?.asString
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-    }
+    suspend fun getTrendingSongs(): List<Track> =
+        searchSongs("trending music")
 
-    suspend fun getLyrics(track: Track): LyricsDocument? {
-        val response = api.getLyrics(track.id)
-        if (!response.isSuccessful) {
-            if (response.code() == 404) return null
-            throw MoodifyApiException("Lyrics request failed (${response.code()})", response.code())
-        }
-        val body = response.body() ?: return null
-        val rawLyrics = body.get("lyrics")?.takeIf { it.isJsonPrimitive }?.asString
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-            ?: return null
-        val source = body.get("source")?.takeIf { it.isJsonPrimitive }?.asString ?: "unknown"
-        val format = body.get("format")?.takeIf { it.isJsonPrimitive }?.asString
-        return LyricsParser.parse(rawLyrics, source, format)
-    }
+    /**
+     * Lyrics are resolved directly on the device and cached by the ViewModel.
+     */
+    suspend fun getLyrics(trackId: String): String? = null
 
-    // ── JSON helpers ────────────────────────────────────────────────
+    suspend fun getLyrics(track: Track): LyricsDocument? = lyricsRepository.get(track)
 
-    suspend fun getExploreCatalog(): CatalogPage = getCatalogPage { api.getExplore() }
+    suspend fun searchLyrics(track: Track, title: String, artist: String): List<LyricsSearchResult> =
+        lyricsRepository.search(title, artist, track.album, track.durationSeconds, track.id)
 
-    suspend fun getHomeCatalog(): CatalogPage = getCatalogPage { api.getHome() }
+    suspend fun translateLyrics(document: LyricsDocument, targetLanguage: String): LyricsDocument =
+        lyricsRepository.translate(document, targetLanguage)
 
-    suspend fun getChartsCatalog(): CatalogPage = getCatalogPage { api.getCharts() }
+    suspend fun getExploreCatalog(): CatalogPage = cached("explore") { catalogClient.explore() }
 
-    suspend fun browseCatalog(browseId: String, params: String? = null): CatalogPage =
-        getCatalogPage { api.browse(browseId, params) }
+    suspend fun getMoodsAndGenresCatalog(): CatalogPage =
+        cached("moods-and-genres") { catalogClient.moodsAndGenres() }
 
-    suspend fun searchCatalog(query: String, type: String? = null, cursor: String? = null): CatalogPage =
-        getCatalogPage { api.searchDiscovery(query, type, cursor) }
+    suspend fun getHomeCatalog(): CatalogPage = cached("home") { catalogClient.home() }
 
-    private suspend fun getCatalogPage(request: suspend () -> Response<JsonObject>): CatalogPage {
-        val response = request()
-        if (!response.isSuccessful) {
-            throw MoodifyApiException("Moodify catalog request failed (${response.code()})", response.code())
-        }
-        return response.body()?.toCatalogPage()
-            ?: throw MoodifyApiException("Moodify returned an empty catalog page")
-    }
+    suspend fun getChartsCatalog(): CatalogPage = cached("charts") { catalogClient.charts() }
 
-    private fun JsonObject.toCatalogPage(): CatalogPage {
-        val catalog = get("catalog")?.takeIf { it.isJsonObject }?.asJsonObject
-        val pageInfo = get("pageInfo")?.takeIf { it.isJsonObject }?.asJsonObject
-        if (catalog == null) {
-            val fallbackTracks = getAsJsonArray("tracks")?.mapNotNull { it.toTrackOrNull() }.orEmpty()
-            return CatalogPage(
-                surface = stringValue("surface") ?: "discovery",
-                title = stringValue("surface") ?: "Discovery",
-                sections = if (fallbackTracks.isEmpty()) emptyList() else listOf(
-                    CatalogSection("fallback", "Songs", "list", fallbackTracks.map { track ->
-                        CatalogItem("track", track.id, track.title, track.albumArtUrl, track = track)
-                    })
-                ),
-                nextCursor = pageInfo?.stringValue("nextCursor")
-            )
-        }
+    suspend fun homeForChip(chipParams: String?): CatalogPage = catalogClient.homeForChip(chipParams)
+    suspend fun homeContinuation(cursor: String, visitor: String?): CatalogPage =
+        catalogClient.homeContinuation(cursor, visitor)
+    suspend fun upNext(videoId: String, playlistId: String? = null): UpNextPage = catalogClient.upNext(videoId, playlistId)
+    suspend fun youTubeLyrics(lyricsBrowseId: String): String? = catalogClient.youTubeLyrics(lyricsBrowseId)
 
-        fun JsonObject.toEndpoint(): BrowseEndpoint? {
-            val endpoint = get("endpoint")?.takeIf { it.isJsonObject }?.asJsonObject ?: return null
-            return BrowseEndpoint(
-                browseId = endpoint.stringValue("browseId"),
-                videoId = endpoint.stringValue("videoId"),
-                params = endpoint.stringValue("params")
-            )
-        }
+    // Stale-while-revalidate variants for the main surfaces. These emit the
+    // cached page immediately (so shelves appear on a cold or offline start),
+    // then the fresh network page when it arrives.
+    fun homeCatalog(): Flow<CatalogResult> = cacheThenNetwork("home") { catalogClient.home() }
+    fun exploreCatalog(): Flow<CatalogResult> = cacheThenNetwork("explore") { catalogClient.explore() }
+    fun chartsCatalog(): Flow<CatalogResult> = cacheThenNetwork("charts") { catalogClient.charts() }
+    fun moodsAndGenresCatalog(): Flow<CatalogResult> =
+        cacheThenNetwork("moods-and-genres") { catalogClient.moodsAndGenres() }
 
-        fun JsonObject.toCatalogItem(): CatalogItem? {
-            val id = stringValue("id") ?: return null
-            val title = stringValue("title") ?: id
-            val track = get("track")?.takeIf { it.isJsonObject }?.toTrackOrNull()
-            return CatalogItem(
-                type = stringValue("type") ?: "browse",
-                id = id,
-                title = title,
-                artworkUrl = stringValue("artworkUrl").orEmpty(),
-                track = track,
-                endpoint = toEndpoint()
-            )
-        }
-
-        val sections = catalog.getAsJsonArray("sections")?.mapNotNull { sectionElement ->
-            if (!sectionElement.isJsonObject) return@mapNotNull null
-            val section = sectionElement.asJsonObject
-            val items = section.getAsJsonArray("items")?.mapNotNull { itemElement ->
-                if (!itemElement.isJsonObject) null else itemElement.asJsonObject.toCatalogItem()
-            }.orEmpty()
-            CatalogSection(
-                id = section.stringValue("id") ?: "section-${items.hashCode()}",
-                title = section.stringValue("title") ?: "Discovery",
-                layout = section.stringValue("layout") ?: "carousel",
-                items = items,
-                endpoint = section.toEndpoint()
-            )
-        }.orEmpty()
-
-        val actions = catalog.getAsJsonArray("actions")?.mapNotNull { itemElement ->
-            if (!itemElement.isJsonObject) null else itemElement.asJsonObject.toCatalogItem()
-        }.orEmpty()
-
-        return CatalogPage(
-            version = catalog.get("version")?.takeIf { it.isJsonPrimitive }?.asInt ?: 1,
-            surface = catalog.stringValue("surface") ?: stringValue("surface") ?: "discovery",
-            title = catalog.stringValue("title") ?: "Discovery",
-            sections = sections,
-            actions = actions,
-            nextCursor = pageInfo?.stringValue("nextCursor")
-        )
-    }
-
-    private fun JsonElement.stringValue(): String? {
-        if (!isJsonPrimitive || !asJsonPrimitive.isString) return null
-        return asString.trim().takeIf { value ->
-            value.isNotEmpty() && value.lowercase() !in setOf("n/a", "na", "null", "undefined")
-        }
-    }
-
-    private fun JsonObject.stringValue(name: String): String? = get(name)?.stringValue()
-
-    private fun JsonElement.toTrackOrNull(): Track? {
-        if (!isJsonObject) return null
-        val json = asJsonObject
-
-        // The Moodify server normalizeTrack emits `id` as the YouTube video ID.
-        val id = json.stringValue("id") ?: return null
-        val title = json.stringValue("title") ?: return null
-
-        val artist = json.stringValue("artist")
-            ?: json.getAsJsonArray("artists")
-                ?.firstOrNull()
-                ?.asJsonObject
-                ?.stringValue("name")
-            ?: "Unknown artist"
-
-        val albumObject = json.get("album")?.takeIf { it.isJsonObject }?.asJsonObject
-        val album = albumObject?.stringValue("title")
-            ?: albumObject?.stringValue("name")
-            ?: ""
-
-        // Artwork: the server emits { artwork: { url: "..." } }
-        val artwork = json.get("artwork")
-            ?.takeIf { it.isJsonObject }
-            ?.asJsonObject
-            ?.stringValue("url")
-            .orEmpty()
-
-        // Duration: server normalizeTrack returns `durationSeconds` (already in seconds).
-        // Fall back to `durationMs` divided by 1000 for older server builds.
-        val durationSeconds: Int = run {
-            val secs = json.get("durationSeconds")
-                ?.takeIf { it.isJsonPrimitive }
-                ?.asInt
-            if (secs != null && secs > 0) return@run secs
-
-            json.get("durationMs")
-                ?.takeIf { it.isJsonPrimitive }
-                ?.asLong
-                ?.div(1000L)
-                ?.toInt()
-                ?: 0
-        }
-
-        return Track(
-            id = id,
+    suspend fun browseCatalog(
+        browseId: String,
+        params: String? = null,
+        surface: String = "browse",
+        title: String = "Browse",
+        continuation: String? = null,
+    ): CatalogPage = cached(
+        "browse:$surface:$browseId:${params.orEmpty()}:${continuation.orEmpty()}",
+    ) {
+        catalogClient.browse(
+            browseId = browseId,
+            params = params,
+            continuation = continuation,
+            surface = surface,
             title = title,
-            artist = artist,
-            album = album,
-            albumArtUrl = artwork,
-            durationSeconds = durationSeconds,
-            // Playback resolves this YouTube video ID natively through InnerTube.
-            audioUrl = ""
         )
+    }
+
+    suspend fun searchCatalog(
+        query: String,
+        type: String? = null,
+        cursor: String? = null,
+    ): CatalogPage = cached(
+        "search:${query.trim().lowercase()}:${type.orEmpty()}:${cursor.orEmpty()}",
+    ) { catalogClient.search(query, type, cursor) }
+
+    /**
+     * Emits the cached page first (marked [CatalogResult.isStale]) when one
+     * exists for this locale, then the network page. A network failure is
+     * thrown only when there was nothing cached to show; otherwise the
+     * flow completes with the stale page as its last value.
+     */
+    private fun cacheThenNetwork(key: String, fetch: suspend () -> CatalogPage): Flow<CatalogResult> = flow {
+        val cache = catalogCache
+        val locale = localeProvider().normalized()
+        val stale = cache?.read(key, locale)
+        if (stale != null) emit(CatalogResult(stale, isStale = true))
+        val fresh = try {
+            fetch()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            if (stale == null) throw failure
+            null
+        }
+        if (fresh != null) {
+            cache?.write(key, locale, fresh)
+            emit(CatalogResult(fresh, isStale = false))
+        }
+    }
+
+    private suspend fun cached(key: String, fetch: suspend () -> CatalogPage): CatalogPage {
+        val cache = catalogCache
+        val locale = localeProvider().normalized()
+        return try {
+            fetch().also { page -> cache?.write(key, locale, page) }
+        } catch (failure: Exception) {
+            cache?.read(key, locale)?.let { stale ->
+                return stale
+            }
+            throw failure
+        }
     }
 }
+
+/**
+ * Kept as a compatibility name for the existing ViewModel error mapping.
+ * New Android provider failures should use CatalogException instead.
+ */
+class MoodifyApiException(message: String, val statusCode: Int? = null) : IOException(message)
+
+/** A catalog page plus whether it came from the offline cache rather than the network. */
+data class CatalogResult(val page: CatalogPage, val isStale: Boolean)

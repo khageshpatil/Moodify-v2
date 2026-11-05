@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Moodify</string>
+    <string name="moodify_playback_channel">Moodify Playback</string>
 </resources>

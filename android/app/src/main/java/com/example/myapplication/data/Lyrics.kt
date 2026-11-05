@@ -1,9 +1,19 @@
-package com.example.myapplication.data
+package com.moodify.app.data
 
 /** A single lyric line. A null start means the source is plain, not timed. */
 data class LyricsLine(
     val text: String,
     val startMs: Long? = null,
+    val endMs: Long? = null,
+    val translation: String? = null,
+    val romanizedText: String? = null,
+    val groupId: Int? = null,
+    val words: List<LyricsWord>? = null,
+)
+
+data class LyricsWord(
+    val text: String,
+    val startMs: Long,
     val endMs: Long? = null,
 )
 
@@ -12,7 +22,13 @@ data class LyricsDocument(
     val source: String = "unknown",
     val isSynced: Boolean,
 ) {
-    val plainText: String = lines.joinToString("\n") { it.text }
+    val plainText: String
+        get() = buildString {
+            lines.forEachIndexed { index, line ->
+                if (index > 0 && (line.groupId == null || line.groupId != lines[index - 1].groupId)) append('\n')
+                append(line.text)
+            }
+        }
 }
 
 /**
@@ -30,6 +46,8 @@ object LyricsParser {
     private val qrcToken = Regex("\\[(\\d+),(\\d+)]\\(([^)]*)\\)")
     private val ttmlBegin = Regex("\\bbegin\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']", RegexOption.IGNORE_CASE)
     private val ttmlEnd = Regex("\\bend\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']", RegexOption.IGNORE_CASE)
+    private val ttmlSpanTag = Regex("</?(?:[\\w.-]+:)?span\\b[^>]*>", RegexOption.IGNORE_CASE)
+    private val ttmlRoleAttribute = Regex("(?:[\\w.-]+:)?role\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']", RegexOption.IGNORE_CASE)
 
     fun parse(raw: String, source: String = "unknown", format: String? = null): LyricsDocument? {
         val input = raw.trim()
@@ -80,11 +98,29 @@ object LyricsParser {
     private fun parseTtml(input: String, source: String): LyricsDocument? {
         val lines = ttmlParagraph.findAll(input).mapNotNull { match ->
             val attributes = match.groupValues.getOrNull(1).orEmpty()
-            val text = decodeEntities(stripTags(match.groupValues.getOrNull(2).orEmpty())).trim()
+            val body = match.groupValues.getOrNull(2).orEmpty()
+            val romanization = extractTtmlRoleTracks(body, "x-roman")
+                .joinToString(separator = "") { it.text }
+                .trim()
+                .takeIf(String::isNotBlank)
+            val translation = extractTtmlRoleTracks(body, "x-translation")
+                .joinToString(separator = "") { it.text }
+                .trim()
+                .takeIf(String::isNotBlank)
+            val excludedRanges = extractTtmlRoleTracks(body, "x-roman") + extractTtmlRoleTracks(body, "x-translation")
+            val mainBody = buildString {
+                var cursor = 0
+                excludedRanges.sortedBy { it.start }.forEach { track ->
+                    append(body, cursor, track.start)
+                    cursor = track.endExclusive
+                }
+                append(body, cursor, body.length)
+            }
+            val text = decodeEntities(stripTags(mainBody)).trim()
             if (text.isBlank()) return@mapNotNull null
             val start = ttmlBegin.find(attributes)?.groupValues?.getOrNull(1)?.let(::parseClock)
             val end = ttmlEnd.find(attributes)?.groupValues?.getOrNull(1)?.let(::parseClock)
-            LyricsLine(text = text, startMs = start, endMs = end)
+            LyricsLine(text = text, startMs = start, endMs = end, translation = translation, romanizedText = romanization)
         }.toList()
         if (lines.isEmpty()) return null
         return LyricsDocument(
@@ -95,7 +131,7 @@ object LyricsParser {
     }
 
     private fun parseQrc(input: String, source: String): LyricsDocument? {
-        val lines = input.lineSequence().flatMap { rawLine ->
+        val lines = input.lineSequence().flatMapIndexed { groupId, rawLine ->
             qrcToken.findAll(rawLine).map { match ->
                 val start = match.groupValues[1].toLongOrNull() ?: 0L
                 val duration = match.groupValues[2].toLongOrNull() ?: 0L
@@ -103,6 +139,7 @@ object LyricsParser {
                     text = decodeEntities(match.groupValues[3]),
                     startMs = start,
                     endMs = (start + duration).takeIf { duration > 0L },
+                    groupId = groupId,
                 )
             }
         }.filter { it.text.isNotBlank() }.toList()
@@ -125,6 +162,50 @@ object LyricsParser {
     }
 
     private fun stripTags(value: String): String = value.replace(Regex("<[^>]+>"), "")
+
+    private data class TtmlRoleTrack(val start: Int, val endExclusive: Int, val text: String)
+
+    /** Read role-marked tracks such as TTML x-roman and x-translation spans, including timed nested spans. */
+    private fun extractTtmlRoleTracks(body: String, role: String): List<TtmlRoleTrack> {
+        val tags = ttmlSpanTag.findAll(body).toList()
+        val tracks = mutableListOf<TtmlRoleTrack>()
+        var index = 0
+        while (index < tags.size) {
+            val open = tags[index]
+            val openText = open.value
+            val isClosing = openText.startsWith("</")
+            val isSelfClosing = openText.endsWith("/>")
+            val actualRole = ttmlRoleAttribute.find(openText)?.groupValues?.getOrNull(1)
+            if (isClosing || !actualRole.equals(role, ignoreCase = true) || isSelfClosing) {
+                index++
+                continue
+            }
+
+            var depth = 1
+            var closeIndex = index + 1
+            while (closeIndex < tags.size && depth > 0) {
+                val tag = tags[closeIndex].value
+                when {
+                    tag.startsWith("</") -> depth--
+                    !tag.endsWith("/>") -> depth++
+                }
+                closeIndex++
+            }
+            if (depth == 0) {
+                val close = tags[closeIndex - 1]
+                val rawTrack = body.substring(open.range.last + 1, close.range.first)
+                tracks += TtmlRoleTrack(
+                    start = open.range.first,
+                    endExclusive = close.range.last + 1,
+                    text = decodeEntities(stripTags(rawTrack)),
+                )
+                index = closeIndex
+            } else {
+                index++
+            }
+        }
+        return tracks
+    }
 
     private fun decodeEntities(value: String): String = value
         .replace("&amp;", "&")

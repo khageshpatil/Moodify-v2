@@ -1,4 +1,4 @@
-package com.example.myapplication.player
+package com.moodify.app.player
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -17,14 +17,9 @@ import androidx.media3.session.LibraryResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.example.myapplication.MainActivity
-import com.example.myapplication.R
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.collect
+import com.moodify.app.MainActivity
+import com.moodify.app.R
+import androidx.media3.session.DefaultMediaNotificationProvider
 
 /**
  * Foreground service that keeps the process alive for background audio playback
@@ -44,12 +39,19 @@ class MoodifyPlaybackService : MediaLibraryService() {
     }
 
     private var mediaSession: MediaLibraryService.MediaLibrarySession? = null
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var activityIntent: PendingIntent? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider.Builder(this)
+                .setNotificationId(NOTIFICATION_ID)
+                .setChannelId(CHANNEL_ID)
+                .setChannelName(R.string.moodify_playback_channel)
+                .build()
+                .apply { setSmallIcon(R.drawable.ic_launcher_foreground) }
+        )
         val playbackManager = PlaybackManager.getInstance(applicationContext)
 
         val activityIntent = PendingIntent.getActivity(
@@ -65,7 +67,7 @@ class MoodifyPlaybackService : MediaLibraryService() {
         // PlaybackManager starts this service before the network resolver
         // finishes, so explicitly publish a notification now or Android 12+
         // will kill the process with ForegroundServiceDidNotStartInTimeException.
-        val bootstrapNotification = buildPlaybackNotification(playbackManager.state.value)
+        val bootstrapNotification = buildBootstrapNotification()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -137,26 +139,21 @@ class MoodifyPlaybackService : MediaLibraryService() {
             }
         }).setSessionActivity(activityIntent)
             .build()
+        // PlaybackManager controls ExoPlayer directly and does not bind an
+        // app-side MediaController. Register the session explicitly so the
+        // service's MediaNotificationManager owns its notification lifecycle.
+        addSession(checkNotNull(mediaSession))
 
-        // The service's first notification is required immediately, but it
-        // must not remain a generic “preparing audio” card. Mirror the
-        // process-wide playback state into the same notification so the
-        // lock screen and notification shade receive the real title, artist,
-        // loading/error state, and current lifecycle without waiting for the
-        // Activity to be visible.
-        serviceScope.launch {
-            playbackManager.state.collect { state ->
-                val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-                manager.notify(NOTIFICATION_ID, buildPlaybackNotification(state))
-            }
-        }
+        // MediaLibraryService now owns notification updates. Its MediaStyle
+        // notification is derived from this session and the current media
+        // metadata, so Android receives the title, artist, artwork, and
+        // transport controls instead of a manually replaced text card.
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibraryService.MediaLibrarySession? =
         mediaSession
 
     override fun onDestroy() {
-        serviceScope.cancel()
         mediaSession?.run {
             release()
         }
@@ -183,23 +180,15 @@ class MoodifyPlaybackService : MediaLibraryService() {
         }
     }
 
-    private fun buildPlaybackNotification(state: PlaybackState): android.app.Notification {
-        val track = state.currentTrack
-        val title = track?.title ?: "Moodify"
-        val text = when {
-            state.errorMessage != null -> state.errorMessage
-            track == null -> "Choose something to play"
-            state.isLoading -> "Connecting to ${track.artist}"
-            else -> track.artist
-        }
+    private fun buildBootstrapNotification(): android.app.Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(title)
-            .setContentText(text)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText("Starting playback")
             .setContentIntent(activityIntent)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(track != null)
+            .setOngoing(true)
             .setSilent(true)
             .build()
     }

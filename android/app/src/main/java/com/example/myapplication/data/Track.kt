@@ -1,4 +1,4 @@
-package com.example.myapplication.data
+package com.moodify.app.data
 
 data class Track(
     val id: String,

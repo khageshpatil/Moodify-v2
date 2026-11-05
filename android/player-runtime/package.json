@@ -1,0 +1,17 @@
+{
+  "name": "moodify-android-player-runtime",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "bgutils-js": "4.0.3",
+    "fast-text-encoding": "1.0.6",
+    "whatwg-url": "14.2.0",
+    "youtubei.js": "18.3.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
