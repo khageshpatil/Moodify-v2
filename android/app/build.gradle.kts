@@ -1,11 +1,13 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "com.example.myapplication"
-    compileSdk = 35
+    namespace = "com.moodify.app"
+    compileSdk = 37
 
     val buildVersionCode = project.findProperty("versionCode")
         ?.toString()
@@ -16,26 +18,20 @@ android {
         ?.takeIf { it.isNotBlank() }
         ?: "1.0"
 
-    val moodifyServerUrl = (project.findProperty("moodifyServerUrl") as String?)
-        ?.trimEnd('/')
-        ?.takeIf { it.isNotBlank() }
-        ?: "https://moodify-v2-0c0a.onrender.com"
-
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.moodify.app"
         minSdk = 24
         targetSdk = 35
         versionCode = buildVersionCode
         versionName = buildVersionName
-
-        buildConfigField("String", "MOODIFY_SERVER_URL", "\"${moodifyServerUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -71,9 +67,7 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
-    // Retrofit & Gson
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.gson)
+    // Direct provider HTTP + local JSON persistence
     implementation(libs.okhttp.core)
     implementation(libs.okhttp.logging)
 
@@ -87,10 +81,27 @@ dependencies {
 
     // Small local persistence layer for queue, favorites, and downloads.
     implementation(libs.gson)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    implementation(libs.datastore.preferences)
+    // Sandboxed local JavaScript runtime for YouTube player transformations.
+    implementation(libs.quickjs.kt)
+
+    // App shell: splash, type-safe navigation, artwork colours, background downloads.
+    implementation(libs.core.splashscreen)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.palette.ktx)
+    implementation(libs.work.runtime.ktx)
+
+    ksp(libs.room.compiler)
 
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    testImplementation(libs.json)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

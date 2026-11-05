@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome layer for Android 13+ themed icons: the bars alone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M33,47 h0 a3,3 0 0 1 3,3 v8 a3,3 0 0 1 -3,3 h-0 a3,3 0 0 1 -3,-3 v-8 a3,3 0 0 1 3,-3 z M43.5,41 h0 a3,3 0 0 1 3,3 v20 a3,3 0 0 1 -3,3 h-0 a3,3 0 0 1 -3,-3 v-20 a3,3 0 0 1 3,-3 z M54,36 h0 a3,3 0 0 1 3,3 v30 a3,3 0 0 1 -3,3 h-0 a3,3 0 0 1 -3,-3 v-30 a3,3 0 0 1 3,-3 z M64.5,41 h0 a3,3 0 0 1 3,3 v20 a3,3 0 0 1 -3,3 h-0 a3,3 0 0 1 -3,-3 v-20 a3,3 0 0 1 3,-3 z M75,47 h0 a3,3 0 0 1 3,3 v8 a3,3 0 0 1 -3,3 h-0 a3,3 0 0 1 -3,-3 v-8 a3,3 0 0 1 3,-3 z" />
+</vector>

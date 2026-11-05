@@ -1,21 +1,29 @@
 [versions]
 agp = "9.4.1"
-kotlin = "2.0.21"
+kotlin = "2.3.21"
+ksp = "2.3.12"
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 appcompat = "1.7.0"
 material = "1.12.0"
-composeBom = "2024.10.01"
-activityCompose = "1.9.3"
-lifecycleCompose = "2.8.7"
-navigationCompose = "2.8.4"
+composeBom = "2026.09.00"
+activityCompose = "1.13.0"
+lifecycleCompose = "2.11.0"
+navigationCompose = "2.10.2"
 coil = "2.7.0"
-retrofit = "2.11.0"
 okhttp = "4.12.0"
-media3 = "1.4.1"
+media3 = "1.11.1"
 androidxMedia = "1.7.0"
 gson = "2.11.0"
+quickjs = "1.0.15"
+room = "2.8.5"
+datastore = "1.2.1"
+json = "20240303"
+splashscreen = "1.2.0"
+palette = "1.1.0"
+work = "2.12.0"
+kotlinxSerialization = "1.12.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -41,8 +49,6 @@ navigation-compose = { group = "androidx.navigation", name = "navigation-compose
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 # Network & JSON
-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
-retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
@@ -54,6 +60,18 @@ media3-datasource = { group = "androidx.media3", name = "media3-datasource", ver
 media3-datasource-okhttp = { group = "androidx.media3", name = "media3-datasource-okhttp", version.ref = "media3" }
 media3-database = { group = "androidx.media3", name = "media3-database", version.ref = "media3" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+quickjs-kt = { group = "io.github.dokar3", name = "quickjs-kt", version.ref = "quickjs" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+json = { group = "org.json", name = "json", version.ref = "json" }
+core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
+palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "palette" }
+work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
 # AndroidX Media (MediaSessionCompat, PlaybackStateCompat, NotificationCompat.MediaStyle)
 androidx-media = { group = "androidx.media", name = "media", version.ref = "androidxMedia" }
@@ -61,3 +79,5 @@ androidx-media = { group = "androidx.media", name = "media", version.ref = "andr
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
