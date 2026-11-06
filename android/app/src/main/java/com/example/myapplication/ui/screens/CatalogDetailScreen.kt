@@ -14,6 +14,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.HowToReg
+import androidx.compose.material.icons.rounded.LibraryAdd
+import androidx.compose.material.icons.rounded.LibraryAddCheck
+import androidx.compose.material.icons.rounded.PersonAddAlt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -51,6 +55,9 @@ fun BrowseScreen(
     onRetry: () -> Unit,
     onLoadMore: () -> Unit,
     onDownloadAll: (List<Track>) -> Unit = {},
+    isSaved: Boolean = false,
+    /** Saves (or follows) this album / playlist / artist; null where saving doesn't apply. */
+    onToggleSave: ((com.moodify.app.data.CatalogItem) -> Unit)? = null,
 ) {
     val actions = LocalMoodifyActions.current
     val page = state.page
@@ -94,6 +101,39 @@ fun BrowseScreen(
         onPlay = tracks.takeIf { it.isNotEmpty() }?.let { { actions.play(it.first(), it) } },
         onShuffle = tracks.takeIf { it.size > 1 }?.let { { val s = it.shuffled(); actions.play(s.first(), s) } },
         topActions = {
+            val savedType = when (state.kind) {
+                BrowseKind.ALBUM -> "album"
+                BrowseKind.PLAYLIST -> "playlist"
+                BrowseKind.ARTIST -> "artist"
+                BrowseKind.OTHER -> null
+            }
+            if (onToggleSave != null && savedType != null && page != null) {
+                val item = com.moodify.app.data.CatalogItem(
+                    type = savedType,
+                    id = state.browseId,
+                    title = state.title.ifBlank { page.title },
+                    artworkUrl = heroArt.orEmpty(),
+                    endpoint = com.moodify.app.data.BrowseEndpoint(state.browseId, null, state.params, state.pageType),
+                )
+                val label = when {
+                    savedType == "artist" && isSaved -> "Unfollow"
+                    savedType == "artist" -> "Follow"
+                    isSaved -> "Remove from Library"
+                    else -> "Save to Library"
+                }
+                androidx.compose.material3.IconButton(onClick = { onToggleSave(item) }) {
+                    androidx.compose.material3.Icon(
+                        when {
+                            savedType == "artist" && isSaved -> Icons.Rounded.HowToReg
+                            savedType == "artist" -> Icons.Rounded.PersonAddAlt
+                            isSaved -> Icons.Rounded.LibraryAddCheck
+                            else -> Icons.Rounded.LibraryAdd
+                        },
+                        contentDescription = label,
+                        tint = if (isSaved) androidx.compose.material3.MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current,
+                    )
+                }
+            }
             if (tracks.isNotEmpty() && state.kind != BrowseKind.ARTIST) {
                 androidx.compose.material3.IconButton(onClick = { onDownloadAll(tracks) }) {
                     androidx.compose.material3.Icon(Icons.Rounded.Download, contentDescription = "Download all")
@@ -166,13 +206,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.itemsIndexedTracks(
             queueContext = context,
             leadingNumber = if (numbered) position + 1 else null,
             subtitle = if (numbered) track.artist else null,
-            modifier = Modifier.padding(horizontal = Spacing.gutter - Spacing.sm),
+            modifier = Modifier.animateItem().padding(horizontal = Spacing.gutter - Spacing.sm),
         )
     }
 }
 
 private fun heroArtwork(page: CatalogPage?): String? {
     page ?: return null
+    page.artworkUrl?.takeIf(String::isNotBlank)?.let { return it }
     return page.sections.asSequence()
         .flatMap { it.items.asSequence() }
         .mapNotNull { item -> item.artworkUrl.takeIf(String::isNotBlank) ?: item.track?.albumArtUrl?.takeIf(String::isNotBlank) }

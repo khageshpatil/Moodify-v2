@@ -26,10 +26,12 @@ class MoodifyActions(
     val searchFor: (query: String) -> Unit,
     /** Opens the track sheet with a "Remove from this playlist" action. */
     val openTrackMenuInPlaylist: (Track, playlistId: String) -> Unit = { track, _ -> openTrackMenu(track) },
+    /** Opens the song's artist page (or an artist search when it isn't linked). */
+    val openArtist: (Track) -> Unit = { searchFor(it.artist) },
 ) {
     /** Same actions with a different track-menu behaviour, for a local override. */
     fun withTrackMenu(openMenu: (Track) -> Unit) = MoodifyActions(
-        play, playNext, addToQueue, toggleFavorite, openMenu, openBrowse, searchFor, openTrackMenuInPlaylist,
+        play, playNext, addToQueue, toggleFavorite, openMenu, openBrowse, searchFor, openTrackMenuInPlaylist, openArtist,
     )
 }
 

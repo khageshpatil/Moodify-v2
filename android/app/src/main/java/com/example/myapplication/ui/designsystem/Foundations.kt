@@ -223,3 +223,16 @@ fun EqualizerBars(
         }
     }
 }
+
+/**
+ * Scrolls [state] back to the top each time [key] increases (tapping the tab
+ * you're already on). Jumps most of the way first so long lists don't crawl.
+ */
+@Composable
+fun ScrollToTopEffect(key: Int, state: androidx.compose.foundation.lazy.LazyListState) {
+    androidx.compose.runtime.LaunchedEffect(key) {
+        if (key <= 0) return@LaunchedEffect
+        if (state.firstVisibleItemIndex > 6) state.scrollToItem(6)
+        state.animateScrollToItem(0)
+    }
+}

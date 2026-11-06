@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.app.SearchManager
 import android.media.AudioManager
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -498,8 +500,22 @@ private fun LyricsTextPane(
     }
 
     when {
-        isLoading -> Box(modifier, contentAlignment = Alignment.Center) {
-            androidx.compose.material3.CircularProgressIndicator(color = Color.White)
+        // Placeholder lines while lyric sources are searched, so the screen says what's happening.
+        isLoading -> Column(
+            modifier.padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text("Finding lyrics…", color = Color.White.copy(alpha = .72f), style = MaterialTheme.typography.titleMedium)
+            listOf(0.82f, 0.64f, 0.9f, 0.55f, 0.74f).forEach { width ->
+                Box(
+                    Modifier
+                        .padding(top = 18.dp)
+                        .fillMaxWidth(width)
+                        .height(22.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(Color.White.copy(alpha = .12f)),
+                )
+            }
         }
         lyrics == null || lyrics.lines.isEmpty() -> Column(
             modifier = modifier.padding(horizontal = 20.dp),
@@ -647,10 +663,6 @@ private fun PlayerControls(
     onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val audioManager = remember(context) { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    val maxVolume = remember(audioManager) { audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1) }
-    var volume by remember(audioManager) { mutableFloatStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume) }
     var draggingSeek by remember(state.currentTrack?.id) { mutableStateOf(false) }
     var seekValue by remember(state.currentTrack?.id) { mutableFloatStateOf(progress.positionMs.toFloat()) }
     LaunchedEffect(progress.positionMs, draggingSeek) { if (!draggingSeek) seekValue = progress.positionMs.toFloat() }
@@ -669,21 +681,6 @@ private fun PlayerControls(
                 Icon(if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (state.isPlaying) "Pause" else "Play", tint = Color.White, modifier = Modifier.size(40.dp))
             }
             IconButton(onClick = onNext, modifier = Modifier.size(60.dp)) { Icon(Icons.Default.SkipNext, "Next track", tint = Color.White, modifier = Modifier.size(34.dp)) }
-        }
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.AutoMirrored.Filled.VolumeDown, "Lower volume", tint = Color.White.copy(alpha = .76f), modifier = Modifier.size(20.dp))
-            com.moodify.app.ui.designsystem.ThinSlider(
-                value = volume,
-                onValueChange = {
-                    volume = it
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (it * maxVolume).toInt(), 0)
-                },
-                accent = MaterialTheme.colorScheme.primary,
-                trackColor = Color.White,
-                contentDescription = "Volume",
-                modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
-            )
-            Icon(Icons.AutoMirrored.Filled.VolumeUp, "Raise volume", tint = Color.White.copy(alpha = .76f), modifier = Modifier.size(20.dp))
         }
     }
 }

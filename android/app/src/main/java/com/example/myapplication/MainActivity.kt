@@ -63,6 +63,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -165,6 +166,8 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
 
+        handleLink(intent, mainViewModel)
+
         setContent {
             val viewModel = mainViewModel
             val settings by viewModel.appSettings.collectAsStateWithLifecycle()
@@ -194,11 +197,53 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val mainViewModel: MainViewModel by viewModels()
+        handleLink(intent, mainViewModel)
+    }
+
+    /** Opens YouTube / YouTube Music links (tapped or shared) inside Moodify. */
+    private fun handleLink(intent: Intent?, viewModel: MainViewModel) {
+        val text = when (intent?.action) {
+            Intent.ACTION_VIEW -> intent.dataString
+            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+            else -> null
+        } ?: return
+        com.moodify.app.data.SharedLinks.parse(text)?.let(viewModel::openLink)
+    }
 }
 
 /** Remembers whether we have already asked for notification permission. */
 private const val PREFS = "moodify_ui"
 private const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
+private const val ARTIST_PAGE_TYPE = "MUSIC_PAGE_TYPE_ARTIST"
+private val NON_MUSIC_CHIPS = listOf("Podcast", "Audiobook")
+
+/** "Playing from …" label for a queue started on the screen that's showing now. */
+private fun playSourceFor(navController: androidx.navigation.NavController, viewModel: MainViewModel): String? {
+    val entry = navController.currentBackStackEntry ?: return null
+    val destination = entry.destination
+    return when {
+        destination.hasRoute(HomeRoute::class) -> "Home"
+        destination.hasRoute(SearchRoute::class) ->
+            viewModel.searchQuery.value.trim().takeIf(String::isNotBlank)?.let { "Search · $it" } ?: "Search"
+        destination.hasRoute(LikedRoute::class) -> "Liked songs"
+        destination.hasRoute(DownloadsRoute::class) -> "Downloads"
+        destination.hasRoute(HistoryRoute::class) -> "History"
+        destination.hasRoute(PlaylistRoute::class) -> {
+            val id = entry.toRoute<PlaylistRoute>().id
+            viewModel.playlists.value.firstOrNull { it.id == id }?.name
+        }
+        destination.hasRoute(BrowseRoute::class) -> entry.toRoute<BrowseRoute>().title.takeIf(String::isNotBlank)
+        destination.hasRoute(com.moodify.app.ui.navigation.MoodRoute::class) -> {
+            val id = entry.toRoute<com.moodify.app.ui.navigation.MoodRoute>().id
+            com.moodify.app.ui.designsystem.MoodOptions.firstOrNull { it.id == id }?.let { "${it.label} mood" }
+        }
+        else -> null
+    }
+}
 
 @UnstableApi
 @Composable
@@ -236,6 +281,24 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchType by viewModel.searchType.collectAsStateWithLifecycle()
     val searchCatalog by viewModel.searchCatalog.collectAsStateWithLifecycle()
+    val searchResultsType by viewModel.searchResultsType.collectAsStateWithLifecycle()
+    val previewingId by viewModel.playbackManager.previewTrackId.collectAsStateWithLifecycle()
+    val savedCollections by viewModel.savedCollections.collectAsStateWithLifecycle()
+    val storage by viewModel.storage.collectAsStateWithLifecycle()
+    val recentCollections by viewModel.recentCollections.collectAsStateWithLifecycle()
+    // Albums, playlists and artists opened from a shared link.
+    val linkTarget by viewModel.linkTarget.collectAsStateWithLifecycle()
+    LaunchedEffect(linkTarget) {
+        val target = linkTarget ?: return@LaunchedEffect
+        val route = when (target) {
+            is com.moodify.app.data.SharedLink.Playlist -> BrowseRoute("VL" + target.playlistId, null, "MUSIC_PAGE_TYPE_PLAYLIST", "")
+            is com.moodify.app.data.SharedLink.Album -> BrowseRoute(target.browseId, null, "MUSIC_PAGE_TYPE_ALBUM", "")
+            is com.moodify.app.data.SharedLink.Artist -> BrowseRoute(target.channelId, null, ARTIST_PAGE_TYPE, "")
+            is com.moodify.app.data.SharedLink.Song -> null
+        }
+        viewModel.consumeLinkTarget()
+        route?.let { navController.navigate(it) }
+    }
     val suggestions by viewModel.searchSuggestions.collectAsStateWithLifecycle()
     val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
     val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
@@ -252,6 +315,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
     var showLyrics by remember { mutableStateOf(false) }
     var searchFocusKey by rememberSaveable { mutableIntStateOf(0) }
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
+    // Bumped when the tab you're already on is tapped again: its list scrolls to the top.
+    val tabReselects = remember { androidx.compose.runtime.mutableStateMapOf<MainTab, Int>() }
 
     // ── Notification permission, asked on first play rather than at launch ─
     val prefs = remember { context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE) }
@@ -298,7 +363,12 @@ fun MoodifyApp(viewModel: MainViewModel) {
                 (tab == MainTab.SEARCH && dest.hasRoute(SearchRoute::class)) ||
                 (tab == MainTab.LIBRARY && dest.hasRoute(LibraryRoute::class))
         } == true
-        if (alreadyOnRoot) return
+        if (alreadyOnRoot) {
+            tabReselects[tab] = (tabReselects[tab] ?: 0) + 1
+            return
+        }
+        // Deeper inside the current tab: go back to its first screen.
+        if (tab == selectedTab && navController.popBackStack(route, inclusive = false)) return
         navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
@@ -310,7 +380,25 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val actions = remember(viewModel, navController) {
         MoodifyActions(
             play = { track, queue ->
-                viewModel.playTrack(track, queue.ifEmpty { listOf(track) })
+                viewModel.playTrack(track, queue.ifEmpty { listOf(track) }, playSourceFor(navController, viewModel))
+                // Remember albums / playlists you play from, for "Recently played".
+                navController.currentBackStackEntry
+                    ?.takeIf { it.destination.hasRoute(BrowseRoute::class) }
+                    ?.toRoute<BrowseRoute>()
+                    ?.let { route ->
+                        val kind = com.moodify.app.ui.navigation.BrowseKind.of(route.browseId, route.pageType)
+                        if (kind == com.moodify.app.ui.navigation.BrowseKind.ALBUM || kind == com.moodify.app.ui.navigation.BrowseKind.PLAYLIST) {
+                            viewModel.rememberCollection(
+                                com.moodify.app.data.CatalogItem(
+                                    type = kind.name.lowercase(),
+                                    id = route.browseId,
+                                    title = route.title.ifBlank { kind.label },
+                                    artworkUrl = queue.firstOrNull()?.albumArtUrl ?: track.albumArtUrl,
+                                    endpoint = BrowseEndpoint(route.browseId, null, route.params, route.pageType),
+                                ),
+                            )
+                        }
+                    }
                 maybeAskForNotifications()
             },
             playNext = viewModel::playNext,
@@ -327,9 +415,33 @@ fun MoodifyApp(viewModel: MainViewModel) {
             searchFor = { query ->
                 collapsePlayer()
                 selectTab(MainTab.SEARCH)
-                if (query.isBlank()) searchFocusKey++ else viewModel.submitSearch(query)
+                if (query.isBlank()) {
+                    searchFocusKey++
+                } else {
+                    viewModel.onSearchTypeChange(null)
+                    viewModel.submitSearch(query)
+                }
             },
             openTrackMenuInPlaylist = { track, playlistId -> menuPlaylistId = playlistId; menuTrack = track },
+            openArtist = { track ->
+                collapsePlayer()
+                val name = com.moodify.app.data.primaryArtist(track.artist)
+                val linked = track.artistId
+                if (!linked.isNullOrBlank()) {
+                    navController.navigate(BrowseRoute(linked, null, ARTIST_PAGE_TYPE, name))
+                } else {
+                    scope.launch {
+                        val endpoint = viewModel.findArtistEndpoint(name)
+                        val browseId = endpoint?.browseId
+                        if (browseId != null) {
+                            navController.navigate(BrowseRoute(browseId, endpoint.params, endpoint.pageType ?: ARTIST_PAGE_TYPE, name))
+                        } else {
+                            selectTab(MainTab.SEARCH)
+                            viewModel.submitSearch(name)
+                        }
+                    }
+                }
+            },
         )
     }
 
@@ -351,7 +463,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val chromeHeight = NavBarHeight + Spacing.md + (if (hasTrack) MiniPlayerHeight + Spacing.sm else 0.dp)
     val bottomPadding = chromeHeight + navInset + Spacing.sm
 
-    val homeState = remember(homeCatalog, history, favorites, trending, forYou, playback.currentTrack, playlists, isLoadingCatalog, catalogStale, catalogError, settings.favoriteMoods, personal, homeChips, selectedChip, isLoadingHomeMore, downloads) {
+    val homeState = remember(homeCatalog, history, favorites, trending, forYou, playback.currentTrack, playlists, isLoadingCatalog, catalogStale, catalogError, settings.favoriteMoods, personal, homeChips, selectedChip, isLoadingHomeMore, downloads, savedCollections, recentCollections) {
         // The mini-player already shows (and resumes) the current song, so Home
         // has no "now playing" card; just don't deal that song into the picks.
         val playingId = playback.currentTrack?.id
@@ -378,8 +490,15 @@ fun MoodifyApp(viewModel: MainViewModel) {
             becauseArtist = personal.becauseArtist,
             becauseTracks = personal.becauseTracks,
             offlineTracks = downloads,
-            chips = homeChips,
+            // Podcasts and other non-music chips lead to content Moodify filters out.
+            // Moods have one home (the mood pills above); keep YouTube's genre chips only.
+            chips = homeChips.filterNot { chip ->
+                NON_MUSIC_CHIPS.any { chip.title.contains(it, ignoreCase = true) } ||
+                    com.moodify.app.ui.designsystem.isMoodTile(chip.title)
+            },
             selectedChip = selectedChip,
+            saved = savedCollections,
+            recent = recentCollections,
             canLoadMore = !homeCatalog?.nextCursor.isNullOrBlank(),
             isLoadingMore = isLoadingHomeMore,
         )
@@ -402,10 +521,13 @@ fun MoodifyApp(viewModel: MainViewModel) {
 
             androidx.compose.animation.SharedTransitionLayout {
             CompositionLocalProvider(com.moodify.app.ui.designsystem.LocalSharedTransitionScope provides this) {
+            // With the full player open, everything behind it is hidden from
+            // TalkBack so swiping can't wander into the screen underneath.
+            val hiddenBehindPlayer = if (sheet.isExpanded) Modifier.clearAndSetSemantics { } else Modifier
             NavHost(
                 navController = navController,
                 startDestination = HomeRoute,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().then(hiddenBehindPlayer),
                 enterTransition = { fadeIn(tween(Motion.MEDIUM)) + slideInHorizontally(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate)) { it / 10 } },
                 exitTransition = { fadeOut(tween(Motion.SHORT)) },
                 popEnterTransition = { fadeIn(tween(Motion.MEDIUM)) },
@@ -425,6 +547,10 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onSelectChip = viewModel::selectHomeChip,
                         onLoadMore = viewModel::loadMoreHome,
                         onRefreshDiscover = viewModel::refreshForYou,
+                        scrollToTopKey = tabReselects[MainTab.HOME] ?: 0,
+                        onPreview = { track -> if (track == null) manager.stopPreview() else manager.startPreview(track) },
+                        onOpenMood = { navController.navigate(com.moodify.app.ui.navigation.MoodRoute(it.id)) },
+                        previewingId = previewingId,
                     )
                 }
                 screen<SearchRoute>(
@@ -437,6 +563,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                             type = searchType,
                             isSearching = isSearching,
                             resultSections = searchCatalog?.sections.orEmpty(),
+                            resultsType = searchResultsType,
                             suggestions = suggestions,
                             recentSearches = settings.recentSearches,
                             browseSections = moodsCatalog?.sections.orEmpty(),
@@ -454,6 +581,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onClearRecents = viewModel::clearRecentSearches,
                         onLoadMore = viewModel::loadMoreSearchResults,
                         onRetry = { viewModel.submitSearch(searchQuery) },
+                        scrollToTopKey = tabReselects[MainTab.SEARCH] ?: 0,
+                        onOpenMood = { navController.navigate(com.moodify.app.ui.navigation.MoodRoute(it.id)) },
                     )
                 }
                 screen<LibraryRoute>(
@@ -471,6 +600,13 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onOpenHistory = { navController.navigate(HistoryRoute) },
                         onOpenPlaylist = { navController.navigate(PlaylistRoute(it.id)) },
                         onCreatePlaylist = { viewModel.createPlaylist(it) },
+                        scrollToTopKey = tabReselects[MainTab.LIBRARY] ?: 0,
+                        saved = savedCollections,
+                        onOpenSaved = { item ->
+                            item.endpoint?.let { endpoint -> actions.openBrowse(endpoint, item.title) }
+                        },
+                        onOpenSettings = { navController.navigate(SettingsRoute) },
+                        onOpenStats = { navController.navigate(com.moodify.app.ui.navigation.StatsRoute) },
                     )
                 }
                 screen<BrowseRoute> {
@@ -483,6 +619,23 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onRetry = browseViewModel::load,
                         onLoadMore = browseViewModel::loadMore,
                         onDownloadAll = { tracks -> viewModel.downloadAll(tracks, state.title.ifBlank { "this collection" }) },
+                        isSaved = savedCollections.any { it.id == state.browseId },
+                        onToggleSave = viewModel::toggleSaved,
+                    )
+                }
+                screen<com.moodify.app.ui.navigation.StatsRoute> {
+                    val stats by viewModel.listeningStats.collectAsStateWithLifecycle()
+                    LaunchedEffect(Unit) { viewModel.loadListeningStats() }
+                    com.moodify.app.ui.screens.StatsScreen(stats = stats, bottomPadding = bottomPadding, onBack = { navController.popBackStack() })
+                }
+                screen<com.moodify.app.ui.navigation.MoodRoute> {
+                    val moodViewModel: com.moodify.app.ui.screens.MoodViewModel = viewModel()
+                    val state by moodViewModel.state.collectAsStateWithLifecycle()
+                    com.moodify.app.ui.screens.MoodScreen(
+                        state = state,
+                        bottomPadding = bottomPadding,
+                        onBack = { navController.popBackStack() },
+                        onRetry = moodViewModel::load,
                     )
                 }
                 screen<PlaylistRoute> { entry ->
@@ -543,7 +696,20 @@ fun MoodifyApp(viewModel: MainViewModel) {
                             onClearRecentSearches = viewModel::clearRecentSearches,
                             onAutoplay = viewModel::setAutoplay,
                             onNormalizeVolume = viewModel::setNormalizeVolume,
+                            onDataSaver = viewModel::setDataSaver,
+                            onSkipSilence = viewModel::setSkipSilence,
+                            onAutoDownloadLiked = viewModel::setAutoDownloadLiked,
+                            onDownloadOnWifiOnly = viewModel::setDownloadOnWifiOnly,
+                            onPauseHistory = viewModel::setPauseHistory,
+                            onClearHistory = viewModel::clearHistory,
+                            onRefreshStorage = viewModel::refreshStorage,
+                            onClearAudioCache = viewModel::clearAudioCache,
+                            onClearLyricsCache = viewModel::clearLyricsCache,
+                            onClearCatalogCache = viewModel::clearCatalogCache,
+                            onExportBackup = viewModel::exportBackup,
+                            onImportBackup = viewModel::importBackup,
                         ),
+                        storage = storage,
                     )
                 }
             }
@@ -570,6 +736,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .then(if (sheet.isExpanded) Modifier.clearAndSetSemantics { } else Modifier)
                     .graphicsLayer {
                         translationY = sheet.progress * (chromeHeight + navInset).toPx()
                         alpha = 1f - sheet.progress
@@ -669,7 +836,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
                                 onOpenMore = { showMore = true },
                                 onOpenSleepTimer = { showSleep = true },
                                 onDownload = viewModel::downloadTrack,
-                                onSearchArtist = { actions.searchFor(it) },
+                                onOpenArtist = actions.openArtist,
+                                onSaveToPlaylist = { pickerTrack = playback.currentTrack },
                             ),
                         )
                         if (showQueue) {
@@ -690,11 +858,20 @@ fun MoodifyApp(viewModel: MainViewModel) {
                                 onSetSpeed = manager::setPlaybackSpeed,
                                 onSetPitch = manager::setPitch,
                                 onSaveToPlaylist = { showMore = false; pickerTrack = playback.currentTrack },
-                                onMoreByArtist = { playback.currentTrack?.let { actions.searchFor(it.artist) } },
+                                onMoreByArtist = { playback.currentTrack?.let(actions.openArtist) },
                                 onStartRadio = { playback.currentTrack?.let(viewModel::startRadio) },
                                 onShowRelated = {
                                     playback.currentTrack?.let(viewModel::loadRelated)
                                     showRelated = true
+                                },
+                                onOpenSleepTimer = { showSleep = true },
+                                onOpenEqualizer = {
+                                    val eq = Intent(android.media.audiofx.AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
+                                        .putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, manager.audioSessionId)
+                                        .putExtra(android.media.audiofx.AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
+                                        .putExtra(android.media.audiofx.AudioEffect.EXTRA_CONTENT_TYPE, android.media.audiofx.AudioEffect.CONTENT_TYPE_MUSIC)
+                                    val opened = runCatching { context.startActivity(eq) }.isSuccess
+                                    if (!opened) scope.launch { snackbar.showSnackbar("This phone has no equaliser app") }
                                 },
                             )
                         }
@@ -730,8 +907,14 @@ fun MoodifyApp(viewModel: MainViewModel) {
                 onSaveToPlaylist = { menuTrack = null; pickerTrack = track },
                 onDownload = { viewModel.downloadTrack(track) },
                 onRemoveDownload = { viewModel.deleteDownload(track) },
-                onMoreByArtist = { actions.searchFor(track.artist) },
+                onMoreByArtist = { actions.openArtist(track) },
                 onStartRadio = { viewModel.startRadio(track) },
+                onOpenAlbum = track.albumId?.takeIf(String::isNotBlank)?.let { albumId ->
+                    {
+                        collapsePlayer()
+                        navController.navigate(BrowseRoute(albumId, null, "MUSIC_PAGE_TYPE_ALBUM", track.album.ifBlank { track.title }))
+                    }
+                },
                 extraActions = { dismiss ->
                     if (playlistId != null) {
                         androidx.compose.material3.TextButton(

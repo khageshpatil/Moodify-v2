@@ -43,6 +43,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.DownloadDone
@@ -125,7 +126,9 @@ class FullPlayerActions(
     val onOpenMore: () -> Unit,
     val onOpenSleepTimer: () -> Unit,
     val onDownload: (Track) -> Unit,
-    val onSearchArtist: (String) -> Unit,
+    /** Opens the artist page for the song (falls back to an artist search). */
+    val onOpenArtist: (Track) -> Unit,
+    val onSaveToPlaylist: () -> Unit = {},
 )
 
 /**
@@ -177,17 +180,32 @@ fun FullPlayer(
                     Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "Close player", tint = Color.White, modifier = Modifier.size(30.dp))
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    val source = state.queueSource
                     Text(
-                        "NOW PLAYING",
+                        if (source != null) "PLAYING FROM" else "NOW PLAYING",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.6f),
                     )
-                    if (state.queue.size > 1) {
-                        Text(
+                    when {
+                        source != null -> Text(
+                            source,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = Spacing.sm),
+                        )
+                        state.queue.size > 1 -> Text(
                             "${state.currentIndex + 1} of ${state.queue.size}",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White,
                         )
+                    }
+                }
+                // A running sleep timer stays visible (and adjustable) from the header.
+                if (state.sleepTimerEndsAtMs != null || state.sleepAtEndOfTrack) {
+                    IconButton(onClick = actions.onOpenSleepTimer) {
+                        Icon(Icons.Rounded.Bedtime, contentDescription = "Sleep timer on", tint = artwork.playerAccent)
                     }
                 }
                 IconButton(onClick = actions.onOpenMore) {
@@ -235,11 +253,15 @@ fun FullPlayer(
                                 color = Color.White.copy(alpha = 0.72f),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.pressable(pressedScale = 0.97f) { actions.onSearchArtist(shown.artist) },
+                                modifier = Modifier.pressable(pressedScale = 0.97f) { actions.onOpenArtist(shown) },
                             )
                         }
                     }
-                    IconButton(onClick = { actions.onToggleLike(track) }) {
+                    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+                    IconButton(onClick = {
+                        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        actions.onToggleLike(track)
+                    }) {
                         LikeIcon(isFavorite, tint = Color.White.copy(alpha = 0.85f), size = 26.dp)
                     }
                 }
@@ -303,12 +325,7 @@ fun FullPlayer(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     PillAction(Icons.Rounded.Lyrics, "Lyrics", onClick = actions.onOpenLyrics)
-                    PillAction(
-                        Icons.Rounded.Bedtime,
-                        if (state.sleepTimerEndsAtMs != null || state.sleepAtEndOfTrack) "Sleep on" else "Sleep",
-                        active = state.sleepTimerEndsAtMs != null || state.sleepAtEndOfTrack,
-                        onClick = actions.onOpenSleepTimer,
-                    )
+                    PillAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Save", onClick = actions.onSaveToPlaylist)
                     PillAction(
                         if (isDownloaded) Icons.Rounded.DownloadDone else Icons.Rounded.Download,
                         when {

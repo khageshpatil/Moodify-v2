@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit
  * Background playback is handled by [MoodifyPlaybackService] (foreground service).
  */
 @UnstableApi
-class PlaybackManager private constructor(context: Context) {
+class PlaybackManager private constructor(private val context: Context) {
 
     companion object {
         @Volatile
@@ -77,6 +77,8 @@ class PlaybackManager private constructor(context: Context) {
         private const val MAX_STREAM_CONTRACTS = 64
         private const val RADIO_LOOKAHEAD = 2
         private const val STREAM_SCHEME = "moodify-stream"
+        private const val PREVIEW_LENGTH_MS = 20_000L
+        private const val PREVIEW_FADE_MS = 600L
         private const val CONTRACT_REFRESH_MARGIN_MS = 60_000L
         private const val ITAG_METADATA_KEY = "moodify_itag"
         private const val MAX_BOOST_DB = 6.0
@@ -248,10 +250,25 @@ class PlaybackManager private constructor(context: Context) {
                 maybeExtendWithRadio()
             }
 
+            override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                // Lets the phone's equaliser (and apps like Wavelet) attach to Moodify.
+                runCatching {
+                    context.sendBroadcast(
+                        android.content.Intent(android.media.audiofx.AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION)
+                            .putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, audioSessionId)
+                            .putExtra(android.media.audiofx.AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
+                            .putExtra(android.media.audiofx.AudioEffect.EXTRA_CONTENT_TYPE, android.media.audiofx.AudioEffect.CONTENT_TYPE_MUSIC),
+                    )
+                }
+            }
+
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _state.update { it.copy(isPlaying = isPlaying) }
                 publishProgress()
                 if (isPlaying) {
+                    // Your music always wins over a Discover preview (also when resumed
+                    // from the notification or headphones).
+                    if (_previewTrackId.value != null) stopPreview()
                     recordDiagnostics(event = "Playback started", status = "Playing", recoveryAction = null)
                 } else if (exoPlayer.playbackState == Player.STATE_READY) {
                     recordDiagnostics(event = "Playback paused", status = "Paused")
@@ -287,7 +304,7 @@ class PlaybackManager private constructor(context: Context) {
                         _state.value.currentTrack?.let { track ->
                             if (historyRecordedForTrack != track.id) {
                                 historyRecordedForTrack = track.id
-                                scope.launch { runCatching { historyStore.record(track) } }
+                                if (!pauseHistory) scope.launch { runCatching { historyStore.record(track) } }
                             }
                         }
                     }
@@ -467,7 +484,8 @@ class PlaybackManager private constructor(context: Context) {
 
     // ── Playback Controls ────────────────────────────────────────────────────
 
-    fun playTrack(track: Track, newQueue: List<Track> = listOf(track)) {
+    fun playTrack(track: Track, newQueue: List<Track> = listOf(track), source: String? = null) {
+        stopPreview()
         if (!YOUTUBE_VIDEO_ID_REGEX.matches(track.id)) {
             setError("This track cannot be played. Please choose another result.")
             return
@@ -482,6 +500,7 @@ class PlaybackManager private constructor(context: Context) {
                 currentTrack = track,
                 queue = newQueue,
                 autoplayFromIndex = if (sameContext) it.autoplayFromIndex else null,
+                queueSource = source ?: if (sameContext) it.queueSource else null,
                 currentIndex = index,
                 isLoading = true,
                 isPlaying = false,
@@ -507,6 +526,33 @@ class PlaybackManager private constructor(context: Context) {
     // ── Autoplay radio ───────────────────────────────────────────────────────
 
     private val catalogClient = com.moodify.app.data.InnerTubeCatalogClient(localeProvider = { playbackLocale })
+
+    /** Settings › Skip silence. */
+    fun setSkipSilence(enabled: Boolean) {
+        scope.launch { exoPlayer.skipSilenceEnabled = enabled }
+    }
+
+    /** Audio session for the phone's equaliser (0 until audio has played). */
+    val audioSessionId: Int get() = exoPlayer.audioSessionId
+
+    /** Settings › Pause listening history: plays are not recorded. */
+    @Volatile
+    var pauseHistory: Boolean = false
+
+    /** Bytes the streaming cache holds right now. */
+    fun audioCacheBytes(): Long = runCatching { playbackCache.cache.cacheSpace }.getOrDefault(0L)
+
+    /** Empties the streaming cache (downloads are separate and stay). */
+    fun clearAudioCache() {
+        val playing = _state.value.currentTrack?.id?.let(::streamCacheKey)
+        runCatching {
+            playbackCache.cache.keys.toList().filter { it != playing }.forEach(playbackCache::remove)
+        }
+    }
+
+    /** Streams the smallest audio format (set from Settings › Audio quality). */
+    @Volatile
+    var dataSaver: Boolean = false
 
     /** When true, the queue is topped up with the current song's radio before it runs out. */
     @Volatile
@@ -572,7 +618,7 @@ class PlaybackManager private constructor(context: Context) {
      * regardless of the autoplay setting.
      */
     fun startRadio(track: Track) {
-        playTrack(track, listOf(track))
+        playTrack(track, listOf(track), source = "${track.title} radio")
         maybeExtendWithRadio(force = true)
     }
 
@@ -787,6 +833,88 @@ class PlaybackManager private constructor(context: Context) {
         preloadNext()
     }
 
+    // ── Discover previews ────────────────────────────────────────────────────
+
+    /**
+     * A second, lightweight player for short Discover previews. It shares the
+     * resolver and audio cache (so a previewed song starts instantly if you
+     * then play it) but never touches the queue, and it never interrupts your
+     * music: previews only play while the main player is idle or paused.
+     */
+    private var previewPlayer: ExoPlayer? = null
+    private var previewJob: Job? = null
+    private val _previewTrackId = MutableStateFlow<String?>(null)
+    /** The song being previewed right now, or null. */
+    val previewTrackId: StateFlow<String?> = _previewTrackId.asStateFlow()
+
+    private fun previewPlayer(): ExoPlayer = previewPlayer ?: ExoPlayer.Builder(context)
+        .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+        .setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                .build(),
+            false,
+        )
+        .build()
+        .also { previewPlayer = it }
+
+    /**
+     * Plays ~[PREVIEW_LENGTH_MS] of [track] from about a third of the way in,
+     * fading in and out. Returns false (and plays nothing) while music plays.
+     */
+    fun startPreview(track: Track): Boolean {
+        if (exoPlayer.isPlaying || !YOUTUBE_VIDEO_ID_REGEX.matches(track.id)) {
+            stopPreview()
+            return false
+        }
+        if (_previewTrackId.value == track.id) return true
+        previewJob?.cancel()
+        val player = previewPlayer()
+        val durationMs = track.durationSeconds * 1000L
+        val startMs = if (durationMs > 0) (durationMs / 3).coerceIn(15_000L, 90_000L) else 30_000L
+        _previewTrackId.value = track.id
+        previewJob = scope.launch {
+            player.volume = 0f
+            player.setMediaItem(
+                MediaItem.Builder()
+                    .setUri(streamUri(track.id))
+                    .setMediaId(track.id)
+                    .setCustomCacheKey(streamCacheKey(track.id))
+                    .build(),
+                startMs,
+            )
+            player.prepare()
+            player.play()
+            // Wait until audio actually starts before fading in.
+            while (!player.isPlaying && player.playerError == null) kotlinx.coroutines.delay(50)
+            fadePreview(player, from = 0f, to = 1f)
+            kotlinx.coroutines.delay(PREVIEW_LENGTH_MS)
+            fadePreview(player, from = 1f, to = 0f)
+            player.stop()
+            if (_previewTrackId.value == track.id) _previewTrackId.value = null
+        }
+        return true
+    }
+
+    fun stopPreview() {
+        previewJob?.cancel()
+        previewJob = null
+        previewPlayer?.let { player ->
+            player.stop()
+            player.clearMediaItems()
+        }
+        _previewTrackId.value = null
+    }
+
+    private suspend fun fadePreview(player: ExoPlayer, from: Float, to: Float) {
+        val steps = 12
+        for (step in 0..steps) {
+            player.volume = from + (to - from) * step / steps
+            kotlinx.coroutines.delay(PREVIEW_FADE_MS / steps)
+        }
+    }
+
     // ── Sleep timer ──────────────────────────────────────────────────────────
 
     private var sleepTimerJob: Job? = null
@@ -945,6 +1073,9 @@ class PlaybackManager private constructor(context: Context) {
     }
 
     suspend fun clearListeningHistory() = historyStore.clear()
+
+    /** Songs with their play counts, most played first (for "Your listening"). */
+    suspend fun playCounts(limit: Int): List<Pair<Track, Int>> = historyStore.mostPlayed(limit)
 
     /** Most-played tracks (for personal recommendations). */
     suspend fun mostPlayedTracks(limit: Int): List<Track> = historyStore.mostPlayed(limit).map { it.first }
@@ -1158,7 +1289,7 @@ class PlaybackManager private constructor(context: Context) {
         val maxProfiles = streamResolver.profileCount()
         while (offset < maxProfiles) {
             val resolved = try {
-                streamResolver.resolve(videoId, offset)
+                streamResolver.resolve(videoId, offset, dataSaver)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {

@@ -32,6 +32,7 @@ object AppGraph {
     val playlistStore by lazy { PlaylistStore(app) }
     val persistence by lazy { PlaybackPersistence(app) }
     val lyricsStore by lazy { LyricsStore(app) }
+    val savedCollections by lazy { com.moodify.app.data.SavedCollectionsStore(app) }
 
     val repository by lazy {
         MusicRepository(

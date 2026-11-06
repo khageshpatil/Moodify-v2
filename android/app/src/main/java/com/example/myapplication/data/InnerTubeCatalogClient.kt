@@ -133,6 +133,24 @@ class InnerTubeCatalogClient(
     }
 
     /**
+     * Title, artist, length and cover for one song (from its player details),
+     * for links opened in Moodify. Null when YouTube doesn't know the id.
+     */
+    suspend fun songDetails(videoId: String): Track? = withContext(Dispatchers.IO) {
+        val body = contextBody().put("videoId", videoId)
+        val request = Request.Builder()
+            .url("$BASE_URL/player?key=$API_KEY&prettyPrint=false")
+            .headers(requestHeaders())
+            .post(body.toString().toRequestBody(JSON))
+            .build()
+        httpClient.newCall(request).await().use { response ->
+            if (!response.isSuccessful) return@use null
+            val root = runCatching { JSONObject(response.body?.string().orEmpty()) }.getOrNull() ?: return@use null
+            CatalogRendererParser.parseSongDetails(root)?.takeIf { it.id == videoId }
+        }
+    }
+
+    /**
      * YouTube Music's own (unsynced) lyrics for a song, from the Lyrics tab of
      * its watch page. Returns null when YouTube has none.
      */
@@ -350,6 +368,26 @@ internal object CatalogRendererParser {
      * the first page (`playlistPanelRenderer`) and continuation pages
      * (`playlistPanelContinuation`).
      */
+    /** A song from a `player` response's videoDetails. */
+    fun parseSongDetails(root: JSONObject): Track? {
+        val details = root.optJSONObject("videoDetails") ?: return null
+        val id = details.optString("videoId").takeIf { it.isNotBlank() } ?: return null
+        val title = details.optString("title").takeIf { it.isNotBlank() } ?: return null
+        // Official audio uploads come from "<Artist> - Topic" channels; only those
+        // channels are artist pages (others are labels or uploaders).
+        val rawAuthor = details.optString("author")
+        val isTopic = rawAuthor.endsWith(" - Topic")
+        val author = rawAuthor.removeSuffix(" - Topic").trim()
+        return Track(
+            id = id,
+            title = title,
+            artist = author.ifBlank { "Unknown artist" },
+            albumArtUrl = thumbnailUrl(details.opt("thumbnail")),
+            durationSeconds = details.optString("lengthSeconds").toIntOrNull() ?: 0,
+            artistId = details.optString("channelId").takeIf { isTopic && it.startsWith("UC") },
+        )
+    }
+
     fun parseUpNext(root: JSONObject): UpNextPage {
         val panel = findRenderer(root, "playlistPanelContinuation")
             ?: findRenderer(root, "playlistPanelRenderer")
@@ -430,6 +468,7 @@ internal object CatalogRendererParser {
                 !part.matches(Regex("\\d{4}")) && !isSpokenDurationOrDate(part)
         }.orEmpty()
         val explicit = renderer.optJSONArray("badges")?.toString()?.contains("MUSIC_EXPLICIT_BADGE") == true
+        val (artistId, albumId) = bylineLinks(renderer)
         return Track(
             id = videoId,
             title = title,
@@ -438,6 +477,8 @@ internal object CatalogRendererParser {
             albumArtUrl = thumbnailUrl(renderer.opt("thumbnail")),
             durationSeconds = parseDuration(text(renderer.opt("lengthText"))),
             explicit = explicit,
+            artistId = artistId,
+            albumId = albumId,
         )
     }
 
@@ -515,6 +556,7 @@ internal object CatalogRendererParser {
             surface = surface,
             title = findPageTitle(root) ?: fallbackTitle,
             sections = sectionsWithArtwork,
+            artworkUrl = findHeaderArtwork(root).takeIf { it.isNotBlank() },
             chips = parseChips(root).takeIf { it.isNotEmpty() },
             nextCursor = when (surface.lowercase(Locale.ROOT)) {
                 "playlist" -> findPlaylistContinuation(root)
@@ -555,6 +597,57 @@ internal object CatalogRendererParser {
         val header = findRenderer(root, "musicResponsiveHeaderRenderer") ?: return ""
         return thumbnailUrl(header.opt("thumbnail"))
             .ifBlank { thumbnailUrl(header.opt("straplineThumbnail")) }
+    }
+
+    /** The header image of a browse page: an artist's photo, or an album/playlist cover. */
+    private fun findHeaderArtwork(root: JSONObject): String {
+        val header = root.optJSONObject("header") ?: return findPageArtwork(root)
+        val renderer = listOf(
+            "musicImmersiveHeaderRenderer",
+            "musicVisualHeaderRenderer",
+            "musicResponsiveHeaderRenderer",
+            "musicDetailHeaderRenderer",
+        ).firstNotNullOfOrNull { header.optJSONObject(it) } ?: return findPageArtwork(root)
+        return thumbnailUrl(renderer.opt("thumbnail"))
+            .ifBlank { thumbnailUrl(renderer.opt("foregroundThumbnail")) }
+            .ifBlank { findPageArtwork(root) }
+    }
+
+    /**
+     * Browse ids of the first artist and album linked in an item's byline
+     * runs (e.g. "Arijit Singh • Kesariya (From "Brahmastra")").
+     */
+    internal fun bylineLinks(renderer: JSONObject): Pair<String?, String?> {
+        var artistId: String? = null
+        var albumId: String? = null
+        val sources = buildList {
+            renderer.optJSONArray("flexColumns")?.let { columns ->
+                for (index in 1 until columns.length()) {
+                    add(columns.optJSONObject(index)?.optJSONObject("musicResponsiveListItemFlexColumnRenderer")?.opt("text"))
+                }
+            }
+            add(renderer.opt("subtitle"))
+            add(renderer.opt("longBylineText"))
+            add(renderer.opt("shortBylineText"))
+        }
+        for (source in sources) {
+            val runs = (source as? JSONObject)?.optJSONArray("runs") ?: continue
+            for (index in 0 until runs.length()) {
+                val browse = runs.optJSONObject(index)
+                    ?.optJSONObject("navigationEndpoint")
+                    ?.optJSONObject("browseEndpoint") ?: continue
+                val id = browse.optString("browseId").takeIf { it.isNotBlank() } ?: continue
+                val pageType = browse.optJSONObject("browseEndpointContextSupportedConfigs")
+                    ?.optJSONObject("browseEndpointContextMusicConfig")
+                    ?.optString("pageType").orEmpty()
+                val isArtist = pageType == "MUSIC_PAGE_TYPE_ARTIST" || (pageType.isBlank() && id.startsWith("UC"))
+                val isAlbum = pageType == "MUSIC_PAGE_TYPE_ALBUM" || (pageType.isBlank() && id.startsWith("MPRE"))
+                if (artistId == null && isArtist) artistId = id
+                if (albumId == null && isAlbum) albumId = id
+            }
+            if (artistId != null && albumId != null) break
+        }
+        return artistId to albumId
     }
 
     private fun findRenderer(value: Any?, rendererKey: String): JSONObject? {
@@ -837,6 +930,7 @@ internal object CatalogRendererParser {
             else -> "browse"
         }
         val track = videoId?.let {
+            val (artistId, albumId) = bylineLinks(renderer)
             Track(
                 id = it,
                 title = title,
@@ -844,6 +938,8 @@ internal object CatalogRendererParser {
                 album = album,
                 albumArtUrl = artwork,
                 durationSeconds = duration,
+                artistId = artistId,
+                albumId = albumId,
             )
         }
         return CatalogItem(
@@ -1147,7 +1243,13 @@ internal object CatalogRendererParser {
             // A tail that is really the end of the title is not an artist.
             label.substringAfterLast(" - ", "").takeUnless { tail -> tail.isNotBlank() && title.endsWith(tail.trim()) }.orEmpty()
         }
-        return artist.trim().takeIf { it.isNotBlank() && !isSpokenDurationOrDate(it) }
+        // Playlist rows add the length too: "Play <title> - <artist> - 4 minutes, 27 seconds".
+        var cleaned = artist.trim()
+        while (true) {
+            val tail = cleaned.substringAfterLast(" - ", "").trim()
+            if (tail.isNotBlank() && isSpokenDurationOrDate(tail)) cleaned = cleaned.substringBeforeLast(" - ").trim() else break
+        }
+        return cleaned.takeIf { it.isNotBlank() && !isSpokenDurationOrDate(it) }
     }
 
     private fun artistFromMetadata(metadata: String?): String? {

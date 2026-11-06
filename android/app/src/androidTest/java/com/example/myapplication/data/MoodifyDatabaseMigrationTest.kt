@@ -18,7 +18,7 @@ class MoodifyDatabaseMigrationTest {
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
-    fun everyPreviouslyShippedSchemaMigratesToV6WithoutLosingQueueOrPlaylistState() = runBlocking {
+    fun everyPreviouslyShippedSchemaMigratesToLatestWithoutLosingQueueOrPlaylistState() = runBlocking {
         (1..5).forEach { oldVersion ->
             val databaseName = "moodify-migration-v$oldVersion.db"
             context.deleteDatabase(databaseName)
@@ -61,6 +61,21 @@ class MoodifyDatabaseMigrationTest {
                     ),
                 )
                 assertNotNull(dao.catalogPage("migration-check-$oldVersion"))
+
+                // v8: the Library can keep albums, playlists and artists.
+                dao.upsertSavedCollection(
+                    SavedCollectionEntity(
+                        id = "MPREb_v$oldVersion",
+                        type = "album",
+                        title = "Saved album",
+                        subtitle = "",
+                        artworkUrl = "",
+                        params = null,
+                        pageType = "MUSIC_PAGE_TYPE_ALBUM",
+                        savedAtMs = 1L,
+                    ),
+                )
+                assertEquals(listOf("MPREb_v$oldVersion"), dao.observeSavedCollections().first().map { it.id })
 
                 // v6: favorites carry track metadata, back-filled from history.
                 if (oldVersion >= 2) {

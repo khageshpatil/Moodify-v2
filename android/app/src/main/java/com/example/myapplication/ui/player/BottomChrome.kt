@@ -324,10 +324,13 @@ fun MoodifyNavBar(
                         tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
                         modifier = Modifier.size(22.dp),
                     )
-                    if (isSelected) {
-                        Spacer(Modifier.width(6.dp))
-                        Text(tab.label, style = MaterialTheme.typography.labelLarge, color = colors.primary, maxLines = 1)
-                    }
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        tab.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isSelected) colors.primary else colors.onSurfaceVariant,
+                        maxLines = 1,
+                    )
                 }
             }
         }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -28,8 +30,35 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing: android/keystore.properties locally (never committed), or
+    // MOODIFY_KEYSTORE_* environment variables in CI. Without either, release
+    // builds stay unsigned, as before.
+    val keystoreProps = Properties().apply {
+        val file = rootProject.file("keystore.properties")
+        if (file.exists()) file.inputStream().use(::load)
+    }
+    val signingStoreFile = keystoreProps.getProperty("storeFile")?.let { rootProject.file(it) }
+        ?: System.getenv("MOODIFY_KEYSTORE_FILE")?.let(::file)
+    val signingStorePassword = keystoreProps.getProperty("storePassword") ?: System.getenv("MOODIFY_KEYSTORE_PASSWORD")
+    val signingKeyAlias = keystoreProps.getProperty("keyAlias") ?: System.getenv("MOODIFY_KEY_ALIAS")
+    val signingKeyPassword = keystoreProps.getProperty("keyPassword") ?: System.getenv("MOODIFY_KEY_PASSWORD")
+    val canSignRelease = signingStoreFile?.exists() == true &&
+        !signingStorePassword.isNullOrBlank() && !signingKeyAlias.isNullOrBlank() && !signingKeyPassword.isNullOrBlank()
+
+    signingConfigs {
+        if (canSignRelease) {
+            create("release") {
+                storeFile = signingStoreFile
+                storePassword = signingStorePassword
+                keyAlias = signingKeyAlias
+                keyPassword = signingKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (canSignRelease) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

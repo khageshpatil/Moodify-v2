@@ -21,6 +21,10 @@ data class BrowseRoute(
 @Serializable data object DownloadsRoute
 @Serializable data object HistoryRoute
 @Serializable data object SettingsRoute
+@Serializable data object StatsRoute
+
+/** One of Moodify's moods (see MoodOptions): songs plus YouTube's matching mood playlists. */
+@Serializable data class MoodRoute(val id: String)
 
 /** What kind of page a browse endpoint opens, used for layout and labels. */
 enum class BrowseKind(val label: String) {

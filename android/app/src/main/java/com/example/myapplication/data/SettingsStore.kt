@@ -30,6 +30,16 @@ data class AppSettings(
     val showLyricsControls: Boolean = true,
     val showLyricsTranslation: Boolean = false,
     val showLyricsRomanization: Boolean = true,
+    /** Stream the smallest audio format (downloads stay full quality). */
+    val dataSaver: Boolean = false,
+    /** Downloads wait for Wi-Fi (an unmetered network). */
+    val downloadOnWifiOnly: Boolean = false,
+    /** Plays aren't recorded in History, and "For you" stops learning. */
+    val pauseHistory: Boolean = false,
+    /** Skip silent stretches (long intros/outros, gaps in live recordings). */
+    val skipSilence: Boolean = false,
+    /** Liked songs download automatically on Wi-Fi. */
+    val autoDownloadLiked: Boolean = false,
 )
 
 private val Context.moodifySettingsDataStore by preferencesDataStore(name = "moodify_settings")
@@ -63,6 +73,11 @@ class SettingsStore(private val context: Context) {
             showLyricsControls = values[LYRICS_CONTROLS]?.toBooleanStrictOrNull() ?: true,
             showLyricsTranslation = values[LYRICS_TRANSLATION]?.toBooleanStrictOrNull() ?: false,
             showLyricsRomanization = values[LYRICS_ROMANIZATION]?.toBooleanStrictOrNull() ?: true,
+            dataSaver = values[DATA_SAVER]?.toBooleanStrictOrNull() ?: false,
+            downloadOnWifiOnly = values[WIFI_ONLY_DOWNLOADS]?.toBooleanStrictOrNull() ?: false,
+            pauseHistory = values[PAUSE_HISTORY]?.toBooleanStrictOrNull() ?: false,
+            skipSilence = values[SKIP_SILENCE]?.toBooleanStrictOrNull() ?: false,
+            autoDownloadLiked = values[AUTO_DOWNLOAD_LIKED]?.toBooleanStrictOrNull() ?: false,
         )
     }
 
@@ -157,6 +172,26 @@ class SettingsStore(private val context: Context) {
         context.moodifySettingsDataStore.edit { values -> values[LYRICS_ROMANIZATION] = enabled.toString() }
     }
 
+    suspend fun setDataSaver(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[DATA_SAVER] = enabled.toString() }
+    }
+
+    suspend fun setDownloadOnWifiOnly(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[WIFI_ONLY_DOWNLOADS] = enabled.toString() }
+    }
+
+    suspend fun setPauseHistory(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[PAUSE_HISTORY] = enabled.toString() }
+    }
+
+    suspend fun setSkipSilence(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[SKIP_SILENCE] = enabled.toString() }
+    }
+
+    suspend fun setAutoDownloadLiked(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[AUTO_DOWNLOAD_LIKED] = enabled.toString() }
+    }
+
     suspend fun getVisitorData(): String? = context.moodifySettingsDataStore.data
         .first()[VISITOR_DATA]
         ?.trim()
@@ -187,5 +222,10 @@ class SettingsStore(private val context: Context) {
         val LYRICS_CONTROLS = stringPreferencesKey("lyrics_show_controls")
         val LYRICS_TRANSLATION = stringPreferencesKey("lyrics_show_translation")
         val LYRICS_ROMANIZATION = stringPreferencesKey("lyrics_show_romanization")
+        private val DATA_SAVER = stringPreferencesKey("data_saver")
+        private val WIFI_ONLY_DOWNLOADS = stringPreferencesKey("download_wifi_only")
+        private val PAUSE_HISTORY = stringPreferencesKey("pause_history")
+        private val SKIP_SILENCE = stringPreferencesKey("skip_silence")
+        private val AUTO_DOWNLOAD_LIKED = stringPreferencesKey("auto_download_liked")
     }
 }

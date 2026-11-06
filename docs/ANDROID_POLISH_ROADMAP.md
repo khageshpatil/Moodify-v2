@@ -29,6 +29,12 @@ These are left out on purpose: the debug screenshots and XML dumps lying around 
 
 ## Sprint 1: Fix what's broken (P0)
 
+> **Status: done 2026-11-06** (emulator-verified, 70 unit tests green, not yet committed). Also pulled forward: the new song-menu order (2.6), "Go to album", hiding sort chips for a single playlist (3.4), and not repeating the top result in Songs (3.5).
+> **Changed from the plan:**
+> - Songs credited to several artists open the first artist; there's no picker.
+> - The "Search" key on the emulator's hardware keyboard doesn't submit; the on-screen keyboard does.
+> **Found while testing (new):** the All search mixes in TV clips and fan videos (e.g. "Indian Idol"). Added to Sprint 3.5.
+
 **Goal:** nothing in the app misleads or blocks you.
 
 ### 1.1 Search filters (M)
@@ -103,6 +109,11 @@ These are left out on purpose: the debug screenshots and XML dumps lying around 
 
 ## Sprint 2: Make it consistent (P1)
 
+> **Status: done 2026-11-06** (emulator-verified).
+> **Changed from the plan:**
+> - Discover previews never pause your music. They play only while your music is paused (your decision).
+> - The freed player button became **Save** (to playlist), because Like and Lyrics already had their own buttons.
+
 **Goal:** the same idea works the same way everywhere, and Library holds what you care about.
 
 ### 2.1 One mood system (L)
@@ -170,6 +181,12 @@ A profile/settings icon in the Home header and in the Library top bar. Today Set
 
 ## Sprint 3: Finishing touches (P2)
 
+> **Status: done 2026-11-06** (emulator-verified).
+> **Also done:**
+> - Podcast episodes are filtered out of search.
+> - YouTube's Home chips that duplicate a mood are hidden.
+> - Playlist songs no longer show their length as part of the artist name.
+
 **Goal:** it looks and feels deliberate, not generated.
 
 ### 3.1 Variety on Home (M)
@@ -211,6 +228,7 @@ A profile/settings icon in the Home header and in the Library top bar. Today Set
 ### 3.5 No duplicate search results (S)
 - The top result isn't repeated as the first song.
 - Results are de-duplicated by song ID, then by matching title and artist (for example "Whispers of Bliss" ×2).
+- In the All results, push TV clips and fan uploads below official songs, or filter them out.
 
 ### 3.6 Motion, haptics and wording (S)
 - One consistent animation for lists and artwork everywhere.
@@ -224,6 +242,9 @@ A profile/settings icon in the Home header and in the Library top bar. Today Set
 ---
 
 ## Sprint 4: New features (pick what you want)
+
+> **Status: done 2026-11-06**, except for **4.4 (home-screen widget)** and **4.5 (Android Auto)**. Both need new background-service code that can't be tested properly on the emulator, so they're deferred.
+> - 4.1 shipped as "Your listening" (all-time play counts, not monthly).
 
 Ideas that would make Moodify feel complete. Each one is separate, so pick any.
 
@@ -243,6 +264,17 @@ Ideas that would make Moodify feel complete. Each one is separate, so pick any.
 ---
 
 ## Sprint 5: Ready to release
+
+> **Status: done 2026-11-06**, except for two items:
+> - **The baseline profile (5.2) is deferred.** It needs its own benchmark module. The libraries' own start-up profiles already ship with the app.
+> - **Cancelling a download mid-way** (5.5) is verified in code only. On the emulator, downloads finished before they could be cancelled.
+>
+> **Verified on the emulator:**
+> - The 10 on-device tests pass. They caught a real bug: the lyrics cache purge was wiping imported legacy lyrics.
+> - Repeat-one replays the song.
+> - An interrupted download resumes and completes.
+> - The first-run screens work.
+> - The signed release build works.
 
 ### 5.1 Signed release APK (S)
 - Create a signing key (you keep it, and it must be backed up: without it you can never update the app).

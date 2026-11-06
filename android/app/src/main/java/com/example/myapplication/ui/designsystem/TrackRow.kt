@@ -71,6 +71,7 @@ fun TrackRow(
         label = "rowTitle",
     )
 
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -79,7 +80,10 @@ fun TrackRow(
             .background(if (isCurrent) colors.primary.copy(alpha = 0.08f) else Color.Transparent)
             .pressable(
                 pressedScale = 0.98f,
-                onLongClick = { actions.openTrackMenu(track) },
+                onLongClick = {
+                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    actions.openTrackMenu(track)
+                },
                 onClick = onClick ?: { actions.play(track, queueContext) },
             )
             .semantics {
@@ -166,7 +170,10 @@ fun TrackRow(
             }
         }
         if (showLike) {
-            IconButton(onClick = { actions.toggleFavorite(track) }) {
+            IconButton(onClick = {
+                haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                actions.toggleFavorite(track)
+            }) {
                 LikeIcon(isFavorite)
             }
         }

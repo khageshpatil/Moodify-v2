@@ -65,3 +65,13 @@ coverage/
 # Misc
 # ========================
 *.tsbuildinfo
+
+# ========================
+# Local debug captures (emulator screenshots, UI dumps)
+# ========================
+.debug-shots/
+/moodify-*.png
+/moodify-*.xml
+/android/moodify-*.png
+/android/moodify-*.xml
+.impeccable/

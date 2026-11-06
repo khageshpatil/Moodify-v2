@@ -18,13 +18,15 @@ class LyricsStore(
 
     /** Visible for tests: completes the one-time legacy import. */
     suspend fun ensureImported() = legacyImport.run {
-        migrateLegacySnapshot()
-        // Lyrics cached before matching version 2 may belong to another song or
-        // carry another recording's timings; drop them once so they are re-fetched.
+        // Lyrics cached in Room before matching version 2 may belong to another
+        // song or carry another recording's timings; drop them once so they are
+        // re-fetched. This runs before the legacy import so it never wipes the
+        // entries that import is about to move across.
         if (preferences.getInt(KEY_MATCHING_VERSION, 1) < MATCHING_VERSION) {
             withContext(Dispatchers.IO) { dao.clearLyrics() }
             preferences.edit().putInt(KEY_MATCHING_VERSION, MATCHING_VERSION).apply()
         }
+        migrateLegacySnapshot()
     }
 
     suspend fun read(trackId: String): LyricsDocument? = withContext(Dispatchers.IO) {

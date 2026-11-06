@@ -80,6 +80,7 @@ import com.moodify.app.ui.designsystem.QuickPicksGrid
 import com.moodify.app.ui.designsystem.SectionHeader
 import com.moodify.app.ui.designsystem.SkeletonShelf
 import com.moodify.app.ui.designsystem.musicOnly
+import com.moodify.app.ui.designsystem.isArtist
 import com.moodify.app.ui.designsystem.sharedArtwork
 import com.moodify.app.ui.designsystem.MoodOption
 import com.moodify.app.ui.designsystem.orderedMoods
@@ -114,6 +115,10 @@ data class HomeUiState(
     val selectedChip: com.moodify.app.data.CatalogChip? = null,
     val canLoadMore: Boolean = false,
     val isLoadingMore: Boolean = false,
+    /** Albums, playlists and artists saved to the Library. */
+    val saved: List<com.moodify.app.data.CatalogItem> = emptyList(),
+    /** Albums and playlists you recently played from. */
+    val recent: List<com.moodify.app.data.CatalogItem> = emptyList(),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,10 +133,15 @@ fun HomeScreen(
     onSelectChip: (com.moodify.app.data.CatalogChip) -> Unit = {},
     onLoadMore: () -> Unit = {},
     onRefreshDiscover: () -> Unit = {},
+    scrollToTopKey: Int = 0,
+    onPreview: (com.moodify.app.data.Track?) -> Unit = {},
+    onOpenMood: (MoodOption) -> Unit = {},
+    previewingId: String? = null,
 ) {
     val actions = LocalMoodifyActions.current
     val favoriteIds = com.moodify.app.ui.designsystem.LocalFavoriteIds.current
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    com.moodify.app.ui.designsystem.ScrollToTopEffect(scrollToTopKey, listState)
     // Keep Home endless: fetch the next page of shelves near the bottom.
     val latestLoadMore by androidx.compose.runtime.rememberUpdatedState(onLoadMore)
     val nearEnd by androidx.compose.runtime.remember {
@@ -167,16 +177,16 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.section),
             ) {
                 item(key = "header") {
-                    HomeHeader(onOpenSearch = onOpenSearch, onOpenSettings = onOpenSettings)
+                    HomeHeader(onOpenSettings = onOpenSettings)
                 }
                 item(key = "moods") {
-                    MoodRow(moods = orderedMoods(state.favoriteMoods), onMood = { actions.searchFor(it.query) })
+                    MoodRow(moods = orderedMoods(state.favoriteMoods), onMood = onOpenMood)
                 }
                 if (state.isStale) {
                     item(key = "offline") { OfflineBanner(onRetry = onRefresh) }
                     if (state.offlineTracks.isNotEmpty()) {
                         item(key = "offlineShelf") {
-                            TrackShelf(title = "Available offline", eyebrow = "Your downloads", tracks = state.offlineTracks)
+                            TrackShelf(title = "Available offline", tracks = state.offlineTracks)
                         }
                     }
                 }
@@ -192,9 +202,13 @@ fun HomeScreen(
                                     onLike = { track -> if (track.id !in favoriteIds) actions.toggleFavorite(track) },
                                     onQueue = actions.addToQueue,
                                     onRefresh = onRefreshDiscover,
+                                    onUnlike = { track -> if (track.id in favoriteIds) actions.toggleFavorite(track) },
+                                    onPreview = onPreview,
+                                    musicPlaying = com.moodify.app.ui.designsystem.LocalNowPlaying.current.isPlaying,
+                                    previewingId = previewingId,
                                 )
                             } else {
-                                SectionHeader(title = "Quick picks", eyebrow = "Start here")
+                                SectionHeader(title = "Quick picks")
                                 Spacer(Modifier.height(Spacing.md))
                                 QuickPicksGrid(tracks = state.quickPicks)
                             }
@@ -203,17 +217,17 @@ fun HomeScreen(
                 }
                 if (state.keepListening.isNotEmpty()) {
                     item(key = "keepListening") {
-                        TrackShelf(title = "Keep listening", eyebrow = "On repeat", tracks = state.keepListening)
+                        TrackShelf(title = "Keep listening", tracks = state.keepListening, style = ShelfStyle.ROWS)
                     }
                 }
                 if (state.becauseArtist != null && state.becauseTracks.isNotEmpty()) {
                     item(key = "because") {
-                        TrackShelf(title = "Because you like ${state.becauseArtist}", eyebrow = "Similar artists", tracks = state.becauseTracks)
+                        TrackShelf(title = "More like ${state.becauseArtist}", tracks = state.becauseTracks)
                     }
                 }
                 if (state.forgotten.isNotEmpty()) {
                     item(key = "forgotten") {
-                        TrackShelf(title = "Forgotten favourites", eyebrow = "Remember these?", tracks = state.forgotten)
+                        TrackShelf(title = "Forgotten favourites", tracks = state.forgotten, style = ShelfStyle.LARGE)
                     }
                 }
                 if (state.pinnedPlaylists.isNotEmpty()) {
@@ -232,14 +246,57 @@ fun HomeScreen(
                         }
                     }
                 }
+                if (state.recent.isNotEmpty()) {
+                    item(key = "recentlyPlayed") {
+                        Column {
+                            SectionHeader(title = "Recently played")
+                            Spacer(Modifier.height(Spacing.md))
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = Spacing.gutter),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+                            ) {
+                                items(state.recent, key = { "recent:${it.id}" }) { item ->
+                                    com.moodify.app.ui.designsystem.MediaCard(
+                                        item = item,
+                                        onClick = { item.endpoint?.let { actions.openBrowse(it, item.title) } },
+                                        width = 128.dp,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                if (state.saved.isNotEmpty()) {
+                    item(key = "fromLibrary") {
+                        Column {
+                            SectionHeader(title = "From your library")
+                            Spacer(Modifier.height(Spacing.md))
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = Spacing.gutter),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+                            ) {
+                                items(state.saved.take(12), key = { "lib:${it.id}" }) { item ->
+                                    com.moodify.app.ui.designsystem.MediaCard(
+                                        item = item,
+                                        onClick = { item.endpoint?.let { actions.openBrowse(it, item.title) } },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 if (state.chips.isNotEmpty()) {
                     item(key = "chips") {
                         HomeChipRow(chips = state.chips, selected = state.selectedChip, onSelect = onSelectChip)
                     }
                 }
                 when {
-                    sections.isNotEmpty() -> items(sections, key = { "shelf:${it.id}:${it.title}" }) { section ->
-                        CatalogShelf(section)
+                    sections.isNotEmpty() -> {
+                        // Feature the first shelf of playlists/albums with bigger cards.
+                        val featuredId = sections.firstOrNull { s -> s.layout == "carousel" && s.items.none { it.track != null } && s.items.none { it.isArtist } }?.id
+                        items(sections, key = { "shelf:${it.id}:${it.title}" }) { section ->
+                            CatalogShelf(section, cardWidth = if (section.id == featuredId) 208.dp else 152.dp)
+                        }
                     }
                     state.isLoading -> items(3, key = { "skeleton$it" }) { SkeletonShelf() }
                     state.error != null -> item(key = "error") {
@@ -257,64 +314,35 @@ fun HomeScreen(
     }
 }
 
+/**
+ * One calm line: the greeting and Settings. Search has its own tab, so Home
+ * gives its first screen to music instead of a second search bar.
+ */
 @Composable
-private fun HomeHeader(onOpenSearch: () -> Unit, onOpenSettings: () -> Unit) {
-    val accent = LocalArtworkColors.current.accent
-    val onBackground = MaterialTheme.colorScheme.onBackground
-    Column(
+private fun HomeHeader(onOpenSettings: () -> Unit) {
+    Row(
         Modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(horizontal = Spacing.gutter)
-            .padding(top = Spacing.lg),
+            .padding(start = Spacing.gutter, end = Spacing.sm)
+            .padding(top = Spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    greeting().uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(Spacing.xs))
-                Text(
-                    "What's your\nmood today?",
-                    style = MaterialTheme.typography.displaySmall.merge(
-                        TextStyle(brush = Brush.linearGradient(listOf(onBackground, onBackground, accent))),
-                    ),
-                    modifier = Modifier.semantics { heading() },
-                )
-            }
-            IconButton(
-                onClick = onOpenSettings,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)),
-            ) {
-                Icon(Icons.Rounded.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurface)
-            }
-        }
-        Spacer(Modifier.height(Spacing.xl))
-        // A big, friendly entry into search. Tapping goes straight to the field.
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp)
+        Text(
+            greeting(),
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() },
+        )
+        IconButton(
+            onClick = onOpenSettings,
+            modifier = Modifier
+                .size(48.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                .pressable(pressedScale = 0.98f, onClick = onOpenSearch)
-                .semantics { contentDescription = "Search songs, artists, or a feeling" }
-                .padding(horizontal = Spacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)),
         ) {
-            Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.width(Spacing.md))
-            Text(
-                "Songs, artists, or a feeling…",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Icon(Icons.Rounded.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -368,13 +396,20 @@ private fun greeting(): String = when (java.util.Calendar.getInstance().get(java
     else -> "Good evening"
 }
 
-/** A horizontal shelf of songs as cards; playing one queues the whole shelf. */
+/** How a song shelf is drawn, so Home isn't one wall of identical cards. */
+private enum class ShelfStyle { CARDS, LARGE, ROWS }
+
+/** A horizontal shelf of songs; playing one queues the whole shelf. */
 @Composable
-private fun TrackShelf(title: String, eyebrow: String?, tracks: List<Track>) {
+private fun TrackShelf(title: String, tracks: List<Track>, style: ShelfStyle = ShelfStyle.CARDS) {
     val actions = LocalMoodifyActions.current
     Column {
-        SectionHeader(title = title, eyebrow = eyebrow)
+        SectionHeader(title = title)
         Spacer(Modifier.height(Spacing.md))
+        if (style == ShelfStyle.ROWS) {
+            QuickPicksGrid(tracks = tracks)
+            return@Column
+        }
         LazyRow(
             contentPadding = PaddingValues(horizontal = Spacing.gutter),
             horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
@@ -389,6 +424,7 @@ private fun TrackShelf(title: String, eyebrow: String?, tracks: List<Track>) {
                         track = track,
                     ),
                     onClick = { actions.play(track, tracks) },
+                    width = if (style == ShelfStyle.LARGE) 208.dp else 152.dp,
                 )
             }
         }

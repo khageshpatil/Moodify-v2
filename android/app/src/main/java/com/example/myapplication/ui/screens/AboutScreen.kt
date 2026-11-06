@@ -33,6 +33,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
@@ -79,8 +81,31 @@ import java.util.Locale
 private const val APK_DOWNLOAD_URL =
     "https://github.com/khageshpatil/Moodify-v2/releases/latest/download/Moodify.apk"
 
-private val REGIONS = listOf("US", "GB", "IN", "CA", "AU", "DE", "FR", "ES", "BR", "MX", "JP", "KR")
-private val LANGUAGES = listOf("en" to "English", "hi" to "हिन्दी", "es" to "Español", "fr" to "Français", "de" to "Deutsch", "pt" to "Português", "ja" to "日本語", "ko" to "한국어")
+/** Languages YouTube Music serves its catalogue in (code to native name). */
+private val LANGUAGES = listOf(
+    "en" to "English", "hi" to "हिन्दी", "bn" to "বাংলা", "ta" to "தமிழ்", "te" to "తెలుగు", "mr" to "मराठी",
+    "gu" to "ગુજરાતી", "kn" to "ಕನ್ನಡ", "ml" to "മലയാളം", "pa" to "ਪੰਜਾਬੀ", "ur" to "اردو",
+    "es" to "Español", "fr" to "Français", "de" to "Deutsch", "pt" to "Português", "it" to "Italiano",
+    "ja" to "日本語", "ko" to "한국어", "id" to "Bahasa Indonesia", "tr" to "Türkçe", "ar" to "العربية", "ru" to "Русский",
+)
+
+/** Space used on the device, for Settings › Storage. */
+data class StorageUsage(
+    val downloadBytes: Long = 0L,
+    val audioCacheBytes: Long = 0L,
+    val lyricsCount: Int = 0,
+)
+
+// Binary units, matching how the cache limit (150 MB = 150 × 1024²) is set.
+private fun formatBytes(bytes: Long): String = when {
+    bytes >= 1L shl 30 -> "%.1f GB".format(bytes / (1L shl 30).toDouble())
+    bytes >= 1L shl 20 -> "%.0f MB".format(bytes / (1L shl 20).toDouble())
+    bytes >= 1L shl 10 -> "%.0f KB".format(bytes / (1L shl 10).toDouble())
+    else -> "$bytes B"
+}
+
+private fun countryName(code: String): String =
+    Locale("", code).getDisplayCountry(Locale.getDefault()).ifBlank { code }
 
 class SettingsActions(
     val onBack: () -> Unit,
@@ -93,7 +118,22 @@ class SettingsActions(
     val onClearRecentSearches: () -> Unit,
     val onAutoplay: (Boolean) -> Unit = {},
     val onNormalizeVolume: (Boolean) -> Unit = {},
+    val onDataSaver: (Boolean) -> Unit = {},
+    val onSkipSilence: (Boolean) -> Unit = {},
+    val onAutoDownloadLiked: (Boolean) -> Unit = {},
+    val onDownloadOnWifiOnly: (Boolean) -> Unit = {},
+    val onPauseHistory: (Boolean) -> Unit = {},
+    val onClearHistory: () -> Unit = {},
+    val onRefreshStorage: () -> Unit = {},
+    val onClearAudioCache: () -> Unit = {},
+    val onClearLyricsCache: () -> Unit = {},
+    val onClearCatalogCache: () -> Unit = {},
+    val onExportBackup: (android.net.Uri) -> Unit = {},
+    val onImportBackup: (android.net.Uri) -> Unit = {},
 )
+
+/** The last crash report kept on the device, if any. */
+private fun lastCrash(context: android.content.Context): String? = com.moodify.app.data.CrashLog.read(context)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -103,11 +143,20 @@ fun SettingsScreen(
     downloadCount: Int,
     bottomPadding: Dp,
     actions: SettingsActions,
+    storage: StorageUsage = StorageUsage(),
 ) {
     val context = LocalContext.current
     var showNotices by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
-    var customLocale by remember { mutableStateOf(false) }
+    var picker by remember { mutableStateOf<String?>(null) }
+    var confirmClearHistory by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { actions.onRefreshStorage() }
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri -> uri?.let(actions.onExportBackup) }
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri -> uri?.let(actions.onImportBackup) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -149,50 +198,20 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(Spacing.md))
-                Text("Country", style = MaterialTheme.typography.labelLarge)
-                // Keep "automatic" when only the language changes.
-                val regionChoice = if (settings.regionIsAutomatic) SettingsStore.AUTOMATIC_REGION else settings.region
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    FilterChip(
-                        selected = settings.regionIsAutomatic,
-                        onClick = { actions.onLocale(settings.language, SettingsStore.AUTOMATIC_REGION) },
-                        label = {
-                            Text(if (settings.regionIsAutomatic) "📍 Automatic · ${flagOf(settings.region)} ${settings.region}" else "📍 Automatic")
-                        },
-                        shape = CircleShape,
-                    )
-                    REGIONS.forEach { code ->
-                        FilterChip(
-                            selected = !settings.regionIsAutomatic && settings.region.equals(code, ignoreCase = true),
-                            onClick = { actions.onLocale(settings.language, code) },
-                            label = { Text("${flagOf(code)} $code") },
-                            shape = CircleShape,
-                        )
-                    }
-                }
                 Spacer(Modifier.height(Spacing.sm))
-                Text("Language", style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    LANGUAGES.forEach { (code, name) ->
-                        FilterChip(
-                            selected = settings.language.equals(code, ignoreCase = true),
-                            onClick = { actions.onLocale(code, regionChoice) },
-                            label = { Text(name) },
-                            shape = CircleShape,
-                        )
-                    }
-                }
-                TextButton(onClick = { customLocale = !customLocale }) { Text(if (customLocale) "Hide custom" else "Other country or language…") }
-                AnimatedVisibility(customLocale) {
-                    var language by remember(settings.language) { mutableStateOf(settings.language) }
-                    var region by remember(settings.region) { mutableStateOf(settings.region) }
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(language, { language = it.take(8) }, label = { Text("Language") }, singleLine = true, modifier = Modifier.weight(1f))
-                        OutlinedTextField(region, { region = it.take(2) }, label = { Text("Country") }, singleLine = true, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { actions.onLocale(language, region) }) { Text("Apply") }
-                    }
-                }
+                PickerRow(
+                    label = "Country",
+                    value = buildString {
+                        if (settings.regionIsAutomatic) append("Automatic · ")
+                        append(flagOf(settings.region)).append(' ').append(countryName(settings.region))
+                    },
+                    onClick = { picker = "country" },
+                )
+                PickerRow(
+                    label = "Language",
+                    value = LANGUAGES.firstOrNull { it.first.equals(settings.language, ignoreCase = true) }?.second ?: settings.language,
+                    onClick = { picker = "language" },
+                )
             }
         }
 
@@ -200,6 +219,35 @@ fun SettingsScreen(
             SettingsGroup("Playback") {
                 ToggleRow("Autoplay similar songs when the queue ends", settings.autoplay, actions.onAutoplay)
                 ToggleRow("Even out volume between songs", settings.normalizeVolume, actions.onNormalizeVolume)
+                ToggleRow(
+                    "Data saver",
+                    settings.dataSaver,
+                    actions.onDataSaver,
+                    description = "Streams at lower quality to use less mobile data. Downloads stay high quality.",
+                )
+                ToggleRow(
+                    "Skip silence",
+                    settings.skipSilence,
+                    actions.onSkipSilence,
+                    description = "Jumps over silent stretches, like long gaps between live tracks.",
+                )
+            }
+        }
+
+        item(key = "downloads") {
+            SettingsGroup("Downloads") {
+                ToggleRow(
+                    "Download on Wi-Fi only",
+                    settings.downloadOnWifiOnly,
+                    actions.onDownloadOnWifiOnly,
+                    description = "New downloads wait until you're on Wi-Fi.",
+                )
+                ToggleRow(
+                    "Download liked songs",
+                    settings.autoDownloadLiked,
+                    actions.onAutoDownloadLiked,
+                    description = "Songs you like download automatically on Wi-Fi, lyrics included.",
+                )
             }
         }
 
@@ -223,12 +271,46 @@ fun SettingsScreen(
         }
 
         item(key = "privacy") {
-            SettingsGroup("Storage & privacy") {
-                InfoRow("Downloaded songs", countLabel(downloadCount))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Recent searches", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                    TextButton(onClick = actions.onClearRecentSearches, enabled = settings.recentSearches.isNotEmpty()) { Text("Clear") }
+            SettingsGroup("Privacy") {
+                ToggleRow(
+                    "Pause listening history",
+                    settings.pauseHistory,
+                    actions.onPauseHistory,
+                    description = "Songs you play aren't added to History, and For you stops learning from them.",
+                )
+                ActionRow("Listening history", actionLabel = "Clear") { confirmClearHistory = true }
+                ActionRow("Recent searches", actionLabel = "Clear", enabled = settings.recentSearches.isNotEmpty(), onClick = actions.onClearRecentSearches)
+            }
+        }
+
+        item(key = "backup") {
+            SettingsGroup("Back up & restore") {
+                Text(
+                    "Save your playlists, liked songs and saved albums to a file, then restore them on another phone.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                ActionRow("Back up library", actionLabel = "Save file") {
+                    val day = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                    exportLauncher.launch("moodify-library-$day.json")
                 }
+                ActionRow("Restore from a backup", actionLabel = "Choose file") {
+                    importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                }
+            }
+        }
+
+        item(key = "storage") {
+            SettingsGroup("Storage") {
+                InfoRow("Downloads", "${countLabel(downloadCount)} · ${formatBytes(storage.downloadBytes)}")
+                ActionRow("Song cache", value = formatBytes(storage.audioCacheBytes), actionLabel = "Clear", enabled = storage.audioCacheBytes > 0, onClick = actions.onClearAudioCache)
+                ActionRow("Saved lyrics", value = if (storage.lyricsCount == 1) "1 song" else "${storage.lyricsCount} songs", actionLabel = "Clear", enabled = storage.lyricsCount > 0, onClick = actions.onClearLyricsCache)
+                ActionRow("Offline catalogue", value = "Home, charts and moods", actionLabel = "Clear", onClick = actions.onClearCatalogCache)
+                Text(
+                    "The song cache makes replays instant and is trimmed automatically at 150 MB.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -257,8 +339,71 @@ fun SettingsScreen(
                     Icon(if (showDiagnostics) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, contentDescription = null)
                 }
                 AnimatedVisibility(showDiagnostics) { DiagnosticsDetails(diagnostics) }
+                var crash by remember { mutableStateOf(lastCrash(context)) }
+                crash?.let { report ->
+                    Spacer(Modifier.height(Spacing.md))
+                    Text("Last crash", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        report.lineSequence().firstOrNull().orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row {
+                        TextButton(onClick = {
+                            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, report)
+                            context.startActivity(Intent.createChooser(send, "Share crash report"))
+                        }) { Text("Share report") }
+                        TextButton(onClick = {
+                            com.moodify.app.data.CrashLog.clear(context)
+                            crash = null
+                        }) { Text("Clear") }
+                    }
+                    Text(
+                        "Kept only on this phone. Nothing is sent unless you share it.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
+    }
+
+    when (picker) {
+        "country" -> OptionPickerSheet(
+            title = "Country",
+            options = remember {
+                listOf(SettingsStore.AUTOMATIC_REGION to "📍 Automatic (use where you are)") +
+                    Locale.getISOCountries().map { it to "${flagOf(it)}  ${countryName(it)}" }.sortedBy { it.second.drop(4) }
+            },
+            selected = if (settings.regionIsAutomatic) SettingsStore.AUTOMATIC_REGION else settings.region,
+            onSelect = { code -> actions.onLocale(settings.language, code); picker = null },
+            onDismiss = { picker = null },
+        )
+        "language" -> OptionPickerSheet(
+            title = "Language",
+            options = LANGUAGES,
+            selected = settings.language,
+            onSelect = { code ->
+                val regionChoice = if (settings.regionIsAutomatic) SettingsStore.AUTOMATIC_REGION else settings.region
+                actions.onLocale(code, regionChoice)
+                picker = null
+            },
+            onDismiss = { picker = null },
+        )
+    }
+
+    if (confirmClearHistory) {
+        AlertDialog(
+            onDismissRequest = { confirmClearHistory = false },
+            title = { Text("Clear listening history?") },
+            text = { Text("History and the play counts behind For you will be removed from this device.") },
+            confirmButton = {
+                TextButton(onClick = { actions.onClearHistory(); confirmClearHistory = false }) {
+                    Text("Clear", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmClearHistory = false }) { Text("Cancel") } },
+        )
     }
 
     if (showNotices) {
@@ -317,16 +462,117 @@ private fun ThemeOption(label: String, icon: ImageVector, selected: Boolean, mod
 }
 
 @Composable
-private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, description: String? = null) {
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 52.dp)
-            .pressable(pressedScale = 0.99f, role = Role.Switch) { onChange(!checked) },
+            .pressable(pressedScale = 0.99f, role = Role.Switch) { onChange(!checked) }
+            .padding(vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f).padding(end = Spacing.md)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            if (description != null) {
+                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+/** A setting that shows its value and opens a picker. */
+@Composable
+private fun PickerRow(label: String, value: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .pressable(pressedScale = 0.99f, onClick = onClick)
+            .semantics { role = Role.Button },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+        }
+        Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun ActionRow(label: String, value: String? = null, actionLabel: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            if (value != null) Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        TextButton(onClick = onClick, enabled = enabled) { Text(actionLabel) }
+    }
+}
+
+/** Searchable single-choice list in a bottom sheet (countries, languages). */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun OptionPickerSheet(
+    title: String,
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    val shown = remember(options, query) {
+        // The current choice sits near the top so it's easy to see and keep.
+        if (query.isBlank()) {
+            val current = options.filter { it.first.equals(selected, ignoreCase = true) }
+            val first = options.take(1).filterNot { it in current }
+            if (options.firstOrNull() in current) options else first + current + (options - current.toSet() - first.toSet())
+        } else options.filter { (code, name) ->
+            name.contains(query.trim(), ignoreCase = true) || code.equals(query.trim(), ignoreCase = true)
+        }
+    }
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(Modifier.padding(horizontal = Spacing.gutter)) {
+            Text(title, style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(Spacing.md))
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text("Search") },
+                singleLine = true,
+                shape = RoundedCornerShape(Radii.md),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(Spacing.sm))
+        }
+        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
+            items(shown.size) { index ->
+                val (code, name) = shown[index]
+                val isSelected = code.equals(selected, ignoreCase = true)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 52.dp)
+                        .pressable(pressedScale = 0.99f) { onSelect(code) }
+                        .semantics { this.selected = isSelected; role = Role.RadioButton }
+                        .padding(horizontal = Spacing.gutter),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (isSelected) Icon(Icons.Rounded.Check, contentDescription = "Selected", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+            item { Spacer(Modifier.height(Spacing.xl)) }
+        }
     }
 }
 

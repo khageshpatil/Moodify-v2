@@ -40,6 +40,8 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
             manager.downloadTrack(track) { progress ->
                 setProgressAsync(workDataOf(KEY_PROGRESS to progress))
             }
+            // Fetch (and cache) the lyrics now, so they work offline too.
+            runCatching { com.moodify.app.AppGraph.repository.getLyrics(track) }
             Result.success()
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -55,15 +57,23 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         private const val KEY_PROGRESS = "progress"
         private const val MAX_ATTEMPTS = 2
 
+        /** Settings › Download on Wi-Fi only: new downloads wait for an unmetered network. */
+        @Volatile
+        var wifiOnly: Boolean = false
+
         /** Queues [tracks] for download; songs already queued are left alone. */
-        fun enqueue(context: Context, tracks: List<Track>) {
+        fun enqueue(context: Context, tracks: List<Track>, wifiOnlyOverride: Boolean = false) {
             val gson = Gson()
             val workManager = WorkManager.getInstance(context)
             tracks.forEach { track ->
                 val json = gson.toJson(track.copy(isFavorite = false))
                 val request = OneTimeWorkRequestBuilder<DownloadWorker>()
                     .setInputData(workDataOf(KEY_TRACK to json))
-                    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                    .setConstraints(
+                        Constraints.Builder()
+                            .setRequiredNetworkType(if (wifiOnly || wifiOnlyOverride) NetworkType.UNMETERED else NetworkType.CONNECTED)
+                            .build(),
+                    )
                     .addTag(TAG)
                     // The track travels in a tag so the queue survives process death.
                     .addTag(TRACK_TAG_PREFIX + json)

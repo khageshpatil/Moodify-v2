@@ -74,15 +74,19 @@ class InnerTubeStreamResolver(
     // Per-instance in-flight dedup map: videoId/profile-attempt → running result
     private val inFlight = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Deferred<ResolvedStream>>()
 
-    suspend fun resolve(videoId: String, profileOffset: Int = 0): ResolvedStream = withContext(Dispatchers.IO) {
+    /**
+     * [dataSaver] prefers the smallest Opus stream (~50 kbps) for streaming on
+     * metered connections; downloads always resolve at full quality.
+     */
+    suspend fun resolve(videoId: String, profileOffset: Int = 0, dataSaver: Boolean = false): ResolvedStream = withContext(Dispatchers.IO) {
         // A changed offset intentionally selects the next InnerTube client
         // after a CDN 403 instead of returning the same signed URL again.
-        val requestKey = "$videoId:$profileOffset"
+        val requestKey = "$videoId:$profileOffset" + if (dataSaver) ":ds" else ""
         resolvedCache[requestKey]?.takeUnless { it.isExpired }?.let { return@withContext it }
         val deferred = inFlight.getOrPut(requestKey) {
             resolutionScope.async {
                 try {
-                    resolveUncached(videoId, profileOffset).also { resolvedCache[requestKey] = it }
+                    resolveUncached(videoId, profileOffset, dataSaver).also { resolvedCache[requestKey] = it }
                 } finally {
                     inFlight.remove(requestKey)
                 }
@@ -256,7 +260,7 @@ class InnerTubeStreamResolver(
         }
     }
 
-    private suspend fun resolveUncached(videoId: String, profileOffset: Int): ResolvedStream {
+    private suspend fun resolveUncached(videoId: String, profileOffset: Int, dataSaver: Boolean = false): ResolvedStream {
         var lastFailure: Throwable? = null
 
         ensureVisitorData()
@@ -295,7 +299,7 @@ class InnerTubeStreamResolver(
                         "poToken=${poToken != null}, signatureTimestamp=${signatureTimestamp ?: "none"}, " +
                         "visitorData=${!visitorData.isNullOrBlank()}",
                 )
-                val resolved = requestPlayer(profile, videoId, poToken, signatureTimestamp)
+                val resolved = requestPlayer(profile, videoId, poToken, signatureTimestamp, dataSaver)
                 Log.d(
                     TAG,
                     "Resolved stream via ${profile.name}: mime=${resolved.mimeType} " +
@@ -319,6 +323,7 @@ class InnerTubeStreamResolver(
         videoId: String,
         poToken: String?,
         signatureTimestamp: Int?,
+        dataSaver: Boolean = false,
     ): ResolvedStream {
         val locale = localeProvider().normalized()
         val request = Request.Builder()
@@ -415,8 +420,8 @@ class InnerTubeStreamResolver(
             // (usually itag 251) is still valid.  Keep bitrate as a quality
             // tiebreaker, never as the only selection rule.
             val orderedCandidates = candidates.sortedWith(
-                compareByDescending<AudioFormat> { formatPreference(it) }
-                    .thenByDescending { it.bitrate }
+                compareByDescending<AudioFormat> { formatPreference(it, dataSaver) }
+                    .thenBy { if (dataSaver) it.bitrate else -it.bitrate }
             )
 
             var selected: AudioFormat? = null
@@ -709,7 +714,11 @@ class InnerTubeStreamResolver(
             return null
         }
 
-        private fun formatPreference(format: AudioFormat): Int = when {
+        private fun formatPreference(format: AudioFormat, dataSaver: Boolean = false): Int = when {
+            // Data saver: smallest Opus first, then the small AAC stream.
+            dataSaver && format.itag == 249 -> 700
+            dataSaver && format.itag == 250 -> 650
+            dataSaver && format.itag == 139 -> 620
             format.itag == 251 -> 600
             format.itag == 250 -> 550
             format.itag == 249 -> 500

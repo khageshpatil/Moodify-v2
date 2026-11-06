@@ -76,6 +76,8 @@ class ListeningHistoryStore(
     suspend fun clear() = withContext(Dispatchers.IO) {
         ensureImported()
         dao.clearHistory()
+        // Play counts drive For you; clearing history forgets them too.
+        dao.clearPlayStats()
     }
 
     private fun toEntry(row: ListeningHistoryEntity): ListeningHistoryEntry? = runCatching {
