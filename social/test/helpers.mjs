@@ -88,12 +88,12 @@ export function memoryStore() {
   };
 }
 
-export function harness({ push = null, live = {} } = {}) {
+export function harness({ push = null, live = {}, vapidPublicKey = null } = {}) {
   let clock = 1_800_000_000;
   const store = memoryStore();
   const events = [];
   // `live`: code -> device ids connected right now (they get events, not pings).
-  const handle = createApi({ store, secret: SECRET, now: () => clock, push, notify: async (code, event) => { events.push({ code, ...event }); return live[code] ?? []; } });
+  const handle = createApi({ store, secret: SECRET, now: () => clock, push, vapidPublicKey, notify: async (code, event) => { events.push({ code, ...event }); return live[code] ?? []; } });
   const call = async (method, path, body, token) => {
     const response = await handle(new Request(`https://social.test${path}`, {
       method,

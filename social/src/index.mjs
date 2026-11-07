@@ -101,6 +101,7 @@ async function route(request, env, ctx) {
   const handle = createApi({
     store: d1Store(env.DB), secret: env.SESSION_SECRET, notify: notifyHub(env),
     push: pushFromEnv(env), defer: (work) => (ctx?.waitUntil ? ctx.waitUntil(work) : work),
+    vapidPublicKey: env.VAPID_PUBLIC_KEY || null,
   });
   try {
     return await handle(request);

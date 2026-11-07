@@ -3,3 +3,4 @@ node_modules/
 .dev.vars
 firebase-service-account.json
 *service-account*.json
+.deploy-secrets.txt

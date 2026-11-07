@@ -6,12 +6,15 @@ compatibility_date = "2025-06-01"
 # Before the first deploy: `wrangler d1 create moodify-social`, paste the id
 # below, run `wrangler d1 migrations apply moodify-social --remote`, and set
 # the secret with `wrangler secret put SESSION_SECRET`.
-# Chat wake-up pings (optional): `wrangler secret put FCM_SERVICE_ACCOUNT < firebase-service-account.json`.
+# Deployed by Cloudflare Workers Builds from GitHub (root directory `social`), deploy command:
+#   npx wrangler d1 migrations apply moodify-social --remote && npx wrangler deploy
+# Secrets (dashboard > Settings > Variables and Secrets): SESSION_SECRET, FCM_SERVICE_ACCOUNT
+# (Android pings), VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY (browser pings; scripts/vapid-keys.mjs).
 # Locally, FCM_SERVICE_ACCOUNT goes in .dev.vars (base64 of the JSON). Both files are git-ignored.
 [[d1_databases]]
 binding = "DB"
 database_name = "moodify-social"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "f57a4ad6-a00f-4bde-91f4-8270e1fb0b53"
 migrations_dir = "migrations"
 
 # One hub per user: live connections and "listening now" (memory only).

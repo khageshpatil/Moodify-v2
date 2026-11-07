@@ -51,15 +51,17 @@ Notifications are built on the device from the decrypted message: "Ravi: hey!", 
 | The app is open or was just closed | The live connection gets `msg.new`. The app fetches, decrypts and notifies, unless that conversation is on screen. |
 | The app is closed (Android) | A wake-up ping through Firebase Cloud Messaging (below). The phone fetches, decrypts and notifies within seconds. |
 | No Google Play services | A background check about every 15 minutes, which is Android's minimum. It uses no Google services. |
+| No Moodify tab open (browser) | A Web Push ping with **no payload at all**. The service worker (`/moodify-sw.js`) shows "New message from a friend"; tapping it opens Moodify, which fetches and decrypts. An open, visible tab shows its own notification with the friend's name instead. |
 
 **Wake-up pings.**
-- A device registers with `PUT /v1/push {device, platform: "fcm", token}`; `DELETE /v1/push/{device}` removes it. `device` is the same id as in §2. An account keeps at most 10 push devices.
+- A device registers with `PUT /v1/push {device, platform: "fcm", token}`, or a browser with `{device, platform: "webpush", subscription}` (only `endpoint` and `keys` are kept; https endpoints only). `DELETE /v1/push/{device}` removes it. Browsers get the server's key from `GET /v1/push/vapid`. `device` is the same id as in §2. An account keeps at most 10 push devices.
 - When a message is stored, the server pings the friend's devices that aren't connected live. Live connections say which device they are with `/v1/live?token=…&device=…`.
 - The ping is a high-priority FCM data message `{kind: "message"}`, with no sender, no content and no message id. It is collapsed (`collapse_key: inbox`) and expires after a day; the 15-minute check covers anything older.
 - The server forgets tokens FCM reports as unregistered. If another account registers the same token (a different Moodify code on the same phone), the old account stops pinging it.
 - Blocked senders cause no ping.
 - Android asks Firebase for a token only after you have a Moodify code, and deletes it when the code is deleted. No Firebase Analytics.
-- Server secret: `FCM_SERVICE_ACCOUNT`, the service-account JSON (raw or base64). Without it, nothing is pinged.
+- Browser pings are signed with VAPID (RFC 8292) and sent with `Urgency: high`, `Topic: inbox`, `TTL: 86400`; 404/410 forgets the subscription.
+- Server secrets: `FCM_SERVICE_ACCOUNT`, the service-account JSON (raw or base64); `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` (`social/scripts/vapid-keys.mjs`). Without them, that platform isn't pinged.
 
 Tapping a notification opens `moodify://chat/{code}`.
 
