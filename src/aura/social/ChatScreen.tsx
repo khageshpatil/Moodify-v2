@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePlayer } from '../PlayerContext';
 import { Artwork, EmptyState } from '../ui';
-import { MAX_TEXT, QUICK_REACTIONS, type ChatMessage } from './chatModel';
+import { MAX_TEXT, QUICK_REACTIONS, type ChatMessage, type SharedPlaylist } from './chatModel';
 import { useRoom } from './RoomProvider';
 import { Avatar, errorText, timeAgo, useToast } from './SocialScreens';
 import { useSocial } from './SocialProvider';
@@ -95,7 +95,8 @@ export function ChatScreen() {
                 onReact={(emoji) => { setPicker(null); if (friend) void act(() => social.react(peer, m.mid, emoji)); }}
                 onRetry={() => void act(() => social.retry(peer, m.mid))}
                 onCopy={() => { void navigator.clipboard?.writeText(m.text ?? ''); setPicker(null); say('Copied'); }}
-                onPlay={(t) => player.playTrack(t, [t])}
+                onPlay={(t, queue) => player.playTrack(t, queue)}
+                onSavePlaylist={(p) => { player.createPlaylist(p.name, p.tracks); say(`Saved “${p.name}” to your library`); }}
                 onJoin={(roomId) => { rooms.join(roomId); navigate('/room'); }}
               />
             </div>
@@ -124,10 +125,11 @@ export function ChatScreen() {
   );
 }
 
-function Bubble({ message: m, me, pickerOpen, onPicker, onReact, onRetry, onCopy, onPlay, onJoin }: {
+function Bubble({ message: m, me, pickerOpen, onPicker, onReact, onRetry, onCopy, onPlay, onJoin, onSavePlaylist }: {
   message: ChatMessage; me: string; pickerOpen: boolean;
   onPicker(open: boolean): void; onReact(emoji: string): void; onRetry(): void; onCopy(): void;
-  onPlay(t: NonNullable<ChatMessage['track']>): void; onJoin(roomId: string): void;
+  onPlay(t: NonNullable<ChatMessage['track']>, queue: NonNullable<ChatMessage['track']>[]): void; onJoin(roomId: string): void;
+  onSavePlaylist(p: SharedPlaylist): void;
 }) {
   const reactions = Object.entries(m.reactions);
   const counts = reactions.reduce<Record<string, number>>((all, [, e]) => ({ ...all, [e]: (all[e] ?? 0) + 1 }), {});
@@ -150,6 +152,22 @@ function Bubble({ message: m, me, pickerOpen, onPicker, onReact, onRetry, onCopy
               </div>
             )}
             {m.kind === 'room' && !m.track && <div className="aura-row"><Headphones size={22} /><div className="type-title-small">Listen together · {m.roomId}</div></div>}
+            {m.kind === 'playlist' && m.playlist && (
+              <div className="aura-row">
+                <Artwork src={m.playlist.tracks[0]?.albumArt} size={56} placeholder={m.playlist.name} />
+                <div className="aura-track-text">
+                  <div className="type-label-medium" style={{ opacity: 0.8 }}>Playlist · {m.playlist.tracks.length} {m.playlist.tracks.length === 1 ? 'song' : 'songs'}</div>
+                  <div className="type-title-small aura-ellipsis">{m.playlist.name}</div>
+                  <div className="type-body-small aura-ellipsis" style={{ opacity: 0.7 }}>{m.playlist.tracks.slice(0, 3).map((t) => t.title).join(', ')}</div>
+                </div>
+              </div>
+            )}
+            {m.kind === 'playlist' && m.playlist && (
+              <div className="aura-row" style={{ gap: 8 }}>
+                <button className="aura-btn aura-btn-tonal aura-chat-card-btn" onClick={() => onPlay(m.playlist!.tracks[0], m.playlist!.tracks)}><Play size={14} fill="currentColor" />Play</button>
+                {!m.fromMe && <button className="aura-btn aura-btn-tonal aura-chat-card-btn" onClick={() => onSavePlaylist(m.playlist!)}>Save to library</button>}
+              </div>
+            )}
             {m.kind === 'collection' && m.collection && (
               <div className="aura-row">
                 <Artwork src={m.collection.artworkUrl} size={56} round={m.collection.kind === 'artist'} placeholder={m.collection.browseId} />
@@ -159,7 +177,7 @@ function Bubble({ message: m, me, pickerOpen, onPicker, onReact, onRetry, onCopy
                 </div>
               </div>
             )}
-            {m.kind === 'track' && m.track && <button className="aura-btn aura-btn-tonal aura-chat-card-btn" onClick={() => onPlay(m.track!)}><Play size={14} fill="currentColor" />Play</button>}
+            {m.kind === 'track' && m.track && <button className="aura-btn aura-btn-tonal aura-chat-card-btn" onClick={() => onPlay(m.track!, [m.track!])}><Play size={14} fill="currentColor" />Play</button>}
             {m.kind === 'room' && m.roomId && <button className="aura-btn aura-btn-tonal aura-chat-card-btn" onClick={() => onJoin(m.roomId!)}><Headphones size={14} />Join</button>}
             {m.kind === 'collection' && m.collection && (
               <Link className="aura-btn aura-btn-tonal aura-chat-card-btn" to={`/browse/${m.collection.kind}/${encodeURIComponent(m.collection.browseId)}${m.collection.params ? `?params=${encodeURIComponent(m.collection.params)}` : ''}`}>Open</Link>

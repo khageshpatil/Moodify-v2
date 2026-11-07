@@ -76,4 +76,18 @@ class SharePayloadTest {
         val (track, _) = SharePayload.parse("""{"v":1,"type":"track","track":{"id":"JGwWNGJdvx8","title":"t","artist":"a","artworkUrl":"http://evil/x"}}""")!!
         assertEquals("", track!!.albumArtUrl)
     }
+
+    @Test
+    fun playlistsRoundTripAndAreCapped() {
+        val songs = (1..3).map { Track(id = "JGwWNGJdvx$it", title = "Song $it", artist = "Artist", albumArtUrl = "https://i.ytimg.com/$it.jpg", durationSeconds = 200) }
+        val parsed = SharePayload.parse(SharePayload.playlist("Road trip", songs, mid = "mid-0001-abcd"))!!
+        assertEquals("playlist", parsed.type)
+        assertEquals("mid-0001-abcd", parsed.mid)
+        assertEquals("Road trip", parsed.playlist?.name)
+        assertEquals(songs, parsed.playlist?.tracks)
+        val many = (1..400).map { Track(id = "JGwWNGJdv%03d".format(it).takeLast(11).padStart(11, 'x'), title = "S$it", artist = "A") }
+        assertEquals(SharePayload.MAX_PLAYLIST, SharePayload.parse(SharePayload.playlist("Big", many))!!.playlist?.tracks?.size)
+        // A playlist with no playable songs isn't shown.
+        assertNull(SharePayload.parse("""{"v":1,"type":"playlist","mid":"mid-0002-abcd","playlist":{"name":"x","tracks":[{"id":"bad"}]}}"""))
+    }
 }

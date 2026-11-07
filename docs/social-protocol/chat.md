@@ -17,6 +17,7 @@ Each message is one encrypted JSON object, `{"v": 1, "type", "mid", …}`.
 | `track` | `track {id, title, artist, album, artworkUrl, durationSeconds, artistId?}` | As in M2. |
 | `collection` | `collection {kind, browseId, title, artworkUrl, params?, pageType?}` | As in M2. |
 | `room` | `room {id, track?}` | A listening-room invite (`rooms.md` §1). |
+| `playlist` | `playlist {name, tracks: [track]}` | One of your own playlists, up to 300 songs. The friend can play it or save their own copy. |
 
 Messages from older versions have no `mid`. Clients use `srv-{server id}` for those. Unknown types, or a newer `v`, are skipped and not shown as garbage.
 
@@ -40,7 +41,7 @@ Both inboxes get a `msg.new` event over the live connection; your own copy is ma
 
 **Limits:**
 - Each sender can send 600 messages an hour in total; above that the server answers `429 slow_down`.
-- A message's ciphertext can be up to 16 KiB.
+- A message's ciphertext can be up to 96 KiB (room for a shared playlist).
 
 ## 3. Notifications
 
@@ -64,6 +65,8 @@ Notifications are built on the device from the decrypted message: "Ravi: hey!", 
 - Server secrets: `FCM_SERVICE_ACCOUNT`, the service-account JSON (raw or base64); `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` (`social/scripts/vapid-keys.mjs`). Without them, that platform isn't pinged.
 
 Tapping a notification opens `moodify://chat/{code}`.
+
+While Moodify is open on another screen, a new message shows as a small in-app banner (with **Open**) instead of a system notification.
 
 ## 4. Privacy
 

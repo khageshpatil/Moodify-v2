@@ -85,6 +85,7 @@ fun ChatScreen(
     onRetry: (String) -> Unit,
     onReact: (mid: String, emoji: String) -> Unit,
     onJoinRoom: (String) -> Unit,
+    onSavePlaylist: (String, List<Track>) -> Unit = { _, _ -> },
 ) {
     val actions = LocalMoodifyActions.current
     var draft by rememberSaveable { mutableStateOf("") }
@@ -108,8 +109,7 @@ fun ChatScreen(
                 val status = when {
                     state.friend == null -> "Not friends any more"
                     p?.online == true && p.playing && p.track != null -> "Listening to ${p.track.title}"
-                    p?.online == true -> "Online"
-                    else -> "End-to-end encrypted"
+                    else -> friendStatus(p)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (p?.online == true && p.playing) { EqualizerBars(playing = true, color = MaterialTheme.colorScheme.primary); Spacer(Modifier.width(4.dp)) }
@@ -134,15 +134,37 @@ fun ChatScreen(
                     )
                 }
             }
-            items(state.messages, key = { it.mid }) { message ->
+            if (state.messages.isNotEmpty()) {
+                item("e2e") {
+                    Text(
+                        "🔒 Messages and songs here are end-to-end encrypted. Only you and $name can read them.",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                    )
+                }
+            }
+            items(state.messages.size, key = { state.messages[it].mid }) { index ->
+                val message = state.messages[index]
+                val previous = state.messages.getOrNull(index - 1)
+                val next = state.messages.getOrNull(index + 1)
+                Column {
+                if (previous == null || !sameDay(previous.sentAtMs, message.sentAtMs)) DayLabel(message.sentAtMs)
+                // One time per run of messages from the same person within a few minutes.
+                val showTime = next == null || next.fromMe != message.fromMe ||
+                    next.sentAtMs - message.sentAtMs > GROUP_MS || !sameDay(message.sentAtMs, next.sentAtMs)
                 Bubble(
                     message = message,
+                    showTime = showTime,
+                    onSavePlaylist = onSavePlaylist,
                     onLongPress = { menuFor = message },
                     onRetry = { onRetry(message.mid) },
-                    onPlay = { track -> actions.play(track, listOf(track)) },
+                    onPlay = { track, queue -> actions.play(track, queue) },
                     onOpenCollection = { item -> item.endpoint?.let { actions.openBrowse(it, item.title) } },
                     onJoinRoom = onJoinRoom,
                 )
+                }
             }
         }
 
@@ -205,9 +227,11 @@ fun ChatScreen(
 @Composable
 private fun Bubble(
     message: ChatMessageEntity,
+    showTime: Boolean,
+    onSavePlaylist: (String, List<Track>) -> Unit,
     onLongPress: () -> Unit,
     onRetry: () -> Unit,
-    onPlay: (Track) -> Unit,
+    onPlay: (Track, List<Track>) -> Unit,
     onOpenCollection: (com.moodify.app.data.CatalogItem) -> Unit,
     onJoinRoom: (String) -> Unit,
 ) {
@@ -232,7 +256,14 @@ private fun Bubble(
                 )
                 parsed?.track != null -> Card(
                     art = parsed.track.albumArtUrl, key = parsed.track.id, title = parsed.track.title, subtitle = parsed.track.artist, color = onColor,
-                    action = "Play", onAction = { onPlay(parsed.track) },
+                    action = "Play", onAction = { onPlay(parsed.track, listOf(parsed.track)) },
+                )
+                parsed?.playlist != null -> PlaylistCard(
+                    playlist = parsed.playlist,
+                    color = onColor,
+                    mine = mine,
+                    onPlay = { parsed.playlist.tracks.firstOrNull()?.let { first -> onPlay(first, parsed.playlist.tracks) } },
+                    onSave = { onSavePlaylist(parsed.playlist.name, parsed.playlist.tracks) },
                 )
                 parsed?.collection != null -> Card(
                     art = parsed.collection.artworkUrl, key = parsed.collection.id, title = parsed.collection.title,
@@ -257,9 +288,9 @@ private fun Bubble(
         val meta = when (message.status) {
             SocialRepository.STATUS_SENDING -> "Sending…"
             SocialRepository.STATUS_FAILED -> "Not sent · tap to retry"
-            else -> DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(message.sentAtMs))
+            else -> if (showTime) DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(message.sentAtMs)) else null
         }
-        Text(
+        if (meta != null) Text(
             meta,
             style = MaterialTheme.typography.labelSmall,
             color = if (message.status == SocialRepository.STATUS_FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -291,6 +322,72 @@ private fun Card(
                 if (action == "Play") Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(action)
             }
+        }
+    }
+}
+
+private const val GROUP_MS = 5 * 60_000L
+
+private fun sameDay(a: Long, b: Long): Boolean {
+    val ca = java.util.Calendar.getInstance().apply { timeInMillis = a }
+    val cb = java.util.Calendar.getInstance().apply { timeInMillis = b }
+    return ca.get(java.util.Calendar.YEAR) == cb.get(java.util.Calendar.YEAR) && ca.get(java.util.Calendar.DAY_OF_YEAR) == cb.get(java.util.Calendar.DAY_OF_YEAR)
+}
+
+/** "Today", "Yesterday", or the date. */
+@Composable
+private fun DayLabel(atMs: Long) {
+    val now = System.currentTimeMillis()
+    val label = when {
+        sameDay(atMs, now) -> "Today"
+        sameDay(atMs, now - 24 * 60 * 60_000L) -> "Yesterday"
+        else -> DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(atMs))
+    }
+    Text(
+        label,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm),
+    )
+}
+
+/** A friend's playlist: play it, or keep your own copy. */
+@Composable
+private fun PlaylistCard(
+    playlist: SharePayload.SharedPlaylist,
+    color: androidx.compose.ui.graphics.Color,
+    mine: Boolean,
+    onPlay: () -> Unit,
+    onSave: () -> Unit,
+) {
+    Column(Modifier.widthIn(max = 280.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val first = playlist.tracks.firstOrNull()
+            ArtworkImage(url = first?.albumArtUrl.orEmpty(), contentDescription = null, placeholderKey = playlist.name, shape = RoundedCornerShape(Radii.sm), modifier = Modifier.size(56.dp))
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f, fill = false)) {
+                Text(playlist.name, style = MaterialTheme.typography.titleSmall, color = color, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "Playlist · ${playlist.tracks.size} ${if (playlist.tracks.size == 1) "song" else "songs"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = color.copy(alpha = 0.75f),
+                )
+                Text(
+                    playlist.tracks.take(3).joinToString(", ") { it.title },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = color.copy(alpha = 0.6f),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Spacer(Modifier.height(Spacing.sm))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            FilledTonalButton(onClick = onPlay, contentPadding = PaddingValues(horizontal = Spacing.md)) {
+                Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("Play")
+            }
+            if (!mine) FilledTonalButton(onClick = onSave, contentPadding = PaddingValues(horizontal = Spacing.md)) { Text("Save to library") }
         }
     }
 }

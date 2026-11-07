@@ -76,6 +76,7 @@ class ChatNotifier(private val context: Context) {
             "text" -> parsed.text.orEmpty()
             "track" -> "🎵 ${parsed.track?.title.orEmpty()}"
             "collection" -> "💿 ${parsed.collection?.title.orEmpty()}"
+            "playlist" -> "📃 ${parsed.playlist?.name.orEmpty()}"
             "room" -> "🎧 Invited you to listen together"
             else -> "New message"
         }

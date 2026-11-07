@@ -1,4 +1,5 @@
-import { Check, Copy, Link2, MessageCircle, MoreVertical, Play, Share2, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
+import { Check, Copy, Link2, MessageCircle, MoreVertical, Play, QrCode, Share2, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
+import type { Track } from '@/data/mockMusic';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { usePlayer } from '../PlayerContext';
 import { Artwork, EmptyState, SectionHeader, hueFor } from '../ui';
 import { preview } from './chatModel';
 import { useRoom } from './RoomProvider';
-import { useSocial, type LinkSession, type SharedItem, type SocialUser } from './SocialProvider';
+import { useSocial, type LinkSession, type SocialUser } from './SocialProvider';
 
 export const timeAgo = (seconds: number) => {
   const minutes = Math.max(0, Math.floor((Date.now() / 1000 - seconds) / 60));
@@ -204,6 +205,7 @@ export function FriendsScreen() {
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [menuFor, setMenuFor] = useState<SocialUser | null>(null);
+  const [showQr, setShowQr] = useState(false);
   const { toast, say } = useToast();
   const act = async (work: () => Promise<unknown>, ok?: string) => { try { await work(); if (ok) say(ok); } catch (e) { say(errorText(e)); } };
 
@@ -220,17 +222,13 @@ export function FriendsScreen() {
   const listening = social.lists.friends.filter((f) => social.presence[f.code]?.online && social.presence[f.code]?.playing && social.presence[f.code]?.track);
   const status = (f: SocialUser) => {
     const p = social.presence[f.code];
-    if (!p) return f.code;
+    if (!p) return 'Offline';
     if (p.online && p.playing && p.track) return `Listening to ${p.track.title}`;
     if (p.online) return 'Online';
     if (p.track && p.lastSeenAt) return `Played ${p.track.title} · ${timeAgo(p.lastSeenAt)}`;
+    if (p.lastSeenAt) return `Last seen ${timeAgo(p.lastSeenAt)}`;
     return 'Offline';
   };
-  const openShared = (item: SharedItem) => {
-    if (item.roomId) { rooms.join(item.roomId); navigate('/room'); return; }
-    if (item.track) player.playTrack(item.track, [item.track]);
-  };
-
   return (
     <div className="aura-page">
       <div className="aura-glow" />
@@ -244,8 +242,10 @@ export function FriendsScreen() {
           <div className="type-title-large aura-mono" style={{ color: 'var(--aura-primary)' }}>{social.code}</div>
           <div className="type-body-small aura-muted">{social.connected ? 'Connected' : social.serverConfigured ? 'Connecting…' : 'Friends go live soon.'}</div>
         </div>
+        <button className="aura-icon-btn" aria-label="Show your code as a QR" onClick={(e) => { e.preventDefault(); setShowQr(true); }}><QrCode size={20} /></button>
         <Link2 size={20} />
       </Link>
+      {showQr && social.code && <CodeQrDialog code={social.code} name={social.displayName} onClose={() => setShowQr(false)} />}
 
       {social.lists.incoming.length > 0 && (
         <section className="aura-section">
@@ -281,25 +281,6 @@ export function FriendsScreen() {
               </Link>
             );
           })}
-        </section>
-      )}
-
-      {social.shared.length > 0 && (
-        <section className="aura-section">
-          <SectionHeader title="Sent to you" />
-          {social.shared.slice(0, 20).map((item) => (
-            <div key={item.id} className="aura-track">
-              <button className="aura-row" style={{ flex: 1, minWidth: 0, textAlign: 'left' }} onClick={() => openShared(item)}>
-                <Artwork src={item.track?.albumArt || item.collection?.artworkUrl} size={52} placeholder={String(item.id)} />
-                <span className="aura-track-text">
-                  <span className="type-title-small aura-ellipsis" style={{ display: 'block' }}>{item.roomId ? 'Listen together' : item.track?.title || item.collection?.title}</span>
-                  <span className="type-body-small aura-muted aura-ellipsis" style={{ display: 'block' }}>{item.roomId ? `Room ${item.roomId}${item.track ? ` · ${item.track.title}` : ''}` : item.track?.artist || item.collection?.kind} · from {item.fromName} · {timeAgo(item.sentAt)}</span>
-                </span>
-              </button>
-              {item.roomId && <button className="aura-btn aura-btn-tonal" style={{ height: 36 }} onClick={() => openShared(item)}>Join</button>}
-              <button className="aura-icon-btn" aria-label="Dismiss" onClick={() => social.dismissShared(item.id)}><X size={18} /></button>
-            </div>
-          ))}
         </section>
       )}
 
@@ -370,6 +351,50 @@ function AddFriendDialog({ onClose, onAdd }: { onClose: () => void; onAdd: (code
           <button type="submit" className="aura-btn aura-btn-primary" disabled={code.replace(/[^0-9A-Z]/g, '').replace(/^MOOD/, '').length !== 8}>Send request</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/** Your code as a QR: a friend scans it in Moodify on their phone (Friends › Add › Scan). */
+function CodeQrDialog({ code, name, onClose }: { code: string; name: string; onClose: () => void }) {
+  const [qr, setQr] = useState('');
+  useEffect(() => { void QRCode.toDataURL(`moodify://add/${code}`, { margin: 1, width: 260, color: { dark: '#0B0B0F', light: '#FFFFFF' } }).then(setQr); }, [code]);
+  return (
+    <div className="aura-dialog-backdrop" onClick={onClose}>
+      <div className="aura-dialog" role="dialog" aria-label="Your Moodify code" onClick={(e) => e.stopPropagation()} style={{ justifyItems: 'center', textAlign: 'center' }}>
+        <div className="type-title-large">{name}</div>
+        <div className="type-title-medium aura-mono" style={{ color: 'var(--aura-primary)' }}>{code}</div>
+        {qr && <img src={qr} width={260} height={260} alt={`QR code for ${code}`} style={{ borderRadius: 16 }} />}
+        <div className="type-body-medium aura-muted">Your friend scans this in Moodify on their phone: Friends › Add › Scan.</div>
+        <button className="aura-btn aura-btn-tonal" onClick={onClose}>Done</button>
+      </div>
+    </div>
+  );
+}
+
+/** Pick a friend to send one of your playlists to (end-to-end encrypted, like chat). */
+export function SendPlaylistDialog({ name, tracks, onClose }: { name: string; tracks: Track[]; onClose: () => void }) {
+  const social = useSocial();
+  const { toast, say } = useToast();
+  const send = async (friend: SocialUser) => {
+    try { await social.sendPlaylist(friend, name, tracks); onClose(); } catch (e) { say(errorText(e)); }
+  };
+  return (
+    <div className="aura-dialog-backdrop" onClick={onClose}>
+      <div className="aura-dialog" role="dialog" aria-label={`Send ${name}`} onClick={(e) => e.stopPropagation()}>
+        <div className="type-title-large">Send “{name}”</div>
+        <div className="type-body-small aura-muted">End-to-end encrypted: only your friend can see it.</div>
+        {!social.code ? <Link to="/account" className="aura-btn aura-btn-primary">Get your code</Link>
+          : social.lists.friends.length === 0 ? <div className="aura-muted">Add friends on the Friends page first.</div>
+            : social.lists.friends.map((f) => (
+              <button key={f.code} className="aura-track" onClick={() => void send(f)}>
+                <Avatar user={f} />
+                <span className="type-title-medium">{f.displayName}</span>
+              </button>
+            ))}
+        <button className="aura-btn-text" onClick={onClose}>Cancel</button>
+        {toast}
+      </div>
     </div>
   );
 }

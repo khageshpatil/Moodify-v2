@@ -15,7 +15,8 @@ export const LIMITS = {
   requestsPerDay: 30,
   ignoreSeconds: 7 * DAY,
   noteLength: 60,
-  messageBytes: 16 * 1024,
+  /** Ciphertext characters per message: a shared playlist of up to 300 songs fits. */
+  messageBytes: 96 * 1024,
   messageRetentionSeconds: 30 * DAY,
   messagesPerPage: 100,
   linkSeconds: 5 * 60,
