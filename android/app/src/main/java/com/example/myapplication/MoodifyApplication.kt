@@ -14,6 +14,13 @@ class MoodifyApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        com.moodify.app.data.CrashLog.install(this, BuildConfig.VERSION_NAME)
+        if (BuildConfig.DEBUG) {
+            // Debug builds log slow work on the main thread (disk, network) so it gets fixed.
+            android.os.StrictMode.setThreadPolicy(
+                android.os.StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyLog().build(),
+            )
+        }
         AppGraph.init(this)
     }
 

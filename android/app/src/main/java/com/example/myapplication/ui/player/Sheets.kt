@@ -42,7 +42,12 @@ import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.AllInclusive
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -151,6 +156,9 @@ fun TrackActionsSheet(
     onRemoveDownload: () -> Unit,
     onMoreByArtist: () -> Unit,
     onStartRadio: () -> Unit = {},
+    /** Shown only when the song links to its album. */
+    onOpenAlbum: (() -> Unit)? = null,
+    onSendToFriend: (() -> Unit)? = null,
     extraActions: @Composable (dismiss: () -> Unit) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -158,21 +166,27 @@ fun TrackActionsSheet(
         Column(Modifier.navigationBarsPadding().padding(bottom = Spacing.md)) {
             SheetHeader(track)
             Spacer(Modifier.height(Spacing.sm))
-            SheetAction(Icons.Rounded.Radio, "Start radio", { onStartRadio(); onDismiss() })
             SheetAction(Icons.Rounded.PlaylistPlay, "Play next", { onPlayNext(); onDismiss() })
             SheetAction(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue", { onAddToQueue(); onDismiss() })
+            SheetAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Save to playlist", onSaveToPlaylist)
             SheetAction(
                 if (isFavorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                 if (isFavorite) "Remove from Liked songs" else "Like",
                 { onToggleFavorite(); onDismiss() },
             )
-            SheetAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Save to playlist", onSaveToPlaylist)
             if (isDownloaded) {
                 SheetAction(Icons.Rounded.DownloadDone, "Remove download", { onRemoveDownload(); onDismiss() })
             } else {
                 SheetAction(Icons.Rounded.Download, "Download", { onDownload(); onDismiss() })
             }
-            SheetAction(Icons.Rounded.Person, "More by ${track.artist}", { onMoreByArtist(); onDismiss() })
+            SheetAction(Icons.Rounded.Radio, "Start radio", { onStartRadio(); onDismiss() })
+            SheetAction(Icons.Rounded.Person, "Go to artist", { onMoreByArtist(); onDismiss() })
+            if (onOpenAlbum != null) {
+                SheetAction(Icons.Rounded.Album, "Go to album", { onOpenAlbum(); onDismiss() })
+            }
+            if (onSendToFriend != null) {
+                SheetAction(Icons.Rounded.Group, "Send to a friend", { onDismiss(); onSendToFriend() })
+            }
             SheetAction(Icons.Rounded.Share, "Share", { shareTrack(context, track); onDismiss() })
             extraActions(onDismiss)
         }
@@ -513,15 +527,37 @@ fun PlayerMoreSheet(
     onMoreByArtist: () -> Unit,
     onStartRadio: () -> Unit = {},
     onShowRelated: () -> Unit = {},
+    onOpenSleepTimer: () -> Unit = {},
+    onOpenEqualizer: () -> Unit = {},
+    roomId: String? = null,
+    onListenTogether: (() -> Unit)? = null,
 ) {
     val track = state.currentTrack ?: return
     val context = LocalContext.current
     var speed by remember { mutableFloatStateOf(state.playbackSpeed) }
     var pitch by remember { mutableFloatStateOf(state.pitch) }
+    var showSpeed by remember { mutableStateOf(false) }
+    val sleepOn = state.sleepTimerEndsAtMs != null || state.sleepAtEndOfTrack
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.navigationBarsPadding().padding(bottom = Spacing.lg)) {
             SheetHeader(track)
-            Column(Modifier.padding(horizontal = Spacing.xl, vertical = Spacing.sm)) {
+            Spacer(Modifier.height(Spacing.sm))
+            SheetAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Save to playlist", onSaveToPlaylist)
+            SheetAction(Icons.Rounded.Radio, "Start radio from this song", { onStartRadio(); onDismiss() })
+            SheetAction(Icons.Rounded.AllInclusive, "Similar music", { onShowRelated(); onDismiss() })
+            SheetAction(Icons.Rounded.Person, "Go to artist", { onMoreByArtist(); onDismiss() })
+            SheetAction(Icons.Rounded.Share, "Share", { shareTrack(context, track); onDismiss() })
+            onListenTogether?.let { open ->
+                SheetAction(Icons.Rounded.Group, roomId?.let { "Listening room · $it" } ?: "Listen together", { onDismiss(); open() })
+            }
+            SheetAction(Icons.Rounded.Bedtime, if (sleepOn) "Sleep timer (on)" else "Sleep timer", { onDismiss(); onOpenSleepTimer() })
+            val speedLabel = buildString {
+                append("Playback speed")
+                if (state.playbackSpeed != 1f || state.pitch != 1f) append(" (%.2fx)".format(state.playbackSpeed))
+            }
+            SheetAction(Icons.Rounded.Equalizer, "Equaliser", { onDismiss(); onOpenEqualizer() })
+            SheetAction(Icons.Rounded.Speed, speedLabel, { showSpeed = !showSpeed })
+            if (showSpeed) Column(Modifier.padding(horizontal = Spacing.xl, vertical = Spacing.sm)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Speed", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     Text("%.2fx".format(speed), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -554,11 +590,6 @@ fun PlayerMoreSheet(
                     valueRange = 0.5f..1.5f,
                 )
             }
-            SheetAction(Icons.Rounded.Radio, "Start radio from this song", { onStartRadio(); onDismiss() })
-            SheetAction(Icons.Rounded.AllInclusive, "Similar music", { onShowRelated(); onDismiss() })
-            SheetAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Save to playlist", onSaveToPlaylist)
-            SheetAction(Icons.Rounded.Person, "More by ${track.artist}", { onMoreByArtist(); onDismiss() })
-            SheetAction(Icons.Rounded.Share, "Share", { shareTrack(context, track); onDismiss() })
         }
     }
 }

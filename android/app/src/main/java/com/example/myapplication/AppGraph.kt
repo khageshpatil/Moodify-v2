@@ -32,6 +32,7 @@ object AppGraph {
     val playlistStore by lazy { PlaylistStore(app) }
     val persistence by lazy { PlaybackPersistence(app) }
     val lyricsStore by lazy { LyricsStore(app) }
+    val savedCollections by lazy { com.moodify.app.data.SavedCollectionsStore(app) }
 
     val repository by lazy {
         MusicRepository(
@@ -43,4 +44,17 @@ object AppGraph {
 
     val playbackManager: PlaybackManager
         get() = PlaybackManager.getInstance(app)
+
+    /** Friends, presence and shares (social M2). Created on first use. */
+    val social by lazy { com.moodify.app.data.social.SocialRepository(app, playbackManager.state) }
+
+    /** Listen together (social M4): one room at a time. */
+    val rooms by lazy {
+        com.moodify.app.data.social.RoomController(
+            client = social.socialClient,
+            playback = playbackManager,
+            token = { social.sessionToken() },
+            sendInvite = { friend, roomId, track -> social.sendRoomInvite(friend, roomId, track) },
+        )
+    }
 }

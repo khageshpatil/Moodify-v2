@@ -33,6 +33,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Search
@@ -92,6 +94,7 @@ enum class MainTab(val label: String, val selectedIcon: ImageVector, val icon: I
     HOME("Home", Icons.Rounded.Home, Icons.Outlined.Home),
     SEARCH("Search", Icons.Rounded.Search, Icons.Outlined.Search),
     LIBRARY("Library", Icons.Rounded.LibraryMusic, Icons.Outlined.LibraryMusic),
+    FRIENDS("Friends", Icons.Rounded.Group, Icons.Outlined.Group),
 }
 
 val MiniPlayerHeight = 64.dp
@@ -301,7 +304,8 @@ fun MoodifyNavBar(
         Row(Modifier.fillMaxSize()) {
             MainTab.entries.forEach { tab ->
                 val isSelected = tab == selected
-                Row(
+                // Icon over label: four tabs fit at any font size.
+                androidx.compose.foundation.layout.Column(
                     Modifier
                         .weight(1f)
                         .fillMaxHeight()
@@ -315,8 +319,8 @@ fun MoodifyNavBar(
                             role = Role.Tab
                             contentDescription = tab.label
                         },
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         if (isSelected) tab.selectedIcon else tab.icon,
@@ -324,10 +328,13 @@ fun MoodifyNavBar(
                         tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
                         modifier = Modifier.size(22.dp),
                     )
-                    if (isSelected) {
-                        Spacer(Modifier.width(6.dp))
-                        Text(tab.label, style = MaterialTheme.typography.labelLarge, color = colors.primary, maxLines = 1)
-                    }
+                    Text(
+                        tab.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isSelected) colors.primary else colors.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
                 }
             }
         }

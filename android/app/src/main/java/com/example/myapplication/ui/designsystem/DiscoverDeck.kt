@@ -24,12 +24,16 @@ import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.automirrored.rounded.Undo
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -84,9 +88,19 @@ fun DiscoverDeck(
     onQueue: (Track) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Undoes a like made from the deck (Undo after a right swipe). */
+    onUnlike: (Track) -> Unit = {},
+    /** Starts a short preview of a song, or stops it with null. */
+    onPreview: (Track?) -> Unit = {},
+    /** Your own music is playing, so previews stay quiet. */
+    musicPlaying: Boolean = false,
+    previewingId: String? = null,
 ) {
     val deckKey = remember(tracks) { tracks.joinToString { it.id }.hashCode() }
     var index by rememberSaveable(deckKey) { mutableIntStateOf(0) }
+    // Previews are opt-in per session, and never play over your music.
+    var listen by rememberSaveable { mutableStateOf(false) }
+    var lastVerdict by remember(deckKey) { mutableStateOf<DeckVerdict?>(null) }
     val remaining = tracks.drop(index)
     val top = remaining.firstOrNull()
     val isDark = LocalMoodifyIsDark.current
@@ -128,6 +142,7 @@ fun DiscoverDeck(
                     DeckVerdict.QUEUE -> onQueue(track)
                     DeckVerdict.SKIP -> Unit
                 }
+                lastVerdict = verdict
                 index += 1
                 armed = null
                 offsetX.snapTo(0f)
@@ -136,6 +151,13 @@ fun DiscoverDeck(
         }
 
         Column(Modifier.fillMaxWidth()) {
+            PreviewToggle(
+                listening = listen,
+                musicPlaying = musicPlaying,
+                previewing = top != null && previewingId == top.id,
+                onToggle = { listen = !listen },
+            )
+            Spacer(Modifier.height(Spacing.sm))
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -235,7 +257,7 @@ fun DiscoverDeck(
                     DeckButton(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue", MaterialTheme.colorScheme.tertiary) { commit(DeckVerdict.QUEUE) }
                     Surface(
                         shape = CircleShape,
-                        color = glow.accent,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .size(64.dp)
                             .shadow(14.dp, CircleShape, ambientColor = glow.glow, spotColor = glow.glow)
@@ -243,16 +265,28 @@ fun DiscoverDeck(
                             .semantics { contentDescription = "Play ${top.title}" },
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = glow.onAccent, modifier = Modifier.size(34.dp))
+                            Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(34.dp))
                         }
                     }
                     DeckButton(Icons.Rounded.Favorite, "Like", Color(0xFFE5579B)) { commit(DeckVerdict.LIKE) }
-                    Text(
-                        "${index + 1}/${tracks.size}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.width(44.dp),
-                    )
+                    val canUndo = index > 0
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(48.dp)) {
+                        if (canUndo) {
+                            androidx.compose.material3.IconButton(onClick = {
+                                val previous = tracks.getOrNull(index - 1)
+                                if (lastVerdict == DeckVerdict.LIKE && previous != null) onUnlike(previous)
+                                lastVerdict = null
+                                index -= 1
+                            }) {
+                                Icon(Icons.AutoMirrored.Rounded.Undo, contentDescription = "Undo last swipe", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Text(
+                            "${index + 1}/${tracks.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -260,6 +294,56 @@ fun DiscoverDeck(
     LaunchedEffect(deckKey) {
         offsetX.snapTo(0f)
         offsetY.snapTo(0f)
+    }
+    // The top card previews while listening is on and your music is quiet.
+    val topId = top?.id
+    LaunchedEffect(topId, listen, musicPlaying) {
+        if (listen && !musicPlaying && top != null) onPreview(top) else onPreview(null)
+    }
+    DisposableEffect(Unit) { onDispose { onPreview(null) } }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_STOP) { onPreview(null) }
+}
+
+@Composable
+private fun PreviewToggle(listening: Boolean, musicPlaying: Boolean, previewing: Boolean, onToggle: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            shape = CircleShape,
+            color = if (listening) colors.primary.copy(alpha = 0.16f) else colors.surfaceContainerHigh,
+            modifier = Modifier
+                .pressable(pressedScale = 0.95f, haptic = true, onClick = onToggle)
+                .semantics { contentDescription = if (listening) "Turn off previews" else "Hear previews" },
+        ) {
+            Row(Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (listening) Icons.AutoMirrored.Rounded.VolumeUp else Icons.AutoMirrored.Rounded.VolumeOff,
+                    contentDescription = null,
+                    tint = if (listening) colors.primary else colors.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(Spacing.xs))
+                Text(
+                    if (listening) "Previews on" else "Hear previews",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (listening) colors.primary else colors.onSurface,
+                )
+                if (previewing) {
+                    Spacer(Modifier.width(Spacing.sm))
+                    EqualizerBars(playing = true, color = colors.primary)
+                }
+            }
+        }
+        if (listening && musicPlaying) {
+            Spacer(Modifier.width(Spacing.sm))
+            Text(
+                "Plays when your music is paused",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

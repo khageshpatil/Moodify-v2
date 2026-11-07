@@ -140,7 +140,7 @@ fun PlaylistScreen(
                 TrackRow(
                     track = track,
                     queueContext = tracks,
-                    modifier = Modifier.padding(horizontal = Spacing.gutter - Spacing.sm),
+                    modifier = Modifier.animateItem().padding(horizontal = Spacing.gutter - Spacing.sm),
                 )
             }
         }
@@ -247,7 +247,7 @@ fun TrackCollectionScreen(
             TrackRow(
                 track = track,
                 queueContext = tracks,
-                modifier = Modifier.padding(horizontal = Spacing.gutter - Spacing.sm),
+                modifier = Modifier.animateItem().padding(horizontal = Spacing.gutter - Spacing.sm),
             )
         }
     }

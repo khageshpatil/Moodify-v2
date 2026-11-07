@@ -13,7 +13,10 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 data class AppSettings(
     val language: String = "en",
+    /** Effective catalogue country: the user's pick, or the detected one when [regionIsAutomatic]. */
     val region: String = "US",
+    /** True when the user has not picked a country and [region] follows [RegionDetector]. */
+    val regionIsAutomatic: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.DARK,
     val recentSearches: List<String> = emptyList(),
     /** Keep playing similar songs when the queue ends. */
@@ -27,16 +30,33 @@ data class AppSettings(
     val showLyricsControls: Boolean = true,
     val showLyricsTranslation: Boolean = false,
     val showLyricsRomanization: Boolean = true,
+    /** Stream the smallest audio format (downloads stay full quality). */
+    val dataSaver: Boolean = false,
+    /** Downloads wait for Wi-Fi (an unmetered network). */
+    val downloadOnWifiOnly: Boolean = false,
+    /** Plays aren't recorded in History, and "For you" stops learning. */
+    val pauseHistory: Boolean = false,
+    /** Skip silent stretches (long intros/outros, gaps in live recordings). */
+    val skipSilence: Boolean = false,
+    /** Liked songs download automatically on Wi-Fi. */
+    val autoDownloadLiked: Boolean = false,
+    /** Friends can see what you're playing (off = you look offline to them). */
+    val shareListening: Boolean = true,
 )
 
 private val Context.moodifySettingsDataStore by preferencesDataStore(name = "moodify_settings")
 
 /** Durable app configuration boundary; catalog clients read this rather than UI preferences. */
 class SettingsStore(private val context: Context) {
+    /** Country the device is in; read once per process (network/SIM rarely change mid-session). */
+    val detectedRegion: String by lazy { RegionDetector.detect(context) }
+
     val settings: Flow<AppSettings> = context.moodifySettingsDataStore.data.map { values ->
+        val pickedRegion = values[REGION]?.trim()?.uppercase()?.takeIf { it.length == 2 }
         AppSettings(
             language = values[LANGUAGE].orEmpty().ifBlank { "en" },
-            region = values[REGION].orEmpty().ifBlank { "US" },
+            region = pickedRegion ?: detectedRegion,
+            regionIsAutomatic = pickedRegion == null,
             // Older builds stored a dark-mode boolean; honour it until the
             // user picks a mode in the new three-way setting.
             themeMode = values[THEME_MODE]?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } }
@@ -55,14 +75,43 @@ class SettingsStore(private val context: Context) {
             showLyricsControls = values[LYRICS_CONTROLS]?.toBooleanStrictOrNull() ?: true,
             showLyricsTranslation = values[LYRICS_TRANSLATION]?.toBooleanStrictOrNull() ?: false,
             showLyricsRomanization = values[LYRICS_ROMANIZATION]?.toBooleanStrictOrNull() ?: true,
+            dataSaver = values[DATA_SAVER]?.toBooleanStrictOrNull() ?: false,
+            downloadOnWifiOnly = values[WIFI_ONLY_DOWNLOADS]?.toBooleanStrictOrNull() ?: false,
+            pauseHistory = values[PAUSE_HISTORY]?.toBooleanStrictOrNull() ?: false,
+            skipSilence = values[SKIP_SILENCE]?.toBooleanStrictOrNull() ?: false,
+            autoDownloadLiked = values[AUTO_DOWNLOAD_LIKED]?.toBooleanStrictOrNull() ?: false,
+            shareListening = values[SHARE_LISTENING]?.toBooleanStrictOrNull() ?: true,
         )
     }
 
+    /** [region] blank (or [AUTOMATIC_REGION]) means "follow the device's country". */
     suspend fun setLocale(language: String, region: String) {
         context.moodifySettingsDataStore.edit { values ->
             values[LANGUAGE] = language.lowercase().take(8).ifBlank { "en" }
-            values[REGION] = region.uppercase().take(2).ifBlank { "US" }
+            putRegion(values, region)
         }
+    }
+
+    /**
+     * One-time fix for installs made before automatic regions existed: the old
+     * default (and the onboarding pre-selection) copied the phone's language
+     * country, e.g. "US" on an English (United States) phone in India. Such a
+     * value was almost never a deliberate choice, so hand it back to detection.
+     */
+    suspend fun migrateRegionToAutomatic() {
+        context.moodifySettingsDataStore.edit { values ->
+            if (values[REGION_AUTO_MIGRATED] == "true") return@edit
+            val stored = values[REGION]
+            if (stored == null || stored.equals(java.util.Locale.getDefault().country, ignoreCase = true)) {
+                values.remove(REGION)
+            }
+            values[REGION_AUTO_MIGRATED] = "true"
+        }
+    }
+
+    private fun putRegion(values: androidx.datastore.preferences.core.MutablePreferences, region: String) {
+        val code = region.trim().uppercase()
+        if (code.isBlank() || code == AUTOMATIC_REGION) values.remove(REGION) else values[REGION] = code.take(2)
     }
 
     suspend fun setAutoplay(enabled: Boolean) {
@@ -76,7 +125,7 @@ class SettingsStore(private val context: Context) {
     suspend fun completeOnboarding(language: String, region: String, moods: List<String>) {
         context.moodifySettingsDataStore.edit { values ->
             values[LANGUAGE] = language.lowercase().take(8).ifBlank { "en" }
-            values[REGION] = region.uppercase().take(2).ifBlank { "US" }
+            putRegion(values, region)
             values[FAVORITE_MOODS] = moods.joinToString(",")
             values[ONBOARDING_DONE] = "true"
         }
@@ -126,6 +175,30 @@ class SettingsStore(private val context: Context) {
         context.moodifySettingsDataStore.edit { values -> values[LYRICS_ROMANIZATION] = enabled.toString() }
     }
 
+    suspend fun setDataSaver(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[DATA_SAVER] = enabled.toString() }
+    }
+
+    suspend fun setDownloadOnWifiOnly(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[WIFI_ONLY_DOWNLOADS] = enabled.toString() }
+    }
+
+    suspend fun setPauseHistory(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[PAUSE_HISTORY] = enabled.toString() }
+    }
+
+    suspend fun setSkipSilence(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[SKIP_SILENCE] = enabled.toString() }
+    }
+
+    suspend fun setAutoDownloadLiked(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[AUTO_DOWNLOAD_LIKED] = enabled.toString() }
+    }
+
+    suspend fun setShareListening(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[SHARE_LISTENING] = enabled.toString() }
+    }
+
     suspend fun getVisitorData(): String? = context.moodifySettingsDataStore.data
         .first()[VISITOR_DATA]
         ?.trim()
@@ -137,9 +210,12 @@ class SettingsStore(private val context: Context) {
         context.moodifySettingsDataStore.edit { values -> values[VISITOR_DATA] = normalized }
     }
 
-    private companion object {
-        val LANGUAGE = stringPreferencesKey("language")
-        val REGION = stringPreferencesKey("region")
+    companion object {
+        /** Pass as the region to follow the device's country instead of a fixed one. */
+        const val AUTOMATIC_REGION = "AUTO"
+        private val LANGUAGE = stringPreferencesKey("language")
+        private val REGION = stringPreferencesKey("region")
+        private val REGION_AUTO_MIGRATED = stringPreferencesKey("region_auto_migrated")
         val DARK_THEME = stringPreferencesKey("dark_theme")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
@@ -153,5 +229,11 @@ class SettingsStore(private val context: Context) {
         val LYRICS_CONTROLS = stringPreferencesKey("lyrics_show_controls")
         val LYRICS_TRANSLATION = stringPreferencesKey("lyrics_show_translation")
         val LYRICS_ROMANIZATION = stringPreferencesKey("lyrics_show_romanization")
+        private val DATA_SAVER = stringPreferencesKey("data_saver")
+        private val WIFI_ONLY_DOWNLOADS = stringPreferencesKey("download_wifi_only")
+        private val PAUSE_HISTORY = stringPreferencesKey("pause_history")
+        private val SKIP_SILENCE = stringPreferencesKey("skip_silence")
+        private val AUTO_DOWNLOAD_LIKED = stringPreferencesKey("auto_download_liked")
+        private val SHARE_LISTENING = stringPreferencesKey("share_listening")
     }
 }

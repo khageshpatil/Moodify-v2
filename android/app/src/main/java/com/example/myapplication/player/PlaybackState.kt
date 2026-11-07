@@ -30,6 +30,8 @@ data class PlaybackState(
     /** Queue index where autoplay (radio) songs begin, or null when none were added. */
     val autoplayFromIndex: Int? = null,
     val isLoadingRadio: Boolean = false,
+    /** Where the queue came from ("Liked songs", "Arijit Singh", "Kesariya radio"), or null. */
+    val queueSource: String? = null,
 ) {
     /**
      * A single, UI-friendly description of what the player is doing. Derived

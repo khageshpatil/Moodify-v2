@@ -19,6 +19,8 @@ import kotlinx.coroutines.launch
 
 data class BrowseUiState(
     val browseId: String = "",
+    val params: String? = null,
+    val pageType: String? = null,
     val title: String,
     val kind: BrowseKind,
     val page: CatalogPage? = null,
@@ -37,7 +39,7 @@ class BrowseViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val kind = BrowseKind.of(route.browseId, route.pageType)
     private val repository = AppGraph.repository
 
-    private val _state = MutableStateFlow(BrowseUiState(browseId = route.browseId, title = route.title, kind = kind))
+    private val _state = MutableStateFlow(BrowseUiState(browseId = route.browseId, params = route.params, pageType = route.pageType, title = route.title, kind = kind))
     val state: StateFlow<BrowseUiState> = _state.asStateFlow()
 
     init {

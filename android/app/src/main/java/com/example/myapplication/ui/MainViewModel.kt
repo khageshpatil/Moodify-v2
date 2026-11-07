@@ -45,14 +45,23 @@ data class UiMessage(val text: String, val actionLabel: String? = null, val acti
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsStore = AppGraph.settingsStore
-    val appSettings = settingsStore.settings.stateIn(
-        viewModelScope,
-        SharingStarted.Eagerly,
-        AppSettings(),
-    )
+    private val _appSettings = MutableStateFlow(AppSettings())
+    val appSettings: StateFlow<AppSettings> = _appSettings.asStateFlow()
+    private val _settingsReady = MutableStateFlow(false)
     /** False until stored settings are read, so the first frame uses the user's real theme. */
-    val settingsReady: StateFlow<Boolean> = settingsStore.settings.map { true }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val settingsReady: StateFlow<Boolean> = _settingsReady.asStateFlow()
+
+    init {
+        // Assign the value before flipping ready, so ready never races ahead of real settings.
+        viewModelScope.launch {
+            // Before the first read, so the first catalogue load already uses the right country.
+            runCatching { settingsStore.migrateRegionToAutomatic() }
+            settingsStore.settings.collect { settings ->
+                _appSettings.value = settings
+                _settingsReady.value = true
+            }
+        }
+    }
 
     private val repository = AppGraph.repository
     private val persistence = AppGraph.persistence
@@ -97,6 +106,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchCatalog = MutableStateFlow<CatalogPage?>(null)
     val searchCatalog: StateFlow<CatalogPage?> = _searchCatalog.asStateFlow()
 
+    /** The filter the current results (or error) were fetched for, so a new chip never shows another chip's results. */
+    private val _searchResultsType = MutableStateFlow<String?>(null)
+    val searchResultsType: StateFlow<String?> = _searchResultsType.asStateFlow()
+
     private val _trendingTracks = MutableStateFlow<List<Track>>(emptyList())
     val trendingTracks: StateFlow<List<Track>> = _trendingTracks.asStateFlow()
 
@@ -135,6 +148,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val playlists: StateFlow<List<LocalPlaylist>> = playlistStore.observe()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Albums, YouTube playlists and artists saved to the Library, newest first. */
+    val savedCollections: StateFlow<List<com.moodify.app.data.CatalogItem>> = AppGraph.savedCollections.observe()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Saves [item] to the Library, or removes it when it's already there (with Undo). */
+    fun toggleSaved(item: com.moodify.app.data.CatalogItem) {
+        val saved = savedCollections.value.any { it.id == item.id }
+        val noun = if (item.type == "artist") "Following" else "Saved to Library"
+        viewModelScope.launch {
+            if (saved) {
+                AppGraph.savedCollections.remove(item.id)
+                say(if (item.type == "artist") "Unfollowed ${item.title}" else "Removed from Library", "Undo") { toggleSaved(item) }
+            } else {
+                AppGraph.savedCollections.save(item)
+                say(if (item.type == "artist") "$noun ${item.title}" else noun)
+            }
+        }
+    }
 
     // ── For you ───────────────────────────────────────────────────────────
     private val recommender = com.moodify.app.data.QuickPicksRecommender(
@@ -235,8 +267,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _favoriteTrackIds.value = records.mapTo(mutableSetOf()) { it.trackId }
             }
         }
-        loadTrendingTracks()
-        loadCatalogSurfaces()
+        // Wait for stored settings so the first fetch/cache read uses the user's locale.
+        viewModelScope.launch {
+            settingsReady.first { it }
+            val settings = appSettings.value
+            AppGraph.catalogLocale = CatalogLocale(settings.language, settings.region).normalized()
+            loadTrendingTracks()
+            loadCatalogSurfaces()
+        }
 
         // Build For-you picks once there is something to base them on.
         viewModelScope.launch {
@@ -249,6 +287,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 AppGraph.catalogLocale = CatalogLocale(settings.language, settings.region).normalized()
                 playbackManager.autoplayEnabled = settings.autoplay
                 playbackManager.normalizeVolume = settings.normalizeVolume
+                playbackManager.dataSaver = settings.dataSaver
+                playbackManager.pauseHistory = settings.pauseHistory
+                playbackManager.setSkipSilence(settings.skipSilence)
+                AppGraph.social.setShareListening(settings.shareListening)
+                com.moodify.app.player.DownloadWorker.wifiOnly = settings.downloadOnWifiOnly
                 playbackManager.setLocale(settings.language, settings.region)
             }
         }
@@ -276,6 +319,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // reload region-sensitive shelves and let the Room page cache select
         // only entries written for the new language/country.
         viewModelScope.launch {
+            settingsReady.first { it }
             appSettings
                 .map { it.language to it.region }
                 .distinctUntilChanged()
@@ -308,6 +352,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         try {
                             val page = repository.searchCatalog(query, type)
                             _searchCatalog.value = page
+                            _searchResultsType.value = type
                             val results = page.sections
                                 .flatMap { section -> section.items.mapNotNull { it.track } }
                                 .distinctBy { it.id }
@@ -321,6 +366,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             throw e
                         } catch (e: Exception) {
                             _searchResults.value = emptyList()
+                            _searchCatalog.value = null
+                            _searchResultsType.value = type
                             _errorMessage.value = readableError(e)
                         } finally {
                             _isSearching.value = false
@@ -497,7 +544,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
-        if (query.isBlank()) _errorMessage.value = null
+        if (query.isBlank()) {
+            _errorMessage.value = null
+            // A fresh search starts unfiltered.
+            _searchType.value = null
+        }
     }
 
     fun onSearchTypeChange(type: String?) {
@@ -508,6 +559,236 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAutoplay(enabled: Boolean) {
         viewModelScope.launch { settingsStore.setAutoplay(enabled) }
+    }
+
+    // ── Back up & restore ─────────────────────────────────────────────────
+    /** Writes playlists, likes and saved items to [uri] (a file the user picked). */
+    fun exportBackup(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val backup = com.moodify.app.data.LibraryBackup(
+                playlists = playlists.value.map { com.moodify.app.data.LibraryBackup.BackupPlaylist(it.name, it.isPinned, it.tracks) },
+                likedSongs = favoriteTracks.value,
+                saved = savedCollections.value,
+            )
+            val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    getApplication<android.app.Application>().contentResolver.openOutputStream(uri, "wt")!!.use { out ->
+                        out.write(backup.toJson().toByteArray(Charsets.UTF_8))
+                    }
+                }.isSuccess
+            }
+            say(
+                if (ok) "Backed up ${backup.playlists.size} playlists and ${backup.likedSongs.size} liked songs"
+                else "Couldn't write the backup file",
+            )
+        }
+    }
+
+    /** Merges a backup into the library: nothing existing is removed or duplicated. */
+    fun importBackup(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val backup = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    getApplication<android.app.Application>().contentResolver.openInputStream(uri)!!.use { it.readBytes().toString(Charsets.UTF_8) }
+                }.getOrNull()?.let(com.moodify.app.data.LibraryBackup::fromJson)
+            }
+            if (backup == null) {
+                say("That file isn't a Moodify backup")
+                return@launch
+            }
+            var addedSongs = 0
+            backup.playlists.forEach { saved ->
+                val existing = playlists.value.firstOrNull { it.name.equals(saved.name, ignoreCase = true) }
+                val target = existing ?: playlistStore.create(saved.name)
+                val have = existing?.tracks.orEmpty().mapTo(HashSet()) { it.id }
+                saved.tracks.filter { it.id !in have }.forEach { track ->
+                    playlistStore.addTrack(target.id, track)
+                    addedSongs++
+                }
+                if (saved.isPinned) playlistStore.setPinned(target.id, true)
+            }
+            val newLikes = backup.likedSongs.filter { it.id !in _favoriteTrackIds.value }
+            newLikes.forEach { persistence.setFavorite(it, true) }
+            _favoriteTrackIds.update { it + newLikes.map(Track::id) }
+            rememberTracks(newLikes)
+            val savedIds = savedCollections.value.mapTo(HashSet()) { it.id }
+            backup.saved.filter { it.id !in savedIds }.forEach { AppGraph.savedCollections.save(it) }
+            say("Restored ${backup.playlists.size} playlists, ${newLikes.size} liked songs and ${backup.saved.size} saved items")
+        }
+    }
+
+    private val _listeningStats = MutableStateFlow(com.moodify.app.data.ListeningStats())
+    val listeningStats: StateFlow<com.moodify.app.data.ListeningStats> = _listeningStats.asStateFlow()
+
+    fun loadListeningStats() {
+        viewModelScope.launch {
+            val plays = runCatching { playbackManager.playCounts(500) }.getOrDefault(emptyList())
+            _listeningStats.value = com.moodify.app.data.ListeningStats.from(plays)
+        }
+    }
+
+    fun setShareListening(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setShareListening(enabled) }
+    }
+
+    fun setSkipSilence(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setSkipSilence(enabled) }
+    }
+
+    fun setAutoDownloadLiked(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setAutoDownloadLiked(enabled) }
+    }
+
+    // ── Links opened from YouTube / YouTube Music ─────────────────────────
+    /** Pages a link asked to open; MoodifyApp navigates and then clears it. */
+    private val _linkTarget = MutableStateFlow<com.moodify.app.data.SharedLink?>(null)
+    val linkTarget: StateFlow<com.moodify.app.data.SharedLink?> = _linkTarget.asStateFlow()
+
+    fun openLink(link: com.moodify.app.data.SharedLink) {
+        when (link) {
+            is com.moodify.app.data.SharedLink.Song -> viewModelScope.launch {
+                val track = runCatching { repository.songDetails(link.videoId) }.getOrNull()
+                if (track == null) {
+                    say("Couldn't open that link")
+                    return@launch
+                }
+                rememberTracks(listOf(track))
+                // Play it and keep going with its radio.
+                playbackManager.startRadio(track)
+            }
+            else -> _linkTarget.value = link
+        }
+    }
+
+    /** A friend's invite link (moodify://add/CODE) waiting to open the Add dialog. */
+    private val _pendingFriendCode = MutableStateFlow<String?>(null)
+    val pendingFriendCode: StateFlow<String?> = _pendingFriendCode.asStateFlow()
+
+    fun openFriendInvite(code: String) {
+        _pendingFriendCode.value = com.moodify.app.data.social.MoodifyIdentity.normalizeCode(code)
+    }
+
+    /** A browser's QR code (moodify://link/CODE?k=KEY) waiting for the Account screen. */
+    /** A moodify://chat/CODE link (a message notification): open that conversation. */
+    private val _pendingChat = MutableStateFlow<String?>(null)
+    val pendingChat: StateFlow<String?> = _pendingChat.asStateFlow()
+
+    fun openChat(code: String) {
+        _pendingChat.value = com.moodify.app.data.social.MoodifyIdentity.normalizeCode(code)
+    }
+
+    fun consumeChat() {
+        _pendingChat.value = null
+    }
+
+    /** A moodify://room/ID link that was opened: join that listening room. */
+    private val _pendingRoom = MutableStateFlow<String?>(null)
+    val pendingRoom: StateFlow<String?> = _pendingRoom.asStateFlow()
+
+    fun openRoomInvite(roomId: String) {
+        _pendingRoom.value = roomId.uppercase().takeIf { it.matches(Regex("[0-9A-HJKMNP-TV-Z]{6}")) }
+    }
+
+    fun consumeRoomInvite() {
+        _pendingRoom.value = null
+    }
+
+    /** The listening-room sheet; kept here so it survives onboarding and recreation. */
+    private val _roomSheetOpen = MutableStateFlow(false)
+    val roomSheetOpen: StateFlow<Boolean> = _roomSheetOpen.asStateFlow()
+
+    fun setRoomSheetOpen(open: Boolean) {
+        _roomSheetOpen.value = open
+    }
+
+    private val _pendingDeviceLink = MutableStateFlow<Pair<String, String?>?>(null)
+    val pendingDeviceLink: StateFlow<Pair<String, String?>?> = _pendingDeviceLink.asStateFlow()
+
+    fun openDeviceLink(code: String, key: String?) {
+        _pendingDeviceLink.value = code to key
+    }
+
+    fun consumeDeviceLink() {
+        _pendingDeviceLink.value = null
+    }
+
+    fun consumeFriendInvite() {
+        _pendingFriendCode.value = null
+    }
+
+    fun consumeLinkTarget() {
+        _linkTarget.value = null
+    }
+
+    // ── Recently played albums & playlists ────────────────────────────────
+    private val recentPrefs = getApplication<android.app.Application>().getSharedPreferences("moodify_recent", android.content.Context.MODE_PRIVATE)
+    private val _recentCollections = MutableStateFlow(loadRecentCollections())
+    val recentCollections: StateFlow<List<com.moodify.app.data.CatalogItem>> = _recentCollections.asStateFlow()
+
+    private fun loadRecentCollections(): List<com.moodify.app.data.CatalogItem> = runCatching {
+        val json = recentPrefs.getString("collections", null) ?: return emptyList()
+        com.google.gson.Gson().fromJson(json, Array<com.moodify.app.data.CatalogItem>::class.java).toList()
+    }.getOrDefault(emptyList())
+
+    /** Remembers a collection you started playing (newest first, at most 12). */
+    fun rememberCollection(item: com.moodify.app.data.CatalogItem) {
+        val updated = (listOf(item) + _recentCollections.value.filterNot { it.id == item.id }).take(12)
+        _recentCollections.value = updated
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            recentPrefs.edit().putString("collections", com.google.gson.Gson().toJson(updated)).apply()
+        }
+    }
+
+    fun setDataSaver(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setDataSaver(enabled) }
+    }
+
+    fun setDownloadOnWifiOnly(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setDownloadOnWifiOnly(enabled) }
+    }
+
+    fun setPauseHistory(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setPauseHistory(enabled) }
+    }
+
+    // ── Storage (Settings) ────────────────────────────────────────────────
+    private val _storage = MutableStateFlow(com.moodify.app.ui.screens.StorageUsage())
+    val storage: StateFlow<com.moodify.app.ui.screens.StorageUsage> = _storage.asStateFlow()
+
+    fun refreshStorage() {
+        viewModelScope.launch {
+            val dao = com.moodify.app.data.MoodifyDatabase.get(getApplication()).moodifyDao()
+            _storage.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.moodify.app.ui.screens.StorageUsage(
+                    downloadBytes = runCatching { dao.downloadBytes() }.getOrDefault(0L),
+                    audioCacheBytes = playbackManager.audioCacheBytes(),
+                    lyricsCount = runCatching { dao.lyricsCount() }.getOrDefault(0),
+                )
+            }
+        }
+    }
+
+    fun clearAudioCache() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            playbackManager.clearAudioCache()
+            refreshStorage()
+            say("Song cache cleared")
+        }
+    }
+
+    fun clearLyricsCache() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.moodify.app.data.MoodifyDatabase.get(getApplication()).moodifyDao().clearLyrics()
+            refreshStorage()
+            say("Saved lyrics cleared")
+        }
+    }
+
+    fun clearCatalogCache() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.moodify.app.data.MoodifyDatabase.get(getApplication()).moodifyDao().clearCatalogPages()
+            say("Offline catalogue cleared")
+        }
     }
 
     fun setNormalizeVolume(enabled: Boolean) {
@@ -580,7 +861,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** The artist page for [name], via an Artists-filtered search; null if none is found. */
+    suspend fun findArtistEndpoint(name: String): com.moodify.app.data.BrowseEndpoint? = try {
+        repository.searchCatalog(name, "artist").sections
+            .flatMap { it.items }
+            .firstOrNull { it.type == "artist" && !it.endpoint?.browseId.isNullOrBlank() }
+            ?.endpoint
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+
     fun startIntent(intent: String) {
+        _searchType.value = null
         _searchQuery.value = intent.trim()
     }
 
@@ -591,6 +885,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _favoriteTrackIds.update { set -> if (makeFavorite) set + track.id else set - track.id }
         val metadata = _knownTracks.value[track.id] ?: track
         viewModelScope.launch { persistence.setFavorite(metadata, makeFavorite) }
+        if (makeFavorite && appSettings.value.autoDownloadLiked && track.id !in playbackState.value.downloadedTrackIds) {
+            com.moodify.app.player.DownloadWorker.enqueue(getApplication(), listOf(metadata), wifiOnlyOverride = true)
+        }
         if (makeFavorite) say("Added to Liked songs")
         else say("Removed from Liked songs", "Undo") { toggleFavorite(metadata) }
         _trendingTracks.update { list ->
@@ -835,8 +1132,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    fun playTrack(track: Track, queue: List<Track>) {
-        playbackManager.playTrack(track, queue)
+    fun playTrack(track: Track, queue: List<Track>, source: String? = null) {
+        playbackManager.playTrack(track, queue, source)
     }
 
     fun playNext(track: Track) {

@@ -1,0 +1,33 @@
+name = "moodify-social"
+main = "src/index.mjs"
+compatibility_date = "2025-06-01"
+
+# Local development works without a Cloudflare login (`npm run dev`).
+# Before the first deploy: `wrangler d1 create moodify-social`, paste the id
+# below, run `wrangler d1 migrations apply moodify-social --remote`, and set
+# the secret with `wrangler secret put SESSION_SECRET`.
+# Chat wake-up pings (optional): `wrangler secret put FCM_SERVICE_ACCOUNT < firebase-service-account.json`.
+# Locally, FCM_SERVICE_ACCOUNT goes in .dev.vars (base64 of the JSON). Both files are git-ignored.
+[[d1_databases]]
+binding = "DB"
+database_name = "moodify-social"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# One hub per user: live connections and "listening now" (memory only).
+[[durable_objects.bindings]]
+name = "USER_HUB"
+class_name = "UserHub"
+
+[[migrations]]
+tag = "v1-user-hub"
+new_sqlite_classes = ["UserHub"]
+
+# One object per listening room (M4): shared clock, queue and members.
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v2-rooms"
+new_sqlite_classes = ["Room"]

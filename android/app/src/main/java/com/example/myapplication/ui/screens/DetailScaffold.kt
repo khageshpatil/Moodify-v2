@@ -128,9 +128,11 @@ fun DetailScaffold(
                                 if (onPlay != null) {
                                     Button(
                                         onClick = onPlay,
+                                        // The main action looks the same on every page; artwork
+                                        // only tints the glow and the eyebrow.
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = heroColors.accent,
-                                            contentColor = heroColors.onAccent,
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
                                         ),
                                         contentPadding = PaddingValues(horizontal = Spacing.xl, vertical = 14.dp),
                                     ) {

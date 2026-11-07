@@ -63,6 +63,7 @@ class MusicRepository(
         catalogClient.homeContinuation(cursor, visitor)
     suspend fun upNext(videoId: String, playlistId: String? = null): UpNextPage = catalogClient.upNext(videoId, playlistId)
     suspend fun youTubeLyrics(lyricsBrowseId: String): String? = catalogClient.youTubeLyrics(lyricsBrowseId)
+    suspend fun songDetails(videoId: String): Track? = catalogClient.songDetails(videoId)
 
     // Stale-while-revalidate variants for the main surfaces. These emit the
     // cached page immediately (so shelves appear on a cold or offline start),

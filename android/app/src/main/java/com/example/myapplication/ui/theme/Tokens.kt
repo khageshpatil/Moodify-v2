@@ -6,17 +6,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-
-/** One radius per role. */
-object Radii {
-    val xs = 6.dp      // chips inside cards, tiny badges
-    val sm = 10.dp     // row artwork
-    val md = 16.dp     // cards, tiles
-    val lg = 24.dp     // hero art, sheets
-    val xl = 32.dp     // player cover, large surfaces
-}
 
 val MoodifyShapes = Shapes(
     extraSmall = RoundedCornerShape(Radii.xs),
@@ -26,18 +15,7 @@ val MoodifyShapes = Shapes(
     extraLarge = RoundedCornerShape(Radii.xl),
 )
 
-/** 4dp grid. Screens use [gutter] at the edges and [section] between sections. */
-object Spacing {
-    val xxs: Dp = 2.dp
-    val xs: Dp = 4.dp
-    val sm: Dp = 8.dp
-    val md: Dp = 12.dp
-    val lg: Dp = 16.dp
-    val xl: Dp = 24.dp
-    val xxl: Dp = 32.dp
-    val gutter: Dp = 20.dp
-    val section: Dp = 32.dp
-}
+// Radii and Spacing are generated from design-tokens/moodify.tokens.json (GeneratedTokens.kt).
 
 /** Shared motion language: quick and springy for touch, slow and soft for ambience. */
 object Motion {

@@ -1,5 +1,6 @@
 package com.moodify.app.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -79,7 +81,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -88,6 +92,7 @@ import com.moodify.app.data.CatalogSection
 import com.moodify.app.ui.designsystem.ArtworkImage
 import com.moodify.app.ui.designsystem.AuraGlow
 import com.moodify.app.ui.designsystem.CatalogShelf
+import com.moodify.app.ui.designsystem.CompactBrowseRow
 import com.moodify.app.ui.designsystem.EmptyState
 import com.moodify.app.ui.designsystem.ErrorState
 import com.moodify.app.ui.designsystem.LocalMoodifyActions
@@ -110,6 +115,8 @@ data class SearchUiState(
     val type: String? = null,
     val isSearching: Boolean = false,
     val resultSections: List<CatalogSection> = emptyList(),
+    /** The filter [resultSections] were fetched for; differs from [type] while a new chip loads. */
+    val resultsType: String? = null,
     val suggestions: List<String> = emptyList(),
     val recentSearches: List<String> = emptyList(),
     val browseSections: List<CatalogSection> = emptyList(),
@@ -118,6 +125,16 @@ data class SearchUiState(
     val canLoadMore: Boolean = false,
     val isLoadingMore: Boolean = false,
 )
+
+private val BROWSE_FILTERS = setOf("album", "artist", "playlist")
+
+/** Same song listed twice (e.g. "Whispers of Bliss" ×2): keep the first by id, then by title + artist. */
+private fun dedupeTracks(tracks: List<com.moodify.app.data.Track>): List<com.moodify.app.data.Track> {
+    val seen = HashSet<String>()
+    return tracks.distinctBy { it.id }.filter { track ->
+        seen.add(track.title.lowercase().replace(Regex("""\s+"""), " ").trim() + "|" + track.artist.lowercase().trim())
+    }
+}
 
 private val FILTERS = listOf(null to "All", "song" to "Songs", "album" to "Albums", "artist" to "Artists", "playlist" to "Playlists", "video" to "Videos")
 
@@ -134,12 +151,17 @@ fun SearchScreen(
     onClearRecents: () -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
+    scrollToTopKey: Int = 0,
+    onOpenMood: (com.moodify.app.ui.designsystem.MoodOption) -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     var fieldFocused by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    val idleListState = rememberLazyListState()
+    com.moodify.app.ui.designsystem.ScrollToTopEffect(scrollToTopKey, listState)
+    com.moodify.app.ui.designsystem.ScrollToTopEffect(scrollToTopKey, idleListState)
 
     LaunchedEffect(focusRequestKey) {
         if (focusRequestKey > 0) runCatching { focusRequester.requestFocus() }
@@ -179,6 +201,24 @@ fun SearchScreen(
         keyboard?.hide()
         focusManager.clearFocus()
     }
+    // Recents and suggestions are new searches, so they start unfiltered.
+    val submitFresh: (String) -> Unit = { text ->
+        onTypeChange(null)
+        submit(text)
+    }
+
+    // Closing the keyboard (or Back) ends editing and returns to the results.
+    val imeVisible = WindowInsets.isImeVisible
+    var imeWasVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(imeVisible) {
+        if (imeVisible) {
+            imeWasVisible = true
+        } else if (imeWasVisible) {
+            imeWasVisible = false
+            focusManager.clearFocus()
+        }
+    }
+    BackHandler(enabled = fieldFocused) { focusManager.clearFocus() }
 
     Box(Modifier.fillMaxSize()) {
         AuraGlow(intensity = 0.6f, height = 300.dp)
@@ -237,8 +277,8 @@ fun SearchScreen(
                 label = "searchMode",
             ) { shown ->
                 when (shown) {
-                    SearchMode.IDLE -> IdleSearch(state, bottomPadding, onSubmit = submit, onRemoveRecent, onClearRecents)
-                    SearchMode.SUGGESTING -> Suggestions(state, bottomPadding, onSubmit = submit, onFill = onQueryChange)
+                    SearchMode.IDLE -> IdleSearch(state, bottomPadding, idleListState, onSubmit = submitFresh, onRemoveRecent, onClearRecents, onOpenMood)
+                    SearchMode.SUGGESTING -> Suggestions(state, bottomPadding, onSubmit = submitFresh, onFill = onQueryChange)
                     SearchMode.RESULTS -> Box(Modifier.nestedScroll(hideKeyboardOnScroll)) {
                         Results(state, bottomPadding, listState, onRetry)
                     }
@@ -258,8 +298,28 @@ private fun SearchField(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
+    // The text always comes from [query]; only the cursor is kept here.
+    var selection by remember { mutableStateOf(TextRange(query.length)) }
+    var composition by remember { mutableStateOf<TextRange?>(null) }
+    var lastTyped by remember { mutableStateOf(query) }
+    if (query != lastTyped) {
+        // Changed from outside (cleared, a suggestion filled in): cursor to the end.
+        lastTyped = query
+        selection = TextRange(query.length)
+        composition = null
+    }
+    val value = TextFieldValue(
+        text = query,
+        selection = TextRange(selection.start.coerceIn(0, query.length), selection.end.coerceIn(0, query.length)),
+        composition = composition?.takeIf { it.max <= query.length },
+    )
+    // The tap that focuses the field would drop the cursor wherever it landed
+    // (often the start), so the next keystrokes glue onto the old query. The
+    // first selection change after focusing is moved to the end instead.
+    var justFocused by remember { mutableStateOf(false) }
     Row(
         modifier
+            .onFocusChanged { if (it.isFocused) justFocused = true }
             .fillMaxWidth()
             .height(56.dp)
             .clip(CircleShape)
@@ -275,8 +335,16 @@ private fun SearchField(
                 Text("Songs, artists, or a feeling…", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
             }
             BasicTextField(
-                value = query,
-                onValueChange = onQueryChange,
+                value = value,
+                onValueChange = { next ->
+                    selection = if (justFocused && next.text == query) TextRange(next.text.length) else next.selection
+                    composition = next.composition
+                    justFocused = false
+                    if (next.text != query) {
+                        lastTyped = next.text
+                        onQueryChange(next.text)
+                    }
+                },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
                 cursorBrush = SolidColor(colors.primary),
@@ -298,15 +366,22 @@ private fun SearchField(
 private fun IdleSearch(
     state: SearchUiState,
     bottomPadding: Dp,
+    listState: androidx.compose.foundation.lazy.LazyListState,
     onSubmit: (String) -> Unit,
     onRemoveRecent: (String) -> Unit,
     onClearRecents: () -> Unit,
+    onOpenMood: (com.moodify.app.ui.designsystem.MoodOption) -> Unit,
 ) {
     val actions = LocalMoodifyActions.current
+    // Moods are Moodify's own (same as Home); YouTube's tiles add the genres.
     val browseItems = remember(state.browseSections) {
-        state.browseSections.flatMap { it.items }.filter { it.endpoint?.browseId?.isNotBlank() == true }.distinctBy { it.id }
+        state.browseSections.flatMap { it.items }
+            .filter { it.endpoint?.browseId?.isNotBlank() == true }
+            .filterNot { com.moodify.app.ui.designsystem.isMoodTile(it.title) }
+            .distinctBy { it.id }
     }
     LazyColumn(
+        state = listState,
         contentPadding = PaddingValues(top = Spacing.md, bottom = bottomPadding + Spacing.xl),
         verticalArrangement = Arrangement.spacedBy(Spacing.xl),
     ) {
@@ -341,8 +416,25 @@ private fun IdleSearch(
                 }
             }
         }
+        item(key = "moodsHeader") { SectionHeader(title = "Moods") }
+        items(com.moodify.app.ui.designsystem.MoodOptions.chunked(2), key = { row -> "mood:" + row.joinToString { it.id } }) { row ->
+            Row(
+                Modifier.padding(horizontal = Spacing.gutter),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            ) {
+                row.forEach { mood ->
+                    MoodTile(
+                        title = mood.label,
+                        accent = mood.hue,
+                        onClick = { onOpenMood(mood) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
         if (browseItems.isNotEmpty()) {
-            item(key = "browseHeader") { SectionHeader(title = "Browse moods & genres") }
+            item(key = "browseHeader") { SectionHeader(title = "Genres & more") }
             items(browseItems.chunked(2), key = { row -> row.joinToString { it.id } }) { row ->
                 Row(
                     Modifier.padding(horizontal = Spacing.gutter),
@@ -401,35 +493,94 @@ private fun Results(
             .map { if (state.type == "video") it else it.musicOnly() }
             .filter { it.items.isNotEmpty() }
     }
-    val tracks = remember(sections) { sections.flatMap { s -> s.items.mapNotNull { it.track } }.distinctBy { it.id } }
+    // Video shelves (live clips, TV performances, fan uploads) stay out of Songs.
+    val isVideoShelf: (CatalogSection) -> Boolean = { it.title.contains("video", ignoreCase = true) || it.title.contains("episode", ignoreCase = true) }
+    val tracks = remember(sections) {
+        val songSections = if (state.type == "video") sections else sections.filterNot(isVideoShelf)
+        dedupeTracks(songSections.flatMap { s -> s.items.mapNotNull { it.track } })
+    }
+    val videos = remember(sections, state.type) {
+        if (state.type != null) emptyList() else dedupeTracks(sections.filter(isVideoShelf).flatMap { s -> s.items.mapNotNull { it.track } })
+            .filterNot { video -> tracks.any { it.id == video.id } }
+            .take(5)
+    }
     val topResult = remember(sections) {
         sections.firstOrNull()?.items?.firstOrNull()
     }
     val otherSections = remember(sections) { sections.filter { s -> s.items.any { it.track == null } } }
+    // Album / artist / playlist filters list their results top to bottom.
+    val browseResults = remember(sections, state.type) {
+        if (state.type in BROWSE_FILTERS) {
+            sections.flatMap { it.items }.filter { it.track == null }.distinctBy { "${it.type}:${it.id}" }
+        } else {
+            emptyList()
+        }
+    }
+    val showTop = topResult != null && state.type == null
+    // The top result is already on screen; don't repeat it as the first song.
+    val songRows = remember(tracks, showTop, topResult) {
+        if (showTop) tracks.filterNot { it.id == topResult?.track?.id } else tracks
+    }
+    val onBrowseClick = rememberCatalogClick(tracks)
+    val waitingForFilter = state.resultsType != state.type
+    val filterName = FILTERS.firstOrNull { it.first == state.type }?.second?.lowercase()
 
     when {
-        state.isSearching && sections.isEmpty() -> SkeletonRows(count = 8, modifier = Modifier.padding(top = Spacing.lg))
+        waitingForFilter || (state.isSearching && sections.isEmpty()) ->
+            SkeletonRows(count = 8, modifier = Modifier.padding(top = Spacing.lg))
         state.error != null && sections.isEmpty() -> ErrorState(message = state.error, onRetry = onRetry)
-        sections.isEmpty() -> EmptyState(
+        sections.isEmpty() || (state.type in BROWSE_FILTERS && browseResults.isEmpty()) -> EmptyState(
             icon = Icons.Rounded.SearchOff,
-            title = "No matches",
-            message = "Try another spelling, an artist name, or describe a feeling.",
+            title = if (filterName == null) "No matches" else "No $filterName for “${state.query.trim()}”",
+            message = if (filterName == null) {
+                "Try another spelling, an artist name, or describe a feeling."
+            } else {
+                "Try All, or check the spelling."
+            },
         )
+        state.type in BROWSE_FILTERS -> LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(top = Spacing.sm, bottom = bottomPadding + Spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            items(browseResults, key = { "${it.type}:${it.id}" }) { item ->
+                CompactBrowseRow(
+                    item = item,
+                    onClick = { onBrowseClick(item) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.gutter - Spacing.sm),
+                )
+            }
+            if (state.isLoadingMore) {
+                item(key = "more") { SkeletonRows(count = 2, modifier = Modifier.padding(top = Spacing.md)) }
+            }
+        }
         else -> LazyColumn(
             state = listState,
             contentPadding = PaddingValues(top = Spacing.md, bottom = bottomPadding + Spacing.xl),
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
-            if (topResult != null && state.type == null) {
+            if (showTop && topResult != null) {
                 item(key = "top") { TopResultCard(topResult, tracks) }
                 item(key = "topSpacer") { Spacer(Modifier.height(Spacing.lg)) }
             }
-            if (tracks.isNotEmpty()) {
+            if (songRows.isNotEmpty()) {
                 item(key = "songsHeader") { SectionHeader(title = "Songs") }
-                items(tracks, key = { "song:${it.id}" }) { track ->
+                items(songRows, key = { "song:${it.id}" }) { track ->
                     TrackRow(
                         track = track,
                         queueContext = tracks,
+                        modifier = Modifier.animateItem().padding(horizontal = Spacing.gutter - Spacing.sm),
+                    )
+                }
+            }
+            if (videos.isNotEmpty()) {
+                item(key = "videosHeader") { Column(Modifier.padding(top = Spacing.lg)) { SectionHeader(title = "Videos") } }
+                items(videos, key = { "video:${it.id}" }) { track ->
+                    TrackRow(
+                        track = track,
+                        queueContext = videos,
                         modifier = Modifier.padding(horizontal = Spacing.gutter - Spacing.sm),
                     )
                 }

@@ -15,6 +15,8 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Shared with the moodify-social server: one implementation of the protocol.
+      "@social": path.resolve(__dirname, "./social/src"),
     },
   },
   test: {
@@ -28,6 +30,7 @@ export default defineConfig(() => ({
       'src/home/__tests__/**/*.{test,spec}.{ts,tsx}',
       'src/services/__tests__/**/*.{test,spec}.{ts,tsx}',
       'src/presentation/__tests__/**/*.{test,spec}.{ts,tsx}',
+      'src/aura/__tests__/**/*.{test,spec}.{ts,tsx}',
     ],
   },
 }));

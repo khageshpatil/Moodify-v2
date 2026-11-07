@@ -55,8 +55,15 @@ import com.moodify.app.ui.theme.Spacing
 
 private val NON_MUSIC_TYPES = setOf("video", "podcast", "episode")
 
+/**
+ * Drops podcasts and episodes. Episodes arrive as playable "tracks" whose
+ * byline says "… • Episode", so the parsed album is checked as well.
+ */
 fun CatalogSection.musicOnly(): CatalogSection =
-    copy(items = items.filter { it.type.lowercase() !in NON_MUSIC_TYPES })
+    copy(items = items.filter { it.type.lowercase() !in NON_MUSIC_TYPES && !it.isSpokenWord })
+
+private val CatalogItem.isSpokenWord: Boolean
+    get() = track?.album?.trim()?.lowercase() in NON_MUSIC_TYPES
 
 val CatalogItem.isArtist: Boolean get() = type.equals("artist", ignoreCase = true)
 
@@ -230,6 +237,19 @@ fun MoodTile(
                     CircleShape,
                 ),
         )
+        // Pale catalogue colours (Chill, Feel good…) can't carry white text on
+        // their own; a dark wash behind the label keeps it readable (>= 4.5:1).
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        0.35f to Color.Black.copy(alpha = 0.18f),
+                        1f to Color.Black.copy(alpha = 0.55f),
+                    ),
+                ),
+        )
         Text(
             title,
             style = MaterialTheme.typography.titleMedium,
@@ -248,7 +268,7 @@ fun MoodTile(
  * layout scrolls edge to edge with the screen gutter as content padding.
  */
 @Composable
-fun CatalogShelf(section: CatalogSection, modifier: Modifier = Modifier) {
+fun CatalogShelf(section: CatalogSection, modifier: Modifier = Modifier, cardWidth: Dp = 152.dp) {
     val sectionTracks = remember(section) { section.items.mapNotNull { it.track } }
     val onItemClick = rememberCatalogClick(sectionTracks)
     val actions = LocalMoodifyActions.current
@@ -283,7 +303,7 @@ fun CatalogShelf(section: CatalogSection, modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
                 items(section.items, key = { "${it.type}:${it.id}" }) { item ->
-                    MediaCard(item = item, onClick = { onItemClick(item) })
+                    MediaCard(item = item, onClick = { onItemClick(item) }, width = cardWidth)
                 }
             }
         }
@@ -340,8 +360,9 @@ fun QuickPicksGrid(
     }
 }
 
+/** One album / artist / playlist as a compact row (circle art for artists). */
 @Composable
-private fun CompactBrowseRow(item: CatalogItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun CompactBrowseRow(item: CatalogItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier
             .height(64.dp)

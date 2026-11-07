@@ -113,8 +113,31 @@ data class DownloadEntity(
     val updatedAtMs: Long,
 )
 
+/** An album, YouTube playlist or artist saved to the Library (v8). */
+@Entity(tableName = "saved_collections")
+data class SavedCollectionEntity(
+    @androidx.room.PrimaryKey val id: String,
+    /** "album", "playlist" or "artist". */
+    val type: String,
+    val title: String,
+    val subtitle: String,
+    val artworkUrl: String,
+    val params: String?,
+    val pageType: String?,
+    val savedAtMs: Long,
+)
+
 @Dao
 interface MoodifyDao {
+    @Query("SELECT * FROM saved_collections ORDER BY savedAtMs DESC")
+    fun observeSavedCollections(): kotlinx.coroutines.flow.Flow<List<SavedCollectionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSavedCollection(entry: SavedCollectionEntity)
+
+    @Query("DELETE FROM saved_collections WHERE id = :id")
+    suspend fun deleteSavedCollection(id: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertTracks(tracks: List<CatalogTrackEntity>)
 
@@ -271,6 +294,21 @@ interface MoodifyDao {
     @Query("DELETE FROM lyrics_cache WHERE trackId = :trackId")
     suspend fun deleteLyrics(trackId: String)
 
+    @Query("DELETE FROM lyrics_cache")
+    suspend fun clearLyrics()
+
+    @Query("SELECT COUNT(*) FROM lyrics_cache")
+    suspend fun lyricsCount(): Int
+
+    @Query("DELETE FROM catalog_pages")
+    suspend fun clearCatalogPages()
+
+    @Query("DELETE FROM play_stats")
+    suspend fun clearPlayStats()
+
+    @Query("SELECT COALESCE(SUM(bytes), 0) FROM downloads")
+    suspend fun downloadBytes(): Long
+
     @Query("SELECT * FROM downloads")
     suspend fun downloads(): List<DownloadEntity>
 
@@ -296,12 +334,15 @@ interface MoodifyDao {
         LyricsCacheEntity::class,
         CatalogPageCacheEntity::class,
         PlayStatEntity::class,
+        SavedCollectionEntity::class,
+        com.moodify.app.data.social.ChatMessageEntity::class,
     ],
-    version = 7,
+    version = 9,
     exportSchema = false,
 )
 abstract class MoodifyDatabase : RoomDatabase() {
     abstract fun moodifyDao(): MoodifyDao
+    abstract fun chatDao(): com.moodify.app.data.social.ChatDao
 
     companion object {
         @Volatile private var instance: MoodifyDatabase? = null
@@ -312,7 +353,7 @@ abstract class MoodifyDatabase : RoomDatabase() {
                     context.applicationContext,
                     MoodifyDatabase::class.java,
                     DATABASE_NAME,
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                     .build().also { instance = it }
             }
@@ -325,7 +366,7 @@ abstract class MoodifyDatabase : RoomDatabase() {
             context.applicationContext,
             MoodifyDatabase::class.java,
             databaseName,
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .build()
 
@@ -455,6 +496,29 @@ abstract class MoodifyDatabase : RoomDatabase() {
                     }
                     if (!exists) database.execSQL("ALTER TABLE `$table` ADD COLUMN `$column` $definition")
                 }
+            }
+        }
+
+        /** v9 keeps chat history on this phone (social M5). */
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS chat_messages (mid TEXT NOT NULL, peer TEXT NOT NULL, fromMe INTEGER NOT NULL, " +
+                        "kind TEXT NOT NULL, body TEXT NOT NULL, sentAtMs INTEGER NOT NULL, status TEXT NOT NULL, " +
+                        "reactions TEXT NOT NULL, read INTEGER NOT NULL, PRIMARY KEY(mid))",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_chat_messages_peer_sentAtMs ON chat_messages (peer, sentAtMs)")
+            }
+        }
+
+        /** v8 lets the Library keep albums, YouTube playlists and artists. */
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS saved_collections (id TEXT NOT NULL, type TEXT NOT NULL, " +
+                        "title TEXT NOT NULL, subtitle TEXT NOT NULL, artworkUrl TEXT NOT NULL, params TEXT, " +
+                        "pageType TEXT, savedAtMs INTEGER NOT NULL, PRIMARY KEY(id))",
+                )
             }
         }
 

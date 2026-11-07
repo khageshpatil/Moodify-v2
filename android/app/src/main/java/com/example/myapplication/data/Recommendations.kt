@@ -96,3 +96,44 @@ class QuickPicksRecommender(private val client: InnerTubeCatalogClient) {
             (mostPlayed + recent + liked).distinctBy { it.id }.take(MAX_SEEDS)
     }
 }
+
+/**
+ * Builds the Discover deck from the listener's own recommendations and
+ * YouTube's regional "Quick picks", so the deck reflects both taste and where
+ * the listener is (and a new listener is not dealt only one kind of music).
+ */
+object DiscoverBlend {
+    /** [personalPerRegional] personal picks, then one regional pick, repeating; no duplicates. */
+    fun blend(personal: List<Track>, regional: List<Track>, personalPerRegional: Int = 2, limit: Int = 30): List<Track> {
+        val seen = mutableSetOf<String>()
+        val result = mutableListOf<Track>()
+        val mine = personal.iterator()
+        val local = regional.iterator()
+        fun take(source: Iterator<Track>): Boolean {
+            while (source.hasNext()) {
+                val track = source.next()
+                if (seen.add(track.id)) { result += track; return true }
+            }
+            return false
+        }
+        while (result.size < limit && (mine.hasNext() || local.hasNext())) {
+            repeat(personalPerRegional) { if (result.size < limit) take(mine) }
+            if (result.size < limit) take(local)
+        }
+        return result
+    }
+
+    /**
+     * YouTube Music's own "Quick picks" shelf on Home: the first of the top
+     * shelves that is (almost) all songs. Its title is localised, so it is found
+     * by shape rather than by name.
+     */
+    fun regionalPicks(page: CatalogPage?): List<Track> = page?.sections.orEmpty()
+        .take(3)
+        .firstOrNull { section ->
+            val tracks = section.items.count { it.track != null }
+            tracks >= 4 && tracks * 10 >= section.items.size * 8
+        }
+        ?.items?.mapNotNull { it.track }
+        .orEmpty()
+}

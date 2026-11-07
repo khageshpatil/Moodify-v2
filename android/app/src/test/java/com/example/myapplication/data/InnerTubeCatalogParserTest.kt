@@ -559,6 +559,33 @@ class InnerTubeCatalogParserTest {
     }
 
     @Test
+    fun titleContainingADashDoesNotLeakIntoTheArtist() {
+        val title = "Veezha Veera (From \\\"OM Chapter 1: Udhiram - The Blood Wood\\\") [Tamil]"
+        val root = JSONObject(
+            """
+            {"items":[{"musicResponsiveListItemRenderer":{
+              "playlistItemData":{"videoId":"9IzKueQ2ZxY"},
+              "overlay":{"musicItemThumbnailOverlayRenderer":{"content":{
+                "musicPlayButtonRenderer":{"accessibilityPlayData":{"accessibilityData":{
+                  "label":"Play $title - Sai Abhyankkar, Tippu & Arun Srinivas"
+                }}}
+              }}},
+              "flexColumns":[
+                {"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"$title"}]}}},
+                {"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"Song"},{"text":" • "},{"text":"3:33"}]}}}
+              ]
+            }}]}
+            """.trimIndent(),
+        )
+
+        val track = CatalogRendererParser
+            .parse(root, "search", "Search", CatalogLocale("en", "US"))
+            .sections.single().items.single().track
+
+        assertEquals("Sai Abhyankkar, Tippu & Arun Srinivas", track?.artist)
+    }
+
+    @Test
     fun parsesMoodsAndGenresGridButtonsWithBrowseParametersAndAccentColors() {
         val root = JSONObject(
             """
@@ -610,5 +637,99 @@ class InnerTubeCatalogParserTest {
         assertEquals("mood-carousel", section.layout)
         assertEquals("Chill", section.items.single().title)
         assertEquals("mood-param", section.items.single().endpoint?.params)
+    }
+
+    @Test
+    fun songsCarryTheirArtistAndAlbumLinks() {
+        val root = JSONObject(
+            """
+            {"items":[{"musicResponsiveListItemRenderer":{
+              "playlistItemData":{"videoId":"BddP6PYo2gs"},
+              "flexColumns":[
+                {"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"Kesariya"}]}}},
+                {"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[
+                  {"text":"Song"},{"text":" • "},
+                  {"text":"Arijit Singh","navigationEndpoint":{"browseEndpoint":{"browseId":"UCDxKh1gFWeYsqePvgVzmPoQ",
+                    "browseEndpointContextSupportedConfigs":{"browseEndpointContextMusicConfig":{"pageType":"MUSIC_PAGE_TYPE_ARTIST"}}}}},
+                  {"text":" & "},
+                  {"text":"Pritam","navigationEndpoint":{"browseEndpoint":{"browseId":"UCxxxxxxxxxxxxxxxxxxxxxx",
+                    "browseEndpointContextSupportedConfigs":{"browseEndpointContextMusicConfig":{"pageType":"MUSIC_PAGE_TYPE_ARTIST"}}}}},
+                  {"text":" • "},
+                  {"text":"Brahmastra","navigationEndpoint":{"browseEndpoint":{"browseId":"MPREb_abc123",
+                    "browseEndpointContextSupportedConfigs":{"browseEndpointContextMusicConfig":{"pageType":"MUSIC_PAGE_TYPE_ALBUM"}}}}},
+                  {"text":" • "},{"text":"4:28"}
+                ]}}}
+              ]
+            }}]}
+            """.trimIndent(),
+        )
+
+        val track = CatalogRendererParser
+            .parse(root, "search", "Search", CatalogLocale("en", "IN"))
+            .sections.single().items.single().track
+
+        assertEquals("UCDxKh1gFWeYsqePvgVzmPoQ", track?.artistId)
+        assertEquals("MPREb_abc123", track?.albumId)
+    }
+
+    @Test
+    fun artistPagesUseTheArtistPhotoAsTheirImage() {
+        val root = JSONObject(
+            """
+            {"header":{"musicImmersiveHeaderRenderer":{
+              "title":{"runs":[{"text":"Arijit Singh"}]},
+              "thumbnail":{"musicThumbnailRenderer":{"thumbnail":{"thumbnails":[
+                {"url":"https://lh3.googleusercontent.com/artist=w540-h225"},
+                {"url":"https://lh3.googleusercontent.com/artist=w1440-h600"}
+              ]}}}
+            }},
+            "contents":{"singleColumnBrowseResultsRenderer":{"tabs":[{"tabRenderer":{"content":{
+              "sectionListRenderer":{"contents":[{"musicShelfRenderer":{"title":{"runs":[{"text":"Top songs"}]},"contents":[
+                {"musicResponsiveListItemRenderer":{
+                  "playlistItemData":{"videoId":"BddP6PYo2gs"},
+                  "thumbnail":{"musicThumbnailRenderer":{"thumbnail":{"thumbnails":[{"url":"https://i.ytimg.com/vi/poster.jpg"}]}}},
+                  "flexColumns":[{"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"Kesariya"}]}}}]
+                }}
+              ]}}]}
+            }}}]}}}
+            """.trimIndent(),
+        )
+
+        val page = CatalogRendererParser.parse(root, "artist", "Arijit Singh", CatalogLocale("en", "IN"))
+
+        assertEquals("https://lh3.googleusercontent.com/artist=w1440-h600", page.artworkUrl)
+    }
+
+    @Test
+    fun primaryArtistIsTheFirstCreditedName() {
+        assertEquals("Arijit Singh", primaryArtist("Arijit Singh, Pritam & Amitabh Bhattacharya"))
+        assertEquals("Sai Abhyankkar", primaryArtist("Sai Abhyankkar feat. Tippu"))
+        assertEquals("Diljit Dosanjh", primaryArtist("Diljit Dosanjh x Sia"))
+        assertEquals("Shankar–Ehsaan–Loy", primaryArtist("Shankar–Ehsaan–Loy"))
+    }
+
+    @Test
+    fun playlistRowsDoNotPutTheSongLengthInTheArtist() {
+        val root = JSONObject(
+            """
+            {"items":[{"musicResponsiveListItemRenderer":{
+              "playlistItemData":{"videoId":"h0ffIJ7ZO4U"},
+              "overlay":{"musicItemThumbnailOverlayRenderer":{"content":{
+                "musicPlayButtonRenderer":{"accessibilityPlayData":{"accessibilityData":{
+                  "label":"Play Sultans Of Swing - Dire Straits - 4 minutes, 27 seconds"
+                }}}
+              }}},
+              "flexColumns":[
+                {"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"Sultans Of Swing"}]}}}
+              ]
+            }}]}
+            """.trimIndent(),
+        )
+
+        val track = CatalogRendererParser
+            .parse(root, "playlist", "Classic Easy Rock", CatalogLocale("en", "IN"))
+            .sections.single().items.single().track
+
+        assertEquals("Dire Straits", track?.artist)
     }
 }

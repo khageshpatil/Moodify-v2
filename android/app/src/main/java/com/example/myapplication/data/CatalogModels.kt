@@ -39,6 +39,8 @@ data class CatalogPage(
     val chips: List<CatalogChip>? = null,
     /** YouTube session that served this page; its paging token only works with it. */
     val visitorData: String? = null,
+    /** The page's own header image (an artist's photo, an album cover). Null for older cached pages. */
+    val artworkUrl: String? = null,
 )
 
 /** A Home filter chip; browsing FEmusic_home with [params] reloads Home for it. */

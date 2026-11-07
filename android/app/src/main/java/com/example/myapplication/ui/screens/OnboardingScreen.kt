@@ -77,9 +77,10 @@ private val LANGUAGE_CHOICES = listOf("en" to "English", "hi" to "हिन्�
 fun OnboardingScreen(onFinish: (language: String, region: String, moods: List<String>) -> Unit) {
     var step by rememberSaveable { mutableIntStateOf(0) }
     val deviceLocale = remember { Locale.getDefault() }
-    var region by rememberSaveable {
-        mutableStateOf(deviceLocale.country.uppercase().takeIf { it.length == 2 } ?: "US")
-    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // Network/SIM country first: an English (US) phone in India should still get India's music.
+    val detectedRegion = remember { com.moodify.app.data.RegionDetector.detect(context) }
+    var region by rememberSaveable { mutableStateOf(detectedRegion) }
     var language by rememberSaveable {
         mutableStateOf(deviceLocale.language.lowercase().takeIf { it.isNotBlank() } ?: "en")
     }
@@ -120,11 +121,11 @@ fun OnboardingScreen(onFinish: (language: String, region: String, moods: List<St
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (step == 2) {
-                    TextButton(onClick = { onFinish(language, region, moods.toList()) }) { Text("Skip") }
+                    TextButton(onClick = { onFinish(language, if (region == detectedRegion) com.moodify.app.data.SettingsStore.AUTOMATIC_REGION else region, moods.toList()) }) { Text("Skip") }
                 }
                 Spacer(Modifier.weight(1f))
                 Button(
-                    onClick = { if (step < 2) step++ else onFinish(language, region, moods.toList()) },
+                    onClick = { if (step < 2) step++ else onFinish(language, if (region == detectedRegion) com.moodify.app.data.SettingsStore.AUTOMATIC_REGION else region, moods.toList()) },
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.xxl, vertical = 16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {

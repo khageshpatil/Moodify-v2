@@ -21,7 +21,8 @@ class CatalogCacheStore(
     suspend fun read(key: String, locale: CatalogLocale): CatalogPage? = withContext(Dispatchers.IO) {
         val entry = dao.catalogPage(key) ?: return@withContext null
         if (entry.localeLanguage != locale.language || entry.localeRegion != locale.region) {
-            dao.deleteCatalogPagesForOtherLocale(locale.language, locale.region)
+            // Never prune here: an early read can carry the default locale before
+            // stored settings arrive, and must not wipe the user's real cache.
             return@withContext null
         }
         runCatching { gson.fromJson(entry.pageJson, CatalogPage::class.java) }.getOrNull()

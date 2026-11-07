@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import AuraApp from "./aura/AuraApp";
 import { IdentityProvider } from "./components/identity/IdentityProvider";
 
 const queryClient = new QueryClient();
@@ -14,7 +14,6 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <IdentityProvider>
       <BrowserRouter 
         basename={import.meta.env.BASE_URL}
         future={{
@@ -23,13 +22,13 @@ const App = () => (
         }}
       >
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/vibes/:vibeId" element={<Index />} />
+          {/* The previous interface, kept while the redesign settles. */}
+          <Route path="/classic" element={<IdentityProvider><Index /></IdentityProvider>} />
+          <Route path="/vibes/:vibeId" element={<IdentityProvider><Index /></IdentityProvider>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/*" element={<AuraApp />} />
         </Routes>
       </BrowserRouter>
-      </IdentityProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
