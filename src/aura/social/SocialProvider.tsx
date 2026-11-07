@@ -124,6 +124,38 @@ const loadThreads = (code: string): ChatThreads => Object.fromEntries(Object.ent
   .map(([peer, thread]) => [peer, thread.map((m) => (m.status === 'sending' ? { ...m, status: 'failed' as const } : m))]));
 const notificationState = (): NotificationPermission | 'unsupported' => (typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
 
+const PUSH_SW = '/moodify-sw.js';
+const pushKey = (code: string) => `aura.social.push.${code}`;
+const PUSH_REFRESH_MS = 7 * 24 * 3600 * 1000;
+const pushSupported = () => typeof navigator !== 'undefined' && 'serviceWorker' in navigator && typeof window !== 'undefined' && 'PushManager' in window;
+
+/**
+ * Browser notifications while Moodify is closed (chat.md §3): subscribes this
+ * browser and tells the server. The pings carry no data. False when the
+ * browser or the server doesn't support it.
+ */
+async function subscribePush(sessionToken: string): Promise<boolean> {
+  if (!pushSupported()) return false;
+  let publicKey: string;
+  try { publicKey = (await api<{ publicKey: string }>('GET', '/v1/push/vapid')).data.publicKey; } catch { return false; }
+  await navigator.serviceWorker.register(PUSH_SW);
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  const current = subscription?.options.applicationServerKey;
+  if (subscription && current && bytesToBase64Url(new Uint8Array(current)) !== publicKey) {
+    await subscription.unsubscribe(); // the server's key changed: start over
+    subscription = null;
+  }
+  subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToBytes(publicKey) as BufferSource });
+  await api('PUT', '/v1/push', { device: deviceId(), platform: 'webpush', subscription: subscription.toJSON() }, sessionToken);
+  return true;
+}
+
+async function unsubscribePush() {
+  if (!pushSupported()) return;
+  try { await (await (await navigator.serviceWorker.getRegistration(PUSH_SW))?.pushManager.getSubscription())?.unsubscribe(); } catch { /* already gone */ }
+}
+
 export function SocialProvider({ children }: { children: ReactNode }) {
   const player = usePlayer();
   const navigate = useNavigate();
@@ -317,6 +349,23 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     return friend;
   };
 
+  // Browser notifications: keep this browser subscribed (refreshed weekly) once you allowed them.
+  useEffect(() => {
+    if (!identity || !SOCIAL_URL || notificationState() !== 'granted') return;
+    const last = readJson<number>(pushKey(identity.code), 0);
+    if (Date.now() - last < PUSH_REFRESH_MS) return;
+    void token().then(subscribePush).then((ok) => { if (ok) writeJson(pushKey(identity.code), Date.now()); }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identity, notifications]);
+
+  // A tapped notification in a tab that was already open.
+  useEffect(() => {
+    if (!pushSupported()) return;
+    const onMessage = (event: MessageEvent) => { if (event.data?.type === 'moodify-open' && typeof event.data.url === 'string' && event.data.url.startsWith('/')) navigate(event.data.url); };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [navigate]);
+
   // Live connection while an identity exists and the server is configured.
   useEffect(() => {
     if (!identity || !SOCIAL_URL) return;
@@ -413,7 +462,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     },
     async deleteAccount() {
       if (meta.registered) await api('DELETE', '/v1/me', undefined, await token());
-      if (identity) { try { localStorage.removeItem(chatKey(identity.code)); localStorage.removeItem(cursorKey(identity.code)); } catch { /* blocked */ } }
+      if (identity) { try { localStorage.removeItem(chatKey(identity.code)); localStorage.removeItem(cursorKey(identity.code)); localStorage.removeItem(pushKey(identity.code)); } catch { /* blocked */ } }
+      await unsubscribePush();
       await clearIdentity();
       session.current = null;
       setIdentity(null); setSeed(null); setLists({ friends: [], incoming: [], outgoing: [] }); setPresence({}); setShared([]);

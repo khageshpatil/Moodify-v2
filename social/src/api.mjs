@@ -27,6 +27,20 @@ export const LIMITS = {
   pushDevices: 10,
 };
 const PUSH_TOKEN = /^[A-Za-z0-9:_-]{20,4096}$/;
+const B64URL = /^[A-Za-z0-9_-]+$/;
+
+/** A browser's push subscription, cleaned; stored as JSON in the token column. */
+function webPushSubscription(sub) {
+  const endpoint = typeof sub?.endpoint === 'string' && sub.endpoint.length <= 1024 ? sub.endpoint : null;
+  let url = null;
+  try { url = endpoint ? new URL(endpoint) : null; } catch { url = null; }
+  if (!url || url.protocol !== 'https:') return null;
+  const p256dh = sub?.keys?.p256dh;
+  const auth = sub?.keys?.auth;
+  if (typeof p256dh !== 'string' || !B64URL.test(p256dh) || p256dh.length !== 87) return null; // 65 bytes
+  if (typeof auth !== 'string' || !B64URL.test(auth) || auth.length !== 22) return null; // 16 bytes
+  return JSON.stringify({ endpoint, keys: { p256dh, auth } });
+}
 const DEVICE_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -66,6 +80,7 @@ export const pair = (x, y) => (x < y ? [x, y] : [y, x]);
  */
 export function createApi({
   store, secret, notify = async () => {}, push = null, defer = (work) => work, now = () => Math.floor(Date.now() / 1000),
+  vapidPublicKey = null,
 }) {
   /** Wakes [code]'s devices that aren't connected live, so they fetch the inbox (chat.md §3). */
   async function wake(code, liveDevices) {
@@ -318,6 +333,9 @@ export function createApi({
       await store.putChallenge(nonce, now() + CHALLENGE_SECONDS, now());
       return json(200, { challenge: nonce, expiresIn: CHALLENGE_SECONDS });
     }
+    if (method === 'GET' && pathname === '/v1/push/vapid') {
+      return vapidPublicKey ? json(200, { publicKey: vapidPublicKey }) : error(404, 'no_web_push', 'Browser notifications are not set up on this server.');
+    }
     if (method === 'POST' && pathname === '/v1/accounts') return register(request);
     if (method === 'POST' && pathname === '/v1/auth/verify') return login(request);
 
@@ -415,9 +433,13 @@ export function createApi({
     if (pathname === '/v1/push' && method === 'PUT') {
       const body = await readJson(request);
       const device = typeof body?.device === 'string' && DEVICE_ID.test(body.device) ? body.device : null;
-      const platform = body?.platform === 'fcm' ? 'fcm' : null;
-      const token = typeof body?.token === 'string' && PUSH_TOKEN.test(body.token) ? body.token : null;
-      if (!device || !platform || !token) return error(400, 'bad_push', 'Expected {device, platform: "fcm", token}.');
+      const platform = ['fcm', 'webpush'].includes(body?.platform) ? body.platform : null;
+      const token = platform === 'fcm'
+        ? (typeof body?.token === 'string' && PUSH_TOKEN.test(body.token) ? body.token : null)
+        : webPushSubscription(body?.subscription);
+      if (!device || !platform || !token) {
+        return error(400, 'bad_push', 'Expected {device, platform: "fcm", token} or {device, platform: "webpush", subscription}.');
+      }
       await store.putPushToken({ code: me.code, device, platform, token, updated_at: now() }, LIMITS.pushDevices);
       return new Response(null, { status: 204 });
     }

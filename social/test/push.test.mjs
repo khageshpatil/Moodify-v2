@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { identityFromSeed, seal } from '../src/client-keys.mjs';
 import { base64UrlToBytes, bytesToBase64Url } from '../src/identity.mjs';
-import { fcmPush } from '../src/push.mjs';
+import { combinePush, fcmPush, webPush } from '../src/push.mjs';
 import { harness, seed, user } from './helpers.mjs';
 
 const TOKEN_A = 'fcm-token-for-phone-A:APA91b' + 'x'.repeat(40);
@@ -129,4 +129,68 @@ test('FCM: a signed service-account assertion, then a high-priority data-only me
   assert.equal(send.init.headers.Authorization, 'Bearer ya29.test');
   assert.deepEqual(JSON.parse(send.init.body).message, { token: TOKEN_A, data: { kind: 'message' }, android: { priority: 'HIGH', ttl: '86400s', collapse_key: 'inbox' } });
   assert.equal(fcmPush(JSON.stringify(account), fakeFetch) instanceof Function, true);
+});
+
+const P256DH = 'B' + 'A'.repeat(86); // 87 base64url characters = 65 bytes
+const AUTH = 'C'.repeat(22);
+const subscription = (endpoint = 'https://fcm.googleapis.com/fcm/send/abc123') => ({ endpoint, keys: { p256dh: P256DH, auth: AUTH } });
+
+test('browsers register a push subscription; the public key is served', async () => {
+  const h = harness({ push: recorder().push, vapidPublicKey: 'BPublicKeyForTests' });
+  const asha = await user(h, 51, 'Asha');
+  assert.equal((await h.call('GET', '/v1/push/vapid')).body.publicKey, 'BPublicKeyForTests');
+  assert.equal((await harness().call('GET', '/v1/push/vapid')).status, 404, 'not set up: browsers skip notifications');
+  const put = (sub) => h.call('PUT', '/v1/push', { device: 'web-asha-laptop', platform: 'webpush', subscription: sub }, asha.token);
+  assert.equal((await put(subscription('http://push.example/x'))).status, 400, 'https only');
+  assert.equal((await put({ ...subscription(), keys: { p256dh: 'short', auth: AUTH } })).status, 400);
+  assert.equal((await put({ ...subscription(), extra: 'dropped' })).status, 204);
+  const [stored] = await h.store.listPushTokens(asha.code);
+  assert.equal(stored.platform, 'webpush');
+  assert.deepEqual(JSON.parse(stored.token), subscription(), 'only endpoint and keys are kept');
+});
+
+test('Web Push: an empty ping signed with VAPID; 410 means the subscription is gone', async () => {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+  const privateKey = (await crypto.subtle.exportKey('jwk', pair.privateKey)).d;
+  const publicKey = bytesToBase64Url(new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey)));
+  const calls = [];
+  const fakeFetch = async (url, init) => {
+    calls.push({ url, init });
+    return new Response(null, { status: url.endsWith('/expired') ? 410 : 201 });
+  };
+  const push = webPush({ privateKey, publicKey, subject: 'https://moodify.test' }, fakeFetch);
+  const target = (endpoint) => ({ platform: 'webpush', token: JSON.stringify(subscription(endpoint)) });
+  assert.equal(await push(target('https://fcm.googleapis.com/fcm/send/abc123'), { kind: 'message' }), 'ok');
+  assert.equal(await push(target('https://updates.push.services.mozilla.com/wpush/v2/expired'), { kind: 'message' }), 'gone');
+  assert.equal(await push({ platform: 'fcm', token: TOKEN_A }, {}), 'error');
+
+  const { init } = calls[0];
+  assert.equal(init.body, undefined, 'no payload: nothing for the push service to read');
+  assert.equal(init.headers.Urgency, 'high');
+  assert.equal(init.headers.Topic, 'inbox');
+  assert.equal(init.headers.TTL, '86400');
+  const [, jwt, k] = init.headers.Authorization.match(/^vapid t=([^,]+), k=(.+)$/);
+  assert.equal(k, publicKey);
+  const [header, claims, signature] = jwt.split('.');
+  const verifyKey = await crypto.subtle.importKey('raw', base64UrlToBytes(publicKey), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+  assert.ok(await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, verifyKey, base64UrlToBytes(signature), new TextEncoder().encode(`${header}.${claims}`)));
+  const c = JSON.parse(new TextDecoder().decode(base64UrlToBytes(claims)));
+  assert.equal(c.aud, 'https://fcm.googleapis.com');
+  assert.equal(c.sub, 'https://moodify.test');
+  // A second audience gets its own token; the first is reused.
+  assert.notEqual(calls[1].init.headers.Authorization, init.headers.Authorization);
+  await push(target('https://fcm.googleapis.com/fcm/send/other'), {});
+  assert.equal(calls[2].init.headers.Authorization, init.headers.Authorization);
+});
+
+test('pings go to the sender for each platform', async () => {
+  const fcm = recorder();
+  const web = recorder();
+  const push = combinePush({ fcm: fcm.push, webpush: web.push });
+  await push({ platform: 'fcm', token: TOKEN_A }, { kind: 'message' });
+  await push({ platform: 'webpush', token: '{}' }, { kind: 'message' });
+  assert.equal(fcm.sent.length, 1);
+  assert.equal(web.sent.length, 1);
+  assert.equal(await combinePush({ fcm: fcm.push, webpush: null })({ platform: 'webpush', token: '{}' }, {}), 'error');
+  assert.equal(combinePush({ fcm: null, webpush: null }), undefined);
 });

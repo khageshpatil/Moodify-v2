@@ -6,6 +6,7 @@
  *
  * Android: Firebase Cloud Messaging HTTP v1, signed with the service account
  * in the FCM_SERVICE_ACCOUNT secret (raw JSON, or base64 of it).
+ * Browsers: Web Push with VAPID keys (VAPID_PRIVATE_KEY / VAPID_PUBLIC_KEY).
  */
 import { base64UrlToBytes, bytesToBase64Url } from './identity.mjs';
 
@@ -84,10 +85,80 @@ export function fcmPush(secret, fetchImpl = fetch) {
   };
 }
 
+// ── Web Push (RFC 8030 + VAPID, RFC 8292) ───────────────────────────────────
+// The browser ping has no payload at all: the push service gets nothing to
+// read, not even ciphertext. The service worker shows "New message from a
+// friend"; the page fetches and decrypts when you open it.
+
+/** VAPID keys from VAPID_PRIVATE_KEY (base64url, 32 bytes) + VAPID_PUBLIC_KEY (base64url, 65 bytes). */
+async function vapidSigner(privateKey, publicKey) {
+  const pub = base64UrlToBytes(publicKey);
+  if (pub.length !== 65 || pub[0] !== 4) throw new Error('VAPID_PUBLIC_KEY must be an uncompressed P-256 key');
+  const jwk = { kty: 'EC', crv: 'P-256', d: privateKey, x: bytesToBase64Url(pub.slice(1, 33)), y: bytesToBase64Url(pub.slice(33)), ext: true };
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  return async (claims) => {
+    const unsigned = `${b64url(JSON.stringify({ typ: 'JWT', alg: 'ES256' }))}.${b64url(JSON.stringify(claims))}`;
+    // WebCrypto ECDSA signatures are already the raw r||s form JWS wants.
+    const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, enc.encode(unsigned));
+    return `${unsigned}.${b64url(signature)}`;
+  };
+}
+
+/** A sender for `platform: "webpush"`; the token is the subscription JSON. */
+export function webPush({ privateKey, publicKey, subject }, fetchImpl = fetch) {
+  const signer = vapidSigner(privateKey, publicKey);
+  const tokens = new Map(); // audience -> { jwt, exp }
+  return async function push(target) {
+    if (target.platform !== 'webpush') return 'error';
+    try {
+      const subscription = JSON.parse(target.token);
+      const audience = new URL(subscription.endpoint).origin;
+      const now = Math.floor(Date.now() / 1000);
+      let cached = tokens.get(audience);
+      if (!cached || cached.exp < now + 600) {
+        const exp = now + 12 * 3600;
+        cached = { jwt: await (await signer)({ aud: audience, exp, sub: subject }), exp };
+        tokens.set(audience, cached);
+      }
+      const response = await fetchImpl(subscription.endpoint, {
+        method: 'POST',
+        headers: { Authorization: `vapid t=${cached.jwt}, k=${publicKey}`, TTL: '86400', Urgency: 'high', Topic: 'inbox', 'Content-Length': '0' },
+      });
+      if (response.ok) return 'ok';
+      if (response.status === 404 || response.status === 410) return 'gone';
+      console.warn('web push failed', response.status);
+      return 'error';
+    } catch (err) {
+      console.warn('web push failed', err?.message);
+      return 'error';
+    }
+  };
+}
+
+/** Routes each ping to the sender for its platform. */
+export function combinePush(senders) {
+  const available = Object.entries(senders).filter(([, send]) => send);
+  if (!available.length) return undefined;
+  const byPlatform = Object.fromEntries(available);
+  return async (target, data) => (byPlatform[target.platform] ? byPlatform[target.platform](target, data) : 'error');
+}
+
+export const DEFAULT_VAPID_SUBJECT = 'https://github.com/khageshpatil/Moodify-v2';
+
 let shared = null;
-/** One sender per isolate, so the access token is reused across requests. */
+/** One sender per isolate, so access tokens and VAPID tokens are reused across requests. */
 export function pushFromEnv(env) {
-  if (!env.FCM_SERVICE_ACCOUNT) return undefined;
-  if (shared?.secret !== env.FCM_SERVICE_ACCOUNT) shared = { secret: env.FCM_SERVICE_ACCOUNT, push: fcmPush(env.FCM_SERVICE_ACCOUNT) };
+  const config = `${env.FCM_SERVICE_ACCOUNT ?? ''}|${env.VAPID_PRIVATE_KEY ?? ''}|${env.VAPID_PUBLIC_KEY ?? ''}`;
+  if (shared?.config !== config) {
+    shared = {
+      config,
+      push: combinePush({
+        fcm: env.FCM_SERVICE_ACCOUNT ? fcmPush(env.FCM_SERVICE_ACCOUNT) : null,
+        webpush: env.VAPID_PRIVATE_KEY && env.VAPID_PUBLIC_KEY
+          ? webPush({ privateKey: env.VAPID_PRIVATE_KEY, publicKey: env.VAPID_PUBLIC_KEY, subject: env.VAPID_SUBJECT || DEFAULT_VAPID_SUBJECT })
+          : null,
+      }),
+    };
+  }
   return shared.push;
 }
