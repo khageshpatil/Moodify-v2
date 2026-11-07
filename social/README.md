@@ -24,13 +24,28 @@ Debug Android builds call `http://10.0.2.2:8790`, which is this server as seen f
 npm test   # node --test: identity vectors, tokens, and the full API against an in-memory store
 ```
 
-## First deploy (once)
+## Deployment
 
-1. `npx wrangler login`
-2. `npx wrangler d1 create moodify-social`, then paste the printed id into `wrangler.toml`.
-3. `npx wrangler d1 migrations apply moodify-social --remote`
-4. `npx wrangler secret put SESSION_SECRET`. Use 32 or more random characters, and never reuse the dev one.
-5. `npx wrangler deploy`
-6. Build the Android release with `-PsocialBaseUrl=https://moodify-social.<your-subdomain>.workers.dev`, or a custom domain.
+Live at **https://moodify-social.moodify-kp.workers.dev** (D1 database `moodify-social`, `f57a4ad6-a00f-4bde-91f4-8270e1fb0b53`).
 
-Release builds without `socialBaseUrl` still let people create and back up a code on their phone. It registers automatically once a server address is configured.
+**Automatic (every merge to `main`):** Cloudflare Workers Builds, connected on the `moodify-social` worker
+(Settings > Build) with:
+
+| Setting | Value |
+|---|---|
+| Branch | `main` (non-production branch builds off) |
+| Root directory | `social` |
+| Build command | *(empty)* |
+| Deploy command | `npx wrangler d1 migrations apply moodify-social --remote && npx wrangler deploy` |
+
+**By hand:** `npx wrangler login`, then the same two commands from this folder.
+
+**Secrets** (Settings > Variables and Secrets, or `npx wrangler secret put NAME`); they survive deploys:
+
+| Secret | What |
+|---|---|
+| `SESSION_SECRET` | 32+ random characters; never reuse the dev one |
+| `FCM_SERVICE_ACCOUNT` | Firebase service-account JSON, for Android wake-up pings |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Browser wake-up pings; make a pair with `node scripts/vapid-keys.mjs` |
+
+Clients: Android release builds default to the live address (override with `-PsocialBaseUrl=…`); the web app reads `VITE_SOCIAL_URL` (set in Vercel).
