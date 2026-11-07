@@ -529,7 +529,8 @@ fun PlayerMoreSheet(
     onShowRelated: () -> Unit = {},
     onOpenSleepTimer: () -> Unit = {},
     onOpenEqualizer: () -> Unit = {},
-    roomId: String? = null,
+    /** "Listening room · ID" or "Following Ravi" while in one; null otherwise. */
+    roomLabel: String? = null,
     onListenTogether: (() -> Unit)? = null,
 ) {
     val track = state.currentTrack ?: return
@@ -548,7 +549,7 @@ fun PlayerMoreSheet(
             SheetAction(Icons.Rounded.Person, "Go to artist", { onMoreByArtist(); onDismiss() })
             SheetAction(Icons.Rounded.Share, "Share", { shareTrack(context, track); onDismiss() })
             onListenTogether?.let { open ->
-                SheetAction(Icons.Rounded.Group, roomId?.let { "Listening room · $it" } ?: "Listen together", { onDismiss(); open() })
+                SheetAction(Icons.Rounded.Group, roomLabel ?: "Listen together", { onDismiss(); open() })
             }
             SheetAction(Icons.Rounded.Bedtime, if (sleepOn) "Sleep timer (on)" else "Sleep timer", { onDismiss(); onOpenSleepTimer() })
             val speedLabel = buildString {

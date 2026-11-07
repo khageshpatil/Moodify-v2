@@ -52,6 +52,7 @@ class FriendsViewModel : ViewModel() {
     fun startRoom() = run { val id = rooms.create(); say("Room ${id.chunked(3).joinToString(" ")} is open. Invite friends.") }
     fun joinRoom(roomId: String) = rooms.join(roomId)
     fun leaveRoom() = rooms.leave()
+    fun followFriend(friend: SocialUser) = rooms.followFriend(friend.code, friend.displayName)
     fun roomChat(text: String) = rooms.chat(text)
     fun makeDj(code: String) = rooms.makeDj(code)
     fun makeHost(code: String) = rooms.makeHost(code)

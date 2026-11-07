@@ -46,7 +46,7 @@ object AppGraph {
         get() = PlaybackManager.getInstance(app)
 
     /** Friends, presence and shares (social M2). Created on first use. */
-    val social by lazy { com.moodify.app.data.social.SocialRepository(app, playbackManager.state) }
+    val social by lazy { com.moodify.app.data.social.SocialRepository(app, playbackManager.state, playbackManager::currentPositionMs) }
 
     /** Listen together (social M4): one room at a time. */
     val rooms by lazy {
@@ -55,6 +55,9 @@ object AppGraph {
             playback = playbackManager,
             token = { social.sessionToken() },
             sendInvite = { friend, roomId, track -> social.sendRoomInvite(friend, roomId, track) },
+            presenceOf = { code -> social.presenceOf(code) },
+            serverClock = { social.serverClockOffsetMs() },
+            syncClock = { social.syncClock() },
         )
     }
 }

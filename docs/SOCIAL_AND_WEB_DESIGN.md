@@ -309,7 +309,7 @@ Each milestone ends with an installable build and a test on your phone.
 
 **Suggested order:** M0 → M1 → M2 → (M3 alongside M4) → M5 → M6 → M7.
 
-**Status (2026-11-07):** M0–M3 done and tested on the emulator. M4 rooms are done on Android and the web (protocol: `docs/social-protocol/rooms.md`): host, DJ and listener roles, clock sync, queue, suggestions, room chat, invites, and rejoining. Each device was tested against a scripted second listener, and each held within 50 ms of the room. Not done yet: "follow a friend" without a room, and the 10-minute phone-and-browser test in one room, which needs a real phone because the emulator can't run the app and Chrome together. Nothing is deployed: the social server has only run locally.
+**Status (2026-11-07):** M0–M3 done and tested on the emulator. M4 rooms are done on Android and the web (protocol: `docs/social-protocol/rooms.md`): host, DJ and listener roles, clock sync, queue, suggestions, room chat, invites, and rejoining. Each device was tested against a scripted second listener, and each held within 50 ms of the room. Following a friend (a one-way room fed by their "listening now") is done on both. Not done yet: the 10-minute phone-and-browser test in one room, which needs a real phone because the emulator can't run the app and Chrome together. Nothing is deployed: the social server has only run locally.
 
 M2 alone already makes Moodify social: friends, live activity and song sharing.
 

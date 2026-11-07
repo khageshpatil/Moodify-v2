@@ -85,7 +85,7 @@ Clients drop types or versions they don't know. Artwork must use `https://`. Cha
 
 ## 4. Live connection (WebSocket)
 
-**Connecting:** `GET /v1/live?token={session}` upgrades to a WebSocket held by that user's hub (a Durable Object). Every frame looks like this:
+**Connecting:** `GET /v1/live?token={session}&device={id}` upgrades to a WebSocket held by that user's hub (a Durable Object). Every frame looks like this:
 
 ```json
 {"v": 1, "type": "…", "ts": 1762400000000, "body": {}}
@@ -95,8 +95,8 @@ Clients drop types or versions they don't know. Artwork must use `https://`. Cha
 
 | Type | Body | Behaviour |
 |---|---|---|
-| `ping` | `{t}` | Answered with `pong {t}`. |
-| `presence.update` | `{trackId, title, artist, artworkUrl, durationMs, positionMs, playing}` or `{cleared:true}` | The server keeps only these fields, and only in memory. A position-only update reaches friends at most once a second. A song change or play/pause goes out at once. |
+| `ping` | `{t}` | Answered with `pong {t}`; the frame's `ts` is the server time, so clients measure their clock offset from the round trip. |
+| `presence.update` | `{trackId, title, artist, artworkUrl, durationMs, positionMs, playing, seek?}` or `{cleared:true}` | The server keeps only these fields, and only in memory. A position-only update reaches friends at most once a second; one marked `seek: true` (the position jumped) at most 4 times a second. A song change or play/pause goes out at once. Clients send the player's live position, and refresh it every 15 s while playing. |
 | `settings.update` | `{sharing}` | `false` makes you look offline to friends. |
 
 **Sent by the server:**
@@ -104,7 +104,7 @@ Clients drop types or versions they don't know. Artwork must use `https://`. Cha
 | Type | Body |
 |---|---|
 | `hello` | `{code, friends: [{code, online, presence, lastSeenAt}]}`: what each friend is doing at the moment you connect |
-| `presence.friend` | `{code, online, presence, lastSeenAt}`. When a friend's last device goes offline, `presence` becomes their last song, paused, and `lastSeenAt` is set. That "last played" isn't saved, so it's forgotten if the hub restarts. |
+| `presence.friend` | `{code, online, presence, lastSeenAt}`. `presence.at` is the server time (ms) when `positionMs` was reported, so a follower knows where the song is now (`rooms.md` §7). When a friend's last device goes offline, `presence` becomes their last song, paused, and `lastSeenAt` is set. That "last played" isn't saved, so it's forgotten if the hub restarts. |
 | `friend.request` / `friend.accepted` / `friend.removed` | `{code, displayName?, note?}`. The client refreshes its friend lists. |
 | `msg.new` | `{from, id}`. The client fetches and decrypts it from `/v1/messages`. |
 

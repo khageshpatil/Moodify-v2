@@ -107,9 +107,40 @@ fun ListeningRoomSheet(
                     onAction = actions.onGetCode,
                 )
                 room == null -> StartOrJoin(actions)
+                room.isFollowing -> Following(room, actions.onLeave)
                 else -> InRoom(room, friends, actions)
             }
         }
+    }
+}
+
+@Composable
+private fun Following(room: RoomUiState, onStop: () -> Unit) {
+    val name = room.followingName.orEmpty()
+    Column(Modifier.padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        Text("Following $name", style = MaterialTheme.typography.titleLarge)
+        Text(
+            room.error ?: "Your player mirrors $name's: the same song at the same moment. Play or pause yourself to stop.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        room.track?.let { track ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ArtworkImage(url = track.albumArtUrl, contentDescription = null, placeholderKey = track.id, shape = RoundedCornerShape(Radii.md), modifier = Modifier.size(52.dp))
+                Spacer(Modifier.width(Spacing.md))
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (room.playing) {
+                            EqualizerBars(playing = true, color = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(Spacing.xs))
+                        }
+                        Text(track.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text(track.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+        OutlinedButton(onClick = onStop, modifier = Modifier.fillMaxWidth()) { Text("Stop following") }
     }
 }
 

@@ -6,6 +6,8 @@
  */
 
 const PRESENCE_MIN_INTERVAL_MS = 1000;
+/** A seek goes out at once (followers jump with you), but never more than 4 a second. */
+const SEEK_MIN_INTERVAL_MS = 250;
 const FRIEND_CACHE_MS = 30_000;
 
 const text = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
@@ -51,16 +53,17 @@ export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now =
     const open = sockets();
     if (open.some((s) => s.state.sharing === false)) return { online: false, presence: null, lastSeenAt: null };
     const live = open.map((s) => s.state).filter((st) => st.presence).sort((x, y) => y.updatedAt - x.updatedAt)[0];
-    if (live) return { online: true, presence: live.presence, lastSeenAt: null };
+    // `at`: server time the position was reported, so followers know where the song is now.
+    if (live) return { online: true, presence: { ...live.presence, at: live.updatedAt }, lastSeenAt: null };
     if (open.length > 0) return { online: true, presence: null, lastSeenAt: null };
     return { online: false, presence: lastSeen?.presence ?? null, lastSeenAt: lastSeen?.at ?? null };
   }
 
-  async function fanOut(force = false) {
+  async function fanOut(force = false, seek = false) {
     const snapshot = currentPresence();
     const key = JSON.stringify([snapshot.online, snapshot.presence?.trackId, snapshot.presence?.playing]);
     // Position ticks are rate-limited; track and play/pause changes go out at once.
-    if (!force && key === lastFanoutKey && now() - lastFanoutAt < PRESENCE_MIN_INTERVAL_MS) return;
+    if (!force && key === lastFanoutKey && now() - lastFanoutAt < (seek ? SEEK_MIN_INTERVAL_MS : PRESENCE_MIN_INTERVAL_MS)) return;
     lastFanoutAt = now();
     lastFanoutKey = key;
     const event = { type: 'presence.friend', body: { code, ...snapshot } };
@@ -96,7 +99,7 @@ export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now =
         case 'presence.update': {
           socket.state.presence = message.body?.cleared ? null : cleanPresence(message.body);
           socket.state.updatedAt = now();
-          await fanOut(false);
+          await fanOut(false, message.body?.seek === true);
           return;
         }
         case 'settings.update': {

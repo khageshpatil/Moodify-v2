@@ -91,6 +91,7 @@ fun FriendsScreen(
     onDismissShared: (Long) -> Unit,
     onRefresh: () -> Unit,
     onJoinRoom: (String) -> Unit = {},
+    onFollow: (SocialUser) -> Unit = {},
     conversations: List<com.moodify.app.data.social.ConversationRow> = emptyList(),
     onOpenChat: (String) -> Unit = {},
     prefillCode: String? = null,
@@ -205,7 +206,7 @@ fun FriendsScreen(
             if (listening.isNotEmpty()) {
                 item(key = "listeningHeader") { SectionHeader(title = "Listening now") }
                 items(listening, key = { "live:${it.first.code}" }) { (friend, presence) ->
-                    ListeningRow(friend, presence, onPlay = { presence.track?.let { actions.play(it, listOf(it)) } })
+                    ListeningRow(friend, presence, onPlay = { presence.track?.let { actions.play(it, listOf(it)) } }, onFollow = { onFollow(friend) })
                 }
             }
 
@@ -303,7 +304,7 @@ private fun SharedRow(item: SharedItem, onOpen: () -> Unit, onDismiss: () -> Uni
 }
 
 @Composable
-private fun ListeningRow(friend: SocialUser, presence: FriendPresence, onPlay: () -> Unit) {
+private fun ListeningRow(friend: SocialUser, presence: FriendPresence, onPlay: () -> Unit, onFollow: () -> Unit) {
     val track = presence.track ?: return
     Row(
         Modifier
@@ -326,7 +327,10 @@ private fun ListeningRow(friend: SocialUser, presence: FriendPresence, onPlay: (
             Text(track.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(track.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        FilledTonalButton(onClick = onPlay) { Text("Play") }
+        Column(horizontalAlignment = Alignment.End) {
+            FilledTonalButton(onClick = onFollow) { Text("Follow") }
+            TextButton(onClick = onPlay) { Text("Just play") }
+        }
     }
 }
 

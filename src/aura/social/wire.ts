@@ -33,7 +33,8 @@ export interface WireFriendPresence {
   code: string;
   online?: boolean;
   lastSeenAt?: number | null;
-  presence?: (WireTrack & { playing?: boolean; positionMs?: number }) | null;
+  /** `at`: server time (ms) the position was reported. */
+  presence?: (WireTrack & { playing?: boolean; positionMs?: number; at?: number }) | null;
 }
 
 /** One inbox entry (chat.md §2); `to` is set on your own copies. */

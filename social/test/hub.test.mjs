@@ -78,6 +78,26 @@ test('position ticks are rate-limited but song changes go out at once', async ()
   assert.equal(of(b, 'presence.friend').length, before + 3);
 });
 
+test('presence says when its position was reported; a seek goes out at once', async () => {
+  const net = network({ A: ['B'], B: ['A'] });
+  const b = await net.connect('B');
+  const a = await net.connect('A');
+  await net.hubOf('A').onMessage(a, update(song));
+  const first = of(b, 'presence.friend').at(-1).body.presence;
+  assert.equal(typeof first.at, 'number', 'server time of the report');
+  assert.equal(first.positionMs, 1000);
+  const count = of(b, 'presence.friend').length;
+  net.tick(300);
+  await net.hubOf('A').onMessage(a, update({ ...song, positionMs: 120000 }));
+  assert.equal(of(b, 'presence.friend').length, count, 'a plain tick within a second is held back');
+  await net.hubOf('A').onMessage(a, update({ ...song, positionMs: 120000, seek: true }));
+  const jumped = of(b, 'presence.friend').at(-1).body.presence;
+  assert.equal(jumped.positionMs, 120000, 'the seek reached the follower');
+  assert.ok(jumped.at > first.at);
+  await net.hubOf('A').onMessage(a, update({ ...song, positionMs: 130000, seek: true }));
+  assert.equal(of(b, 'presence.friend').at(-1).body.presence.positionMs, 120000, 'seeks are capped at 4 a second');
+});
+
 test('turning sharing off makes you look offline', async () => {
   const net = network({ A: ['B'], B: ['A'] });
   const b = await net.connect('B');

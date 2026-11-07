@@ -316,7 +316,10 @@ export function FriendsScreen() {
                   <div className="type-title-medium aura-ellipsis">{track.title}</div>
                   <div className="type-body-small aura-muted aura-ellipsis">{track.artist}</div>
                 </div>
-                <button className="aura-btn aura-btn-tonal" onClick={() => player.playTrack(track, [track])}><Play size={16} fill="currentColor" />Play</button>
+                <div style={{ display: 'grid', gap: 4, justifyItems: 'end' }}>
+                  <button className="aura-btn aura-btn-tonal" onClick={() => { rooms.followFriend(f); navigate('/room'); }}>Follow</button>
+                  <button className="aura-btn-text" onClick={() => player.playTrack(track, [track])}><Play size={14} fill="currentColor" />Just play</button>
+                </div>
               </div>
             );
           })}
