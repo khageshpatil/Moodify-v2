@@ -335,12 +335,14 @@ interface MoodifyDao {
         CatalogPageCacheEntity::class,
         PlayStatEntity::class,
         SavedCollectionEntity::class,
+        com.moodify.app.data.social.ChatMessageEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class MoodifyDatabase : RoomDatabase() {
     abstract fun moodifyDao(): MoodifyDao
+    abstract fun chatDao(): com.moodify.app.data.social.ChatDao
 
     companion object {
         @Volatile private var instance: MoodifyDatabase? = null
@@ -351,7 +353,7 @@ abstract class MoodifyDatabase : RoomDatabase() {
                     context.applicationContext,
                     MoodifyDatabase::class.java,
                     DATABASE_NAME,
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                     .build().also { instance = it }
             }
@@ -364,7 +366,7 @@ abstract class MoodifyDatabase : RoomDatabase() {
             context.applicationContext,
             MoodifyDatabase::class.java,
             databaseName,
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .build()
 
@@ -494,6 +496,18 @@ abstract class MoodifyDatabase : RoomDatabase() {
                     }
                     if (!exists) database.execSQL("ALTER TABLE `$table` ADD COLUMN `$column` $definition")
                 }
+            }
+        }
+
+        /** v9 keeps chat history on this phone (social M5). */
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS chat_messages (mid TEXT NOT NULL, peer TEXT NOT NULL, fromMe INTEGER NOT NULL, " +
+                        "kind TEXT NOT NULL, body TEXT NOT NULL, sentAtMs INTEGER NOT NULL, status TEXT NOT NULL, " +
+                        "reactions TEXT NOT NULL, read INTEGER NOT NULL, PRIMARY KEY(mid))",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_chat_messages_peer_sentAtMs ON chat_messages (peer, sentAtMs)")
             }
         }
 

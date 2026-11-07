@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.HowToReg
 import androidx.compose.material.icons.rounded.LibraryAdd
 import androidx.compose.material.icons.rounded.LibraryAddCheck
@@ -58,6 +59,8 @@ fun BrowseScreen(
     isSaved: Boolean = false,
     /** Saves (or follows) this album / playlist / artist; null where saving doesn't apply. */
     onToggleSave: ((com.moodify.app.data.CatalogItem) -> Unit)? = null,
+    /** Send this album / playlist / artist to a friend. */
+    onSendToFriend: ((com.moodify.app.data.CatalogItem) -> Unit)? = null,
 ) {
     val actions = LocalMoodifyActions.current
     val page = state.page
@@ -120,6 +123,11 @@ fun BrowseScreen(
                     savedType == "artist" -> "Follow"
                     isSaved -> "Remove from Library"
                     else -> "Save to Library"
+                }
+                if (onSendToFriend != null) {
+                    androidx.compose.material3.IconButton(onClick = { onSendToFriend(item) }) {
+                        androidx.compose.material3.Icon(Icons.Rounded.Group, contentDescription = "Send to a friend")
+                    }
                 }
                 androidx.compose.material3.IconButton(onClick = { onToggleSave(item) }) {
                     androidx.compose.material3.Icon(

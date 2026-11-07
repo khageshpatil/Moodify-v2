@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object HomeRoute
 @Serializable data object SearchRoute
 @Serializable data object LibraryRoute
+@Serializable data object FriendsRoute
 
 // Destinations pushed on top of a tab.
 @Serializable
@@ -22,6 +23,10 @@ data class BrowseRoute(
 @Serializable data object HistoryRoute
 @Serializable data object SettingsRoute
 @Serializable data object StatsRoute
+@Serializable data object AccountRoute
+
+/** A conversation with a friend (social M5), by their Moodify code. */
+@Serializable data class ChatRoute(val code: String)
 
 /** One of Moodify's moods (see MoodOptions): songs plus YouTube's matching mood playlists. */
 @Serializable data class MoodRoute(val id: String)

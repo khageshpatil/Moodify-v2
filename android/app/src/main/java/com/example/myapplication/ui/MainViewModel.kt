@@ -290,6 +290,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 playbackManager.dataSaver = settings.dataSaver
                 playbackManager.pauseHistory = settings.pauseHistory
                 playbackManager.setSkipSilence(settings.skipSilence)
+                AppGraph.social.setShareListening(settings.shareListening)
                 com.moodify.app.player.DownloadWorker.wifiOnly = settings.downloadOnWifiOnly
                 playbackManager.setLocale(settings.language, settings.region)
             }
@@ -626,6 +627,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setShareListening(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setShareListening(enabled) }
+    }
+
     fun setSkipSilence(enabled: Boolean) {
         viewModelScope.launch { settingsStore.setSkipSilence(enabled) }
     }
@@ -653,6 +658,62 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             else -> _linkTarget.value = link
         }
+    }
+
+    /** A friend's invite link (moodify://add/CODE) waiting to open the Add dialog. */
+    private val _pendingFriendCode = MutableStateFlow<String?>(null)
+    val pendingFriendCode: StateFlow<String?> = _pendingFriendCode.asStateFlow()
+
+    fun openFriendInvite(code: String) {
+        _pendingFriendCode.value = com.moodify.app.data.social.MoodifyIdentity.normalizeCode(code)
+    }
+
+    /** A browser's QR code (moodify://link/CODE?k=KEY) waiting for the Account screen. */
+    /** A moodify://chat/CODE link (a message notification): open that conversation. */
+    private val _pendingChat = MutableStateFlow<String?>(null)
+    val pendingChat: StateFlow<String?> = _pendingChat.asStateFlow()
+
+    fun openChat(code: String) {
+        _pendingChat.value = com.moodify.app.data.social.MoodifyIdentity.normalizeCode(code)
+    }
+
+    fun consumeChat() {
+        _pendingChat.value = null
+    }
+
+    /** A moodify://room/ID link that was opened: join that listening room. */
+    private val _pendingRoom = MutableStateFlow<String?>(null)
+    val pendingRoom: StateFlow<String?> = _pendingRoom.asStateFlow()
+
+    fun openRoomInvite(roomId: String) {
+        _pendingRoom.value = roomId.uppercase().takeIf { it.matches(Regex("[0-9A-HJKMNP-TV-Z]{6}")) }
+    }
+
+    fun consumeRoomInvite() {
+        _pendingRoom.value = null
+    }
+
+    /** The listening-room sheet; kept here so it survives onboarding and recreation. */
+    private val _roomSheetOpen = MutableStateFlow(false)
+    val roomSheetOpen: StateFlow<Boolean> = _roomSheetOpen.asStateFlow()
+
+    fun setRoomSheetOpen(open: Boolean) {
+        _roomSheetOpen.value = open
+    }
+
+    private val _pendingDeviceLink = MutableStateFlow<Pair<String, String?>?>(null)
+    val pendingDeviceLink: StateFlow<Pair<String, String?>?> = _pendingDeviceLink.asStateFlow()
+
+    fun openDeviceLink(code: String, key: String?) {
+        _pendingDeviceLink.value = code to key
+    }
+
+    fun consumeDeviceLink() {
+        _pendingDeviceLink.value = null
+    }
+
+    fun consumeFriendInvite() {
+        _pendingFriendCode.value = null
     }
 
     fun consumeLinkTarget() {

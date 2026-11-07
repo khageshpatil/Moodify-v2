@@ -130,6 +130,8 @@ class SettingsActions(
     val onClearCatalogCache: () -> Unit = {},
     val onExportBackup: (android.net.Uri) -> Unit = {},
     val onImportBackup: (android.net.Uri) -> Unit = {},
+    val onOpenAccount: () -> Unit = {},
+    val onShareListening: (Boolean) -> Unit = {},
 )
 
 /** The last crash report kept on the device, if any. */
@@ -172,6 +174,22 @@ fun SettingsScreen(
             ) {
                 IconButton(onClick = actions.onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
                 Text("Settings", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+            }
+        }
+
+        item(key = "account") {
+            SettingsGroup("Friends") {
+                PickerRow(
+                    label = "Your Moodify code",
+                    value = "Connect with friends without a phone number",
+                    onClick = actions.onOpenAccount,
+                )
+                ToggleRow(
+                    "Share what I'm listening to",
+                    settings.shareListening,
+                    actions.onShareListening,
+                    description = "Friends see the song you're playing. Off: you look offline to them.",
+                )
             }
         }
 

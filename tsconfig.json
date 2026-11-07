@@ -4,7 +4,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@social/*": ["./social/src/*"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,

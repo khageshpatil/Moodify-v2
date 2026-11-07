@@ -28,6 +28,8 @@ export class PlaybackEngine {
   private endedListener: (() => void) | null = null;
   private mediaSessionHandlers: { next?: () => void; previous?: () => void } = {};
   private recoveryAttemptedTrackId: string | null = null;
+  /** The current track's stream URL, for reopening it at a later point. */
+  private sourceUrl = '';
 
   constructor(resolveSource?: PlaybackSourceResolver) {
     this.resolveSource = resolveSource ?? null;
@@ -101,6 +103,7 @@ export class PlaybackEngine {
     }
 
     if (controller.signal.aborted || requestId !== this.requestId) return;
+    this.sourceUrl = source.url;
     this.audio.src = source.url;
     this.audio.load();
     if ('mediaSession' in navigator) {
@@ -125,7 +128,39 @@ export class PlaybackEngine {
   async resume() { return this.play(); }
   togglePlay() { return this.audio.paused ? this.play() : Promise.resolve(this.pause()); }
   seek(time: number) {
-    if (Number.isFinite(time) && this.audio.readyState > 0) this.audio.currentTime = Math.max(0, Math.min(time, this.audio.duration || time));
+    if (!Number.isFinite(time) || this.audio.readyState === 0) return;
+    const target = Math.max(0, Math.min(time, this.audio.duration || time));
+    if (this.canSeekWithin(target) || !this.canReopenAt()) {
+      this.audio.currentTime = target;
+      return;
+    }
+    this.reopenAt(target);
+  }
+
+  /** True when [time] is in a range the browser can jump to without a new request. */
+  canSeekWithin(time: number) {
+    const within = (ranges: TimeRanges) => Array.from({ length: ranges.length }, (_, i) => i)
+      .some((i) => time >= ranges.start(i) && time <= ranges.end(i) && ranges.end(i) > ranges.start(i));
+    return within(this.audio.seekable) || within(this.audio.buffered);
+  }
+
+  /**
+   * Moodify's media relay streams a song front to back (no byte ranges), so the
+   * browser can't jump ahead in it. It can start a stream at a timestamp
+   * instead; that stream keeps the song's own timeline, so currentTime stays right.
+   */
+  private canReopenAt() {
+    return this.sourceUrl.includes('/api/media/') && !this.sourceUrl.includes('transport=direct');
+  }
+
+  private reopenAt(time: number) {
+    const wasPlaying = !this.audio.paused;
+    const url = new URL(this.sourceUrl, window.location.href);
+    url.searchParams.set('startMs', String(Math.round(time * 1000)));
+    this.update({ status: 'loading', currentTime: time });
+    this.audio.src = url.toString();
+    this.audio.load();
+    if (wasPlaying) void this.play();
   }
   setVolume(volume: number) { const value = Math.max(0, Math.min(100, volume)); this.audio.volume = value / 100; this.update({ volume: value }); }
   setMuted(muted: boolean) { this.audio.muted = muted; this.update({ muted }); }

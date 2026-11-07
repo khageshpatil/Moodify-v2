@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1028240020206",
+    "project_id": "moodify-2082c",
+    "storage_bucket": "moodify-2082c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1028240020206:android:452fd3402f7eb8da4f19ff",
+        "android_client_info": {
+          "package_name": "com.moodify.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8YeBNA0M3sSBXVzK6ZcZdDwg0Mxoiri4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

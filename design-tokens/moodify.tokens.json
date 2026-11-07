@@ -1,0 +1,203 @@
+{
+  "$comment": "Moodify 'Aura' design tokens: the single source for Android (GeneratedTokens.kt) and the web (src/aura/tokens.css). Edit here, then run `node scripts/build-tokens.mjs`.",
+  "color": {
+    "dark": {
+      "background": "#0B0B0F",
+      "surface": "#111116",
+      "surfaceLow": "#15151B",
+      "surfaceContainer": "#1A1A21",
+      "surfaceHigh": "#22222A",
+      "surfaceHighest": "#2B2B35",
+      "outline": "#3A3A46",
+      "outlineVariant": "#26262F",
+      "onBackground": "#F4F3F8",
+      "onSurfaceVariant": "#A9A8B6",
+      "muted": "#6E6D7B",
+      "primary": "#B79CFF",
+      "onPrimary": "#1C0B4A",
+      "primaryContainer": "#3A2A73",
+      "onPrimaryContainer": "#E6DCFF",
+      "secondary": "#FFB38A",
+      "onSecondary": "#3B1A06",
+      "secondaryContainer": "#2E2650",
+      "onSecondaryContainer": "#E6DCFF",
+      "tertiary": "#7FE0C8",
+      "onTertiary": "#00382D",
+      "error": "#FF8A8A",
+      "onError": "#4A0707"
+    },
+    "light": {
+      "background": "#F8F7FB",
+      "surface": "#FFFFFF",
+      "surfaceLow": "#F3F2F8",
+      "surfaceContainer": "#EEEDF4",
+      "surfaceHigh": "#E7E5EF",
+      "surfaceHighest": "#DFDDE9",
+      "outline": "#C4C2D0",
+      "outlineVariant": "#E2E0EA",
+      "onBackground": "#15141B",
+      "onSurfaceVariant": "#55536A",
+      "muted": "#8C8A9C",
+      "primary": "#6A43F0",
+      "onPrimary": "#FFFFFF",
+      "primaryContainer": "#E7DEFF",
+      "onPrimaryContainer": "#22095E",
+      "secondary": "#C2541D",
+      "onSecondary": "#FFFFFF",
+      "secondaryContainer": "#EAE3FF",
+      "onSecondaryContainer": "#22095E",
+      "tertiary": "#0F7B66",
+      "onTertiary": "#FFFFFF",
+      "error": "#C42B2B",
+      "onError": "#FFFFFF"
+    }
+  },
+  "moodHues": {
+    "violet": "#8B5CF6",
+    "coral": "#F97366",
+    "teal": "#22B8A6",
+    "amber": "#F2A93B",
+    "blue": "#4F8DF7",
+    "pink": "#E5579B",
+    "green": "#6BBF59",
+    "bronze": "#B0753E"
+  },
+  "radius": {
+    "xs": 6,
+    "sm": 10,
+    "md": 16,
+    "lg": 24,
+    "xl": 32
+  },
+  "spacing": {
+    "xxs": 2,
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "xxl": 32,
+    "gutter": 20,
+    "section": 32
+  },
+  "font": {
+    "family": "Plus Jakarta Sans",
+    "weights": [
+      400,
+      500,
+      600,
+      700,
+      800
+    ]
+  },
+  "type": {
+    "displayLarge": [
+      52,
+      56,
+      800,
+      -0.035
+    ],
+    "displayMedium": [
+      42,
+      46,
+      800,
+      -0.03
+    ],
+    "displaySmall": [
+      34,
+      38,
+      800,
+      -0.025
+    ],
+    "headlineLarge": [
+      30,
+      36,
+      700,
+      -0.02
+    ],
+    "headlineMedium": [
+      26,
+      32,
+      700,
+      -0.02
+    ],
+    "headlineSmall": [
+      22,
+      28,
+      700,
+      -0.015
+    ],
+    "titleLarge": [
+      20,
+      26,
+      700,
+      -0.01
+    ],
+    "titleMedium": [
+      16,
+      22,
+      600,
+      -0.005
+    ],
+    "titleSmall": [
+      14,
+      20,
+      600,
+      0.0
+    ],
+    "bodyLarge": [
+      16,
+      24,
+      400,
+      0.0
+    ],
+    "bodyMedium": [
+      14,
+      20,
+      400,
+      0.0
+    ],
+    "bodySmall": [
+      12,
+      16,
+      500,
+      0.005
+    ],
+    "labelLarge": [
+      14,
+      20,
+      600,
+      0.005
+    ],
+    "labelMedium": [
+      12,
+      16,
+      600,
+      0.01
+    ],
+    "labelSmall": [
+      11,
+      14,
+      700,
+      0.06
+    ]
+  },
+  "motion": {
+    "short": 160,
+    "medium": 320,
+    "long": 520,
+    "ambient": 900,
+    "emphasized": [
+      0.2,
+      0,
+      0,
+      1
+    ],
+    "emphasizedDecelerate": [
+      0.05,
+      0.7,
+      0.1,
+      1
+    ]
+  }
+}

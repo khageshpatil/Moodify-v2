@@ -43,6 +43,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Speed
@@ -157,6 +158,7 @@ fun TrackActionsSheet(
     onStartRadio: () -> Unit = {},
     /** Shown only when the song links to its album. */
     onOpenAlbum: (() -> Unit)? = null,
+    onSendToFriend: (() -> Unit)? = null,
     extraActions: @Composable (dismiss: () -> Unit) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -181,6 +183,9 @@ fun TrackActionsSheet(
             SheetAction(Icons.Rounded.Person, "Go to artist", { onMoreByArtist(); onDismiss() })
             if (onOpenAlbum != null) {
                 SheetAction(Icons.Rounded.Album, "Go to album", { onOpenAlbum(); onDismiss() })
+            }
+            if (onSendToFriend != null) {
+                SheetAction(Icons.Rounded.Group, "Send to a friend", { onDismiss(); onSendToFriend() })
             }
             SheetAction(Icons.Rounded.Share, "Share", { shareTrack(context, track); onDismiss() })
             extraActions(onDismiss)
@@ -524,6 +529,8 @@ fun PlayerMoreSheet(
     onShowRelated: () -> Unit = {},
     onOpenSleepTimer: () -> Unit = {},
     onOpenEqualizer: () -> Unit = {},
+    roomId: String? = null,
+    onListenTogether: (() -> Unit)? = null,
 ) {
     val track = state.currentTrack ?: return
     val context = LocalContext.current
@@ -540,6 +547,9 @@ fun PlayerMoreSheet(
             SheetAction(Icons.Rounded.AllInclusive, "Similar music", { onShowRelated(); onDismiss() })
             SheetAction(Icons.Rounded.Person, "Go to artist", { onMoreByArtist(); onDismiss() })
             SheetAction(Icons.Rounded.Share, "Share", { shareTrack(context, track); onDismiss() })
+            onListenTogether?.let { open ->
+                SheetAction(Icons.Rounded.Group, roomId?.let { "Listening room · $it" } ?: "Listen together", { onDismiss(); open() })
+            }
             SheetAction(Icons.Rounded.Bedtime, if (sleepOn) "Sleep timer (on)" else "Sleep timer", { onDismiss(); onOpenSleepTimer() })
             val speedLabel = buildString {
                 append("Playback speed")

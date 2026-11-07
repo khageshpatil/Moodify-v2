@@ -166,7 +166,10 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
 
-        handleLink(intent, mainViewModel)
+        // Only a fresh launch: a restored activity or one reopened from Recents
+        // still carries its original link (e.g. an old room invite).
+        val fromHistory = intent?.flags?.and(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+        if (savedInstanceState == null && !fromHistory) handleLink(intent, mainViewModel)
 
         setContent {
             val viewModel = mainViewModel
@@ -198,6 +201,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        // The live social connection only runs while Moodify is on screen.
+        com.moodify.app.AppGraph.social.setForeground(true)
+    }
+
+    override fun onStop() {
+        com.moodify.app.AppGraph.social.setForeground(false)
+        super.onStop()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val mainViewModel: MainViewModel by viewModels()
@@ -206,6 +220,30 @@ class MainActivity : ComponentActivity() {
 
     /** Opens YouTube / YouTube Music links (tapped or shared) inside Moodify. */
     private fun handleLink(intent: Intent?, viewModel: MainViewModel) {
+        val data = intent?.data
+        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "add") {
+            data.lastPathSegment?.let(viewModel::openFriendInvite)
+            return
+        }
+        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "chat") {
+            data.lastPathSegment?.let(viewModel::openChat)
+            return
+        }
+        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "room") {
+            // Room codes are single-use, so a link Android replays later (task
+            // relaunch, Recents) is always stale: join from each link once.
+            val roomId = data.lastPathSegment?.uppercase() ?: return
+            val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+            val handled = prefs.getStringSet(KEY_HANDLED_ROOM_LINKS, emptySet()).orEmpty()
+            if (roomId in handled) return
+            prefs.edit().putStringSet(KEY_HANDLED_ROOM_LINKS, (handled + roomId).toList().takeLast(50).toSet()).apply()
+            viewModel.openRoomInvite(roomId)
+            return
+        }
+        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "link") {
+            data.lastPathSegment?.let { viewModel.openDeviceLink(it, data.getQueryParameter("k")) }
+            return
+        }
         val text = when (intent?.action) {
             Intent.ACTION_VIEW -> intent.dataString
             Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
@@ -217,6 +255,7 @@ class MainActivity : ComponentActivity() {
 
 /** Remembers whether we have already asked for notification permission. */
 private const val PREFS = "moodify_ui"
+private const val KEY_HANDLED_ROOM_LINKS = "handled_room_links"
 private const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
 private const val ARTIST_PAGE_TYPE = "MUSIC_PAGE_TYPE_ARTIST"
 private val NON_MUSIC_CHIPS = listOf("Podcast", "Audiobook")
@@ -308,6 +347,38 @@ fun MoodifyApp(viewModel: MainViewModel) {
     var menuTrack by remember { mutableStateOf<Track?>(null) }
     var menuPlaylistId by remember { mutableStateOf<String?>(null) }
     var pickerTrack by remember { mutableStateOf<Track?>(null) }
+    // "Send to a friend": a song or a collection waiting for a friend to be picked.
+    var sendTrack by remember { mutableStateOf<Track?>(null) }
+    var sendCollection by remember { mutableStateOf<com.moodify.app.data.CatalogItem?>(null) }
+    val friendsViewModel: com.moodify.app.ui.social.FriendsViewModel = viewModel()
+    val social by friendsViewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(friendsViewModel) { friendsViewModel.messages.collect { snackbar.showSnackbar(it) } }
+    val pendingFriendCode by viewModel.pendingFriendCode.collectAsStateWithLifecycle()
+    val pendingDeviceLinkNav by viewModel.pendingDeviceLink.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingDeviceLinkNav) {
+        if (pendingDeviceLinkNav != null) navController.navigate(com.moodify.app.ui.navigation.AccountRoute) { launchSingleTop = true }
+    }
+    val pendingChat by viewModel.pendingChat.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingChat) {
+        val code = pendingChat ?: return@LaunchedEffect
+        viewModel.consumeChat()
+        navController.navigate(com.moodify.app.ui.navigation.ChatRoute(code)) { launchSingleTop = true }
+    }
+    val conversations by remember { com.moodify.app.AppGraph.social.conversations() }.collectAsStateWithLifecycle(emptyList())
+    LaunchedEffect(pendingFriendCode) {
+        if (pendingFriendCode != null) navController.navigate(com.moodify.app.ui.navigation.FriendsRoute) { launchSingleTop = true }
+    }
+    // Listen together (M4)
+    val room by friendsViewModel.room.collectAsStateWithLifecycle()
+    val showRoom by viewModel.roomSheetOpen.collectAsStateWithLifecycle()
+    val pendingRoom by viewModel.pendingRoom.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingRoom) {
+        pendingRoom?.let { roomId ->
+            if (room?.roomId != roomId) friendsViewModel.joinRoom(roomId)
+            viewModel.setRoomSheetOpen(true)
+            viewModel.consumeRoomInvite()
+        }
+    }
     var showQueue by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
     var showSleep by remember { mutableStateOf(false) }
@@ -357,11 +428,13 @@ fun MoodifyApp(viewModel: MainViewModel) {
             MainTab.HOME -> HomeRoute
             MainTab.SEARCH -> SearchRoute
             MainTab.LIBRARY -> LibraryRoute
+            MainTab.FRIENDS -> com.moodify.app.ui.navigation.FriendsRoute
         }
         val alreadyOnRoot = navController.currentDestination?.let { dest ->
             (tab == MainTab.HOME && dest.hasRoute(HomeRoute::class)) ||
                 (tab == MainTab.SEARCH && dest.hasRoute(SearchRoute::class)) ||
-                (tab == MainTab.LIBRARY && dest.hasRoute(LibraryRoute::class))
+                (tab == MainTab.LIBRARY && dest.hasRoute(LibraryRoute::class)) ||
+                (tab == MainTab.FRIENDS && dest.hasRoute(com.moodify.app.ui.navigation.FriendsRoute::class))
         } == true
         if (alreadyOnRoot) {
             tabReselects[tab] = (tabReselects[tab] ?: 0) + 1
@@ -453,10 +526,12 @@ fun MoodifyApp(viewModel: MainViewModel) {
             destination.hasRoute(HomeRoute::class) -> selectedTab = MainTab.HOME
             destination.hasRoute(SearchRoute::class) -> selectedTab = MainTab.SEARCH
             destination.hasRoute(LibraryRoute::class) -> selectedTab = MainTab.LIBRARY
+            destination.hasRoute(com.moodify.app.ui.navigation.FriendsRoute::class) -> selectedTab = MainTab.FRIENDS
         }
     }
 
     BackHandler(enabled = sheet.isExpanded) { collapsePlayer() }
+    val onChatRoute = backStackEntry?.destination?.hasRoute(com.moodify.app.ui.navigation.ChatRoute::class) == true
 
     val hasTrack = playback.currentTrack != null
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -585,6 +660,33 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onOpenMood = { navController.navigate(com.moodify.app.ui.navigation.MoodRoute(it.id)) },
                     )
                 }
+                screen<com.moodify.app.ui.navigation.FriendsRoute>(
+                    enterTransition = { fadeIn(tween(Motion.MEDIUM)) },
+                    exitTransition = { fadeOut(tween(Motion.SHORT)) },
+                ) {
+                    val prefill = pendingFriendCode
+                    LaunchedEffect(prefill) { if (prefill != null) viewModel.consumeFriendInvite() }
+                    val friendsList = androidx.compose.foundation.lazy.rememberLazyListState()
+                    com.moodify.app.ui.designsystem.ScrollToTopEffect(tabReselects[MainTab.FRIENDS] ?: 0, friendsList)
+                    com.moodify.app.ui.social.FriendsScreen(
+                        state = social,
+                        bottomPadding = bottomPadding,
+                        onOpenAccount = { navController.navigate(com.moodify.app.ui.navigation.AccountRoute) },
+                        onAddFriend = friendsViewModel::addFriend,
+                        onAccept = friendsViewModel::accept,
+                        onIgnore = friendsViewModel::ignore,
+                        onRemove = friendsViewModel::remove,
+                        onBlock = friendsViewModel::block,
+                        onReport = friendsViewModel::report,
+                        onDismissShared = friendsViewModel::dismissShared,
+                        onJoinRoom = { roomId -> friendsViewModel.joinRoom(roomId); viewModel.setRoomSheetOpen(true) },
+                        onRefresh = friendsViewModel::refresh,
+                        conversations = conversations,
+                        onOpenChat = { code -> navController.navigate(com.moodify.app.ui.navigation.ChatRoute(code)) },
+                        prefillCode = prefill,
+                        listState = friendsList,
+                    )
+                }
                 screen<LibraryRoute>(
                     enterTransition = { fadeIn(tween(Motion.MEDIUM)) },
                     exitTransition = { fadeOut(tween(Motion.SHORT)) },
@@ -621,6 +723,67 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onDownloadAll = { tracks -> viewModel.downloadAll(tracks, state.title.ifBlank { "this collection" }) },
                         isSaved = savedCollections.any { it.id == state.browseId },
                         onToggleSave = viewModel::toggleSaved,
+                        onSendToFriend = { sendCollection = it },
+                    )
+                }
+                screen<com.moodify.app.ui.navigation.ChatRoute> {
+                    val chatViewModel: com.moodify.app.ui.social.ChatViewModel = viewModel()
+                    val chat by chatViewModel.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(chatViewModel) { chatViewModel.messages.collect { snackbar.showSnackbar(it) } }
+                    // Read while on screen; notifications for it resume when you leave or the app goes away.
+                    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                    androidx.compose.runtime.DisposableEffect(lifecycleOwner, chatViewModel) {
+                        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                            when (event) {
+                                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> chatViewModel.setVisible(true)
+                                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> chatViewModel.setVisible(false)
+                                else -> Unit
+                            }
+                        }
+                        lifecycleOwner.lifecycle.addObserver(observer)
+                        onDispose { lifecycleOwner.lifecycle.removeObserver(observer); chatViewModel.setVisible(false) }
+                    }
+                    com.moodify.app.ui.social.ChatScreen(
+                        state = chat,
+                        nowPlaying = playback.currentTrack,
+                        onBack = { navController.popBackStack() },
+                        onSend = chatViewModel::send,
+                        onShareTrack = chatViewModel::shareTrack,
+                        onRetry = chatViewModel::retry,
+                        onReact = chatViewModel::react,
+                        onJoinRoom = { roomId -> friendsViewModel.joinRoom(roomId); viewModel.setRoomSheetOpen(true) },
+                    )
+                }
+                screen<com.moodify.app.ui.navigation.AccountRoute> {
+                    val accountViewModel: com.moodify.app.ui.social.AccountViewModel = viewModel()
+                    val account by accountViewModel.state.collectAsStateWithLifecycle()
+                    // A scanned browser QR code: trust the key it carries, then compare words.
+                    val deviceLink by viewModel.pendingDeviceLink.collectAsStateWithLifecycle()
+                    LaunchedEffect(deviceLink, account.loading) {
+                        val (linkCode, key) = deviceLink ?: return@LaunchedEffect
+                        if (account.loading) return@LaunchedEffect
+                        viewModel.consumeDeviceLink()
+                        val keyBytes = key?.let {
+                            runCatching { android.util.Base64.decode(it, android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP) }.getOrNull()
+                        }
+                        accountViewModel.prepareLink(linkCode, keyBytes)
+                    }
+                    com.moodify.app.ui.social.AccountScreen(
+                        state = account,
+                        bottomPadding = bottomPadding,
+                        onBack = { navController.popBackStack() },
+                        onCreate = accountViewModel::create,
+                        onRestore = accountViewModel::restore,
+                        onConfirmBackedUp = accountViewModel::confirmBackedUp,
+                        onRevealWords = accountViewModel::revealRecoveryWords,
+                        onHideWords = accountViewModel::hideRecoveryWords,
+                        onRename = accountViewModel::rename,
+                        onRetry = accountViewModel::retryConnect,
+                        onDelete = accountViewModel::deleteAccount,
+                        onDismissMessages = accountViewModel::dismissMessages,
+                        onPrepareLink = { accountViewModel.prepareLink(it) },
+                        onConfirmLink = accountViewModel::confirmLink,
+                        onCancelLink = accountViewModel::cancelLink,
                     )
                 }
                 screen<com.moodify.app.ui.navigation.StatsRoute> {
@@ -708,6 +871,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
                             onClearCatalogCache = viewModel::clearCatalogCache,
                             onExportBackup = viewModel::exportBackup,
                             onImportBackup = viewModel::importBackup,
+                            onOpenAccount = { navController.navigate(com.moodify.app.ui.navigation.AccountRoute) },
+                            onShareListening = viewModel::setShareListening,
                         ),
                         storage = storage,
                     )
@@ -732,7 +897,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
             )
 
             // ── Bottom chrome: fade-out scrim, mini player, nav pill ──────
-            Box(
+            // (Hidden in a conversation, where the composer sits at the bottom.)
+            if (!onChatRoute) Box(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
@@ -865,6 +1031,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
                                     showRelated = true
                                 },
                                 onOpenSleepTimer = { showSleep = true },
+                                roomId = room?.roomId,
+                                onListenTogether = { viewModel.setRoomSheetOpen(true) },
                                 onOpenEqualizer = {
                                     val eq = Intent(android.media.audiofx.AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
                                         .putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, manager.audioSessionId)
@@ -894,6 +1062,26 @@ fun MoodifyApp(viewModel: MainViewModel) {
         }
 
         // ── Global sheets ─────────────────────────────────────────────────
+        if (showRoom) {
+            com.moodify.app.ui.social.ListeningRoomSheet(
+                room = room,
+                friends = social.lists.friends,
+                hasIdentity = social.myCode != null,
+                actions = com.moodify.app.ui.social.RoomActions(
+                    onStart = friendsViewModel::startRoom,
+                    onJoin = friendsViewModel::joinRoom,
+                    onLeave = { friendsViewModel.leaveRoom(); viewModel.setRoomSheetOpen(false) },
+                    onChat = friendsViewModel::roomChat,
+                    onInvite = friendsViewModel::inviteToRoom,
+                    onMakeDj = friendsViewModel::makeDj,
+                    onMakeHost = friendsViewModel::makeHost,
+                    onNext = friendsViewModel::roomNext,
+                    onQueue = friendsViewModel::queueInRoom,
+                    onGetCode = { viewModel.setRoomSheetOpen(false); navController.navigate(com.moodify.app.ui.navigation.AccountRoute) { launchSingleTop = true } },
+                ),
+                onDismiss = { viewModel.setRoomSheetOpen(false) },
+            )
+        }
         menuTrack?.let { track ->
             val playlistId = menuPlaylistId
             TrackActionsSheet(
@@ -909,6 +1097,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                 onRemoveDownload = { viewModel.deleteDownload(track) },
                 onMoreByArtist = { actions.openArtist(track) },
                 onStartRadio = { viewModel.startRadio(track) },
+                onSendToFriend = { sendTrack = track },
                 onOpenAlbum = track.albumId?.takeIf(String::isNotBlank)?.let { albumId ->
                     {
                         collapsePlayer()
@@ -925,6 +1114,25 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         }
                     }
                 },
+            )
+        }
+        if (sendTrack != null || sendCollection != null) {
+            com.moodify.app.ui.social.SendToFriendSheet(
+                title = sendTrack?.title ?: sendCollection?.title.orEmpty(),
+                friends = social.lists.friends,
+                hasIdentity = social.myCode != null,
+                onPick = { friend ->
+                    sendTrack?.let { friendsViewModel.sendTrack(friend, it) }
+                    sendCollection?.let { friendsViewModel.sendCollection(friend, it) }
+                    sendTrack = null
+                    sendCollection = null
+                },
+                onGetCode = {
+                    sendTrack = null
+                    sendCollection = null
+                    navController.navigate(com.moodify.app.ui.navigation.AccountRoute)
+                },
+                onDismiss = { sendTrack = null; sendCollection = null },
             )
         }
         pickerTrack?.let { track ->

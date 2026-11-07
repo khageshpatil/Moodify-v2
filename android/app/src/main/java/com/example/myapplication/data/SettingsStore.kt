@@ -40,6 +40,8 @@ data class AppSettings(
     val skipSilence: Boolean = false,
     /** Liked songs download automatically on Wi-Fi. */
     val autoDownloadLiked: Boolean = false,
+    /** Friends can see what you're playing (off = you look offline to them). */
+    val shareListening: Boolean = true,
 )
 
 private val Context.moodifySettingsDataStore by preferencesDataStore(name = "moodify_settings")
@@ -78,6 +80,7 @@ class SettingsStore(private val context: Context) {
             pauseHistory = values[PAUSE_HISTORY]?.toBooleanStrictOrNull() ?: false,
             skipSilence = values[SKIP_SILENCE]?.toBooleanStrictOrNull() ?: false,
             autoDownloadLiked = values[AUTO_DOWNLOAD_LIKED]?.toBooleanStrictOrNull() ?: false,
+            shareListening = values[SHARE_LISTENING]?.toBooleanStrictOrNull() ?: true,
         )
     }
 
@@ -192,6 +195,10 @@ class SettingsStore(private val context: Context) {
         context.moodifySettingsDataStore.edit { values -> values[AUTO_DOWNLOAD_LIKED] = enabled.toString() }
     }
 
+    suspend fun setShareListening(enabled: Boolean) {
+        context.moodifySettingsDataStore.edit { values -> values[SHARE_LISTENING] = enabled.toString() }
+    }
+
     suspend fun getVisitorData(): String? = context.moodifySettingsDataStore.data
         .first()[VISITOR_DATA]
         ?.trim()
@@ -227,5 +234,6 @@ class SettingsStore(private val context: Context) {
         private val PAUSE_HISTORY = stringPreferencesKey("pause_history")
         private val SKIP_SILENCE = stringPreferencesKey("skip_silence")
         private val AUTO_DOWNLOAD_LIKED = stringPreferencesKey("auto_download_liked")
+        private val SHARE_LISTENING = stringPreferencesKey("share_listening")
     }
 }

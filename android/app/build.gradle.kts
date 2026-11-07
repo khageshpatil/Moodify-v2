@@ -28,6 +28,25 @@ android {
         versionName = buildVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // moodify-social server. Empty = not live yet: identities are created on
+        // the device and register once a server is configured.
+        buildConfigField("String", "SOCIAL_BASE_URL", "\"${project.findProperty("socialBaseUrl") ?: ""}\"")
+
+        // Firebase, for content-free wake-up pings only. Read from google-services.json
+        // (no Google Services plugin needed); without the file, pings are off and the
+        // 15-minute background check still delivers messages.
+        val firebase = file("google-services.json").takeIf { it.exists() }
+            ?.let { groovy.json.JsonSlurper().parse(it) as Map<*, *> }
+        if (firebase != null) {
+            val info = firebase["project_info"] as Map<*, *>
+            val client = (firebase["client"] as List<*>).map { it as Map<*, *> }.first {
+                ((it["client_info"] as Map<*, *>)["android_client_info"] as Map<*, *>)["package_name"] == "com.moodify.app"
+            }
+            resValue("string", "google_app_id", (client["client_info"] as Map<*, *>)["mobilesdk_app_id"].toString())
+            resValue("string", "gcm_defaultSenderId", info["project_number"].toString())
+            resValue("string", "google_api_key", ((client["api_key"] as List<*>).first() as Map<*, *>)["current_key"].toString())
+            resValue("string", "project_id", info["project_id"].toString())
+        }
     }
 
     // Release signing: android/keystore.properties locally (never committed), or
@@ -57,6 +76,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Debug builds talk to `npm run dev` in social/ on the host machine
+            // (10.0.2.2 is the host from the Android emulator).
+            buildConfigField("String", "SOCIAL_BASE_URL", "\"${project.findProperty("socialBaseUrl") ?: "http://10.0.2.2:8790"}\"")
+        }
         release {
             if (canSignRelease) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
@@ -74,6 +98,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 }
 
@@ -98,6 +123,7 @@ dependencies {
 
     // Direct provider HTTP + local JSON persistence
     implementation(libs.okhttp.core)
+    implementation(libs.bouncycastle.prov)
     implementation(libs.okhttp.logging)
 
     // Media3 ExoPlayer + MediaSessionService (background playback + notification)
@@ -121,6 +147,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.palette.ktx)
     implementation(libs.work.runtime.ktx)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     ksp(libs.room.compiler)
 

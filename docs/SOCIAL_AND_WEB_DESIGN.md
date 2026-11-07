@@ -158,7 +158,7 @@ No images and no file uploads, by design.
 - **Message history:** stored only on each device (Room on Android, IndexedDB on the web). Library sync (§11) can optionally back it up, encrypted.
 
 ### Notifications
-- **Android:** Firebase Cloud Messaging data messages with **no content**, only `{kind: "message", from: code}`. The app wakes up, downloads and decrypts the message, then shows "Asha: 🎵 Kesariya" on the device.
+- **Android:** Firebase Cloud Messaging data messages with **no content**, only `{kind: "message"}` (not even who it's from). The app wakes up, downloads and decrypts the message, then shows "Asha: 🎵 Kesariya" on the device.
 - **Web:** Web Push with the same content-free payload. This is optional and comes later; in v1 the web gets messages while it's open.
 - **What Google sees:** only that a notification went to a device token. The FCM token is per device and carries no personal information. Still, it's the one Google touchpoint, and the privacy page says so.
 
@@ -309,12 +309,14 @@ Each milestone ends with an installable build and a test on your phone.
 
 **Suggested order:** M0 → M1 → M2 → (M3 alongside M4) → M5 → M6 → M7.
 
+**Status (2026-11-07):** M0–M3 done and tested on the emulator. M4 rooms are done on Android and the web (protocol: `docs/social-protocol/rooms.md`): host, DJ and listener roles, clock sync, queue, suggestions, room chat, invites, and rejoining. Each device was tested against a scripted second listener, and each held within 50 ms of the room. Not done yet: "follow a friend" without a room, and the 10-minute phone-and-browser test in one room, which needs a real phone because the emulator can't run the app and Chrome together. Nothing is deployed: the social server has only run locally.
+
 M2 alone already makes Moodify social: friends, live activity and song sharing.
 
 ## 14. Decisions needed
 
 1. **Recovery key format:** 24 words (recommended; easiest to write down) or a QR image or file?
-2. **Notifications through Google (FCM):** OK, with content-free payloads? The alternative is no notifications when the app is closed.
+2. **Notifications through Google (FCM):** decided 2026-11-07: yes, content-free wake-up pings (Firebase project `moodify-2082c`). Phones without Google services keep the 15-minute background check. Built as described in `social-protocol/chat.md` §3.
 3. **Chat from the start (M5), or social without chat first (M2 to M4)?** I recommend shipping M2 first and seeing how friends use it.
 4. **Web domain:** where will the web app and invite links live? This decides the `https://<domain>/add/…` links.
 5. **Room size:** is 20 enough?

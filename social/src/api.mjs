@@ -1,0 +1,562 @@
+/**
+ * HTTP API. Storage goes through `store` and live events through `notify`,
+ * so tests can run the real handlers against in-memory fakes.
+ * Protocol: docs/social-protocol/identity.md, docs/social-protocol/friends.md
+ */
+import {
+  base64UrlToBytes, bytesToBase64Url, cleanDisplayName, codeForSigningKey, normalizeCode, signedMessages, verifySignature,
+} from './identity.mjs';
+import { issueToken, readToken } from './tokens.mjs';
+
+const CHALLENGE_SECONDS = 5 * 60;
+const DAY = 24 * 60 * 60;
+export const LIMITS = {
+  friends: 500,
+  requestsPerDay: 30,
+  ignoreSeconds: 7 * DAY,
+  noteLength: 60,
+  messageBytes: 16 * 1024,
+  messageRetentionSeconds: 30 * DAY,
+  messagesPerPage: 100,
+  linkSeconds: 5 * 60,
+  /** Devices per account that keep their own inbox position (oldest dropped). */
+  inboxDevices: 10,
+  /** Sends per sender per hour (all friends together). */
+  messagesPerHour: 600,
+  /** Devices per account that can get wake-up pings (oldest dropped). */
+  pushDevices: 10,
+};
+const PUSH_TOKEN = /^[A-Za-z0-9:_-]{20,4096}$/;
+const DEVICE_ID = /^[A-Za-z0-9_-]{8,64}$/;
+
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const linkCode = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => CROCKFORD[b % 32]).join('');
+const LINK_ID = /^[0-9A-HJKMNP-TV-Z]{8}$/;
+
+const json = (status, body) => new Response(JSON.stringify(body), {
+  status,
+  headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+});
+const error = (status, code, message) => json(status, { error: { code, message } });
+
+async function readJson(request) {
+  try {
+    return await request.json();
+  } catch {
+    return null;
+  }
+}
+
+function keyBytes(value) {
+  try {
+    const bytes = base64UrlToBytes(value);
+    return bytes.length === 32 ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Friendships are stored once per pair, ordered. */
+export const pair = (x, y) => (x < y ? [x, y] : [y, x]);
+
+/**
+ * `notify(code, event)` returns the device ids connected live (or nothing).
+ * `push(target, data)` sends a content-free wake-up ping ("ok" | "gone" | "error");
+ * `defer(promise)` lets it finish after the reply (Workers: ctx.waitUntil).
+ */
+export function createApi({
+  store, secret, notify = async () => {}, push = null, defer = (work) => work, now = () => Math.floor(Date.now() / 1000),
+}) {
+  /** Wakes [code]'s devices that aren't connected live, so they fetch the inbox (chat.md §3). */
+  async function wake(code, liveDevices) {
+    if (!push) return;
+    const live = new Set(Array.isArray(liveDevices) ? liveDevices : []);
+    const targets = (await store.listPushTokens(code)).filter((t) => !live.has(t.device));
+    if (!targets.length) return;
+    await defer(Promise.all(targets.map(async (t) => {
+      if ((await push({ platform: t.platform, token: t.token }, { kind: 'message' })) === 'gone') await store.deletePushToken(code, t.device);
+    })).catch(() => {}));
+  }
+
+  async function authed(request) {
+    const header = request.headers.get('Authorization') || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    const code = await readToken(secret, token, now());
+    if (!code) return null;
+    return store.getAccount(code);
+  }
+
+  const profile = (account) => ({
+    code: account.code,
+    displayName: account.display_name,
+    boxPub: account.box_pub,
+    createdAt: account.created_at,
+  });
+  const publicUser = (account) => ({ code: account.code, displayName: account.display_name, boxPub: account.box_pub });
+
+  async function takeChallenge(nonce) {
+    if (typeof nonce !== 'string' || nonce.length < 16 || nonce.length > 64) return false;
+    return store.takeChallenge(nonce, now());
+  }
+
+  // ── Identity (M1) ──────────────────────────────────────────────────────────
+
+  async function register(request) {
+    const body = await readJson(request);
+    const signPub = keyBytes(body?.signPub);
+    const boxPub = keyBytes(body?.boxPub);
+    const displayName = cleanDisplayName(body?.displayName);
+    if (!signPub || !boxPub) return error(400, 'bad_keys', 'signPub and boxPub must be 32-byte base64url keys.');
+    if (!displayName) return error(400, 'bad_name', 'Display names are 2–24 characters.');
+    let signature;
+    try { signature = base64UrlToBytes(body?.signature ?? ''); } catch { signature = null; }
+    const message = signedMessages.register(body?.challenge, body.signPub, body.boxPub, body.displayName);
+    if (!signature || !(await verifySignature(signPub, message, signature))) {
+      return error(401, 'bad_signature', 'The registration signature does not match the key.');
+    }
+    if (!(await takeChallenge(body.challenge))) return error(401, 'bad_challenge', 'Challenge expired or already used.');
+    const code = await codeForSigningKey(signPub);
+    const existing = await store.getAccount(code);
+    if (existing && existing.sign_pub !== body.signPub) {
+      return error(409, 'code_taken', 'This code belongs to another key. Generate a new identity.');
+    }
+    if (!existing) {
+      await store.insertAccount({ code, sign_pub: body.signPub, box_pub: body.boxPub, display_name: displayName, created_at: now() });
+    }
+    const session = await issueToken(secret, code, now());
+    return json(existing ? 200 : 201, { account: profile(await store.getAccount(code)), ...session });
+  }
+
+  async function login(request) {
+    const body = await readJson(request);
+    const signPub = keyBytes(body?.signPub);
+    if (!signPub) return error(400, 'bad_keys', 'signPub must be a 32-byte base64url key.');
+    let signature;
+    try { signature = base64UrlToBytes(body?.signature ?? ''); } catch { signature = null; }
+    if (!signature || !(await verifySignature(signPub, signedMessages.login(body?.challenge), signature))) {
+      return error(401, 'bad_signature', 'Signature does not match.');
+    }
+    if (!(await takeChallenge(body.challenge))) return error(401, 'bad_challenge', 'Challenge expired or already used.');
+    const code = await codeForSigningKey(signPub);
+    const account = await store.getAccount(code);
+    if (!account || account.sign_pub !== body.signPub) return error(404, 'no_account', 'No account for this key. Register first.');
+    return json(200, { account: profile(account), ...(await issueToken(secret, code, now())) });
+  }
+
+  // ── Friends (M2) ───────────────────────────────────────────────────────────
+
+  async function listFriends(me) {
+    const rows = await store.listFriendships(me.code);
+    const blocked = new Set((await store.listBlocks(me.code)).map((b) => b.blocked));
+    const out = { friends: [], incoming: [], outgoing: [] };
+    for (const row of rows) {
+      const other = row.a === me.code ? row.b : row.a;
+      if (blocked.has(other)) continue;
+      const account = await store.getAccount(other);
+      if (!account) continue;
+      const entry = { ...publicUser(account), since: row.accepted_at ?? row.created_at };
+      if (row.status === 'accepted') out.friends.push(entry);
+      else if (row.requested_by === me.code) out.outgoing.push({ ...entry, note: row.note ?? null });
+      else out.incoming.push({ ...entry, note: row.note ?? null });
+    }
+    out.friends.sort((x, y) => x.displayName.localeCompare(y.displayName));
+    return json(200, out);
+  }
+
+  async function requestFriend(me, request) {
+    const body = await readJson(request);
+    const code = normalizeCode(body?.code ?? '');
+    if (!code) return error(400, 'bad_code', "That doesn't look like a Moodify code.");
+    if (code === me.code) return error(400, 'self', "That's your own code.");
+    const note = typeof body?.note === 'string' ? body.note.replace(/\s+/g, ' ').trim().slice(0, LIMITS.noteLength) || null : null;
+    const target = await store.getAccount(code);
+    if (!target) return error(404, 'not_found', 'No one has that code.');
+    const user = publicUser(target);
+    const [a, b] = pair(me.code, code);
+    const existing = await store.getFriendship(a, b);
+    if (existing?.status === 'accepted') return json(200, { status: 'friends', user });
+    // They already asked you: accepting is the friendly thing to do.
+    if (existing && existing.requested_by === code) {
+      await store.acceptFriendship(a, b, now());
+      await notify(code, { type: 'friend.accepted', body: { code: me.code, displayName: me.display_name } });
+      await notify(me.code, { type: 'friend.accepted', body: { code, displayName: target.display_name } });
+      return json(200, { status: 'friends', user });
+    }
+    if (existing) return json(200, { status: 'pending', user });
+    if ((await store.countFriends(me.code)) >= LIMITS.friends) return error(429, 'too_many_friends', `You can have up to ${LIMITS.friends} friends.`);
+    if ((await store.countRequestsSince(me.code, now() - DAY)) >= LIMITS.requestsPerDay) {
+      return error(429, 'slow_down', 'Too many friend requests today. Try again tomorrow.');
+    }
+    // Blocked, or ignored in the last week: looks sent, but nothing is delivered.
+    if ((await store.isBlocked(code, me.code)) || (await store.ignoredUntil(me.code, code)) > now()) {
+      return json(202, { status: 'pending', user });
+    }
+    await store.insertFriendRequest({ a, b, requested_by: me.code, note, created_at: now() });
+    await notify(code, { type: 'friend.request', body: { code: me.code, displayName: me.display_name, note } });
+    return json(201, { status: 'pending', user });
+  }
+
+  async function answerRequest(me, code, accept) {
+    const [a, b] = pair(me.code, code);
+    const existing = await store.getFriendship(a, b);
+    if (!existing || existing.status !== 'pending' || existing.requested_by !== code) {
+      return error(404, 'no_request', 'There is no request from that person.');
+    }
+    if (accept) {
+      if ((await store.countFriends(me.code)) >= LIMITS.friends) return error(429, 'too_many_friends', `You can have up to ${LIMITS.friends} friends.`);
+      await store.acceptFriendship(a, b, now());
+      // Both sides' hubs refresh their friend lists (and your other devices update).
+      await notify(me.code, { type: 'friend.accepted', body: { code, displayName: (await store.getAccount(code))?.display_name ?? '' } });
+      await notify(code, { type: 'friend.accepted', body: { code: me.code, displayName: me.display_name } });
+      return json(200, { status: 'friends' });
+    }
+    // Ignoring sends nothing back and stops repeat requests for a week.
+    await store.deleteFriendship(a, b);
+    await store.setIgnored(code, me.code, now() + LIMITS.ignoreSeconds);
+    return json(200, { status: 'ignored' });
+  }
+
+  async function removeFriend(me, code) {
+    const [a, b] = pair(me.code, code);
+    const existing = await store.getFriendship(a, b);
+    if (!existing) return new Response(null, { status: 204 });
+    await store.deleteFriendship(a, b);
+    if (existing.status === 'accepted') {
+      await notify(me.code, { type: 'friend.removed', body: { code } });
+      await notify(code, { type: 'friend.removed', body: { code: me.code } });
+    }
+    return new Response(null, { status: 204 });
+  }
+
+  async function block(me, code) {
+    if (code === me.code) return error(400, 'self', "You can't block yourself.");
+    await store.addBlock(me.code, code, now());
+    const [a, b] = pair(me.code, code);
+    await store.deleteFriendship(a, b);
+    await store.deleteMessagesBetween(code, me.code);
+    // Only your own hub hears about it: the blocked person is never told.
+    await notify(me.code, { type: 'friend.removed', body: { code } });
+    return new Response(null, { status: 204 });
+  }
+
+  async function report(me, request) {
+    const body = await readJson(request);
+    const code = normalizeCode(body?.code ?? '');
+    const reason = typeof body?.reason === 'string' ? body.reason.trim().slice(0, 500) : '';
+    if (!code || !reason) return error(400, 'bad_report', 'A report needs a code and a reason.');
+    const evidence = typeof body?.evidence === 'string' ? body.evidence.slice(0, 8000) : null;
+    await store.addReport({ reporter: me.code, reported: code, reason, evidence, created_at: now() });
+    return json(201, { status: 'received' });
+  }
+
+  // ── Encrypted inbox (M2 shares, M5 chat) ───────────────────────────────────
+
+  async function sendMessage(me, request) {
+    const body = await readJson(request);
+    const to = normalizeCode(body?.to ?? '');
+    if (!to) return error(400, 'bad_code', 'Unknown recipient.');
+    const nonce = typeof body?.nonce === 'string' && /^[A-Za-z0-9_-]{16}$/.test(body.nonce) ? body.nonce : null;
+    const ciphertext = typeof body?.ciphertext === 'string' && /^[A-Za-z0-9_-]+$/.test(body.ciphertext) ? body.ciphertext : null;
+    if (!nonce || !ciphertext) return error(400, 'bad_message', 'Messages must be encrypted (nonce + ciphertext, base64url).');
+    if (ciphertext.length > LIMITS.messageBytes) return error(413, 'too_big', 'That message is too large.');
+    const [a, b] = pair(me.code, to);
+    const friendship = await store.getFriendship(a, b);
+    if (friendship?.status !== 'accepted') return error(403, 'not_friends', 'You can only send to friends.');
+    const sentAt = now();
+    // A block hides delivery: the sender sees success, nothing is stored.
+    if ((await store.countSentSince(me.code, sentAt - 3600)) >= LIMITS.messagesPerHour) {
+      return error(429, 'slow_down', "You're sending a lot. Try again in a little while.");
+    }
+    await store.pruneMessages(sentAt - LIMITS.messageRetentionSeconds);
+    // A copy for your own other devices (same ciphertext: the pair key works both ways).
+    const copyId = await store.insertMessage({ sender: me.code, recipient: me.code, peer: to, nonce, ciphertext, created_at: sentAt });
+    await notify(me.code, { type: 'msg.new', body: { from: me.code, id: copyId, own: true } });
+    // A block hides delivery: the sender sees success, nothing reaches the other person.
+    if (await store.isBlocked(to, me.code)) return json(201, { id: null, copyId, sentAt });
+    const id = await store.insertMessage({ sender: me.code, recipient: to, peer: null, nonce, ciphertext, created_at: sentAt });
+    const live = await notify(to, { type: 'msg.new', body: { from: me.code, id } });
+    await wake(to, live);
+    return json(201, { id, copyId, sentAt });
+  }
+
+  async function listMessages(me, url) {
+    const after = Math.max(0, Number(url.searchParams.get('after')) || 0);
+    const rows = await store.listMessages(me.code, after, LIMITS.messagesPerPage);
+    return json(200, {
+      messages: rows.map((m) => ({
+        id: m.id, from: m.sender, nonce: m.nonce, ciphertext: m.ciphertext, sentAt: m.created_at,
+        // Your own message, copied for your other devices: who it went to.
+        ...(m.peer ? { to: m.peer } : {}),
+      })),
+    });
+  }
+
+  async function ackMessages(me, request) {
+    const body = await readJson(request);
+    const upTo = Number(body?.upTo);
+    // 0 is a check-in: a new device with an empty inbox starts holding messages for itself.
+    if (!Number.isInteger(upTo) || upTo < 0) return error(400, 'bad_ack', 'upTo must be a message id, or 0 to check in.');
+    // Each device confirms its own position; older clients without one count as "legacy".
+    const device = typeof body?.device === 'string' && DEVICE_ID.test(body.device) ? body.device : 'legacy';
+    const t = now();
+    const safeUpTo = await store.ackInbox(me.code, device, upTo, t, t - LIMITS.messageRetentionSeconds, LIMITS.inboxDevices);
+    if (safeUpTo > 0) await store.deleteMessagesUpTo(me.code, safeUpTo);
+    return new Response(null, { status: 204 });
+  }
+
+  // ── Router ─────────────────────────────────────────────────────────────────
+
+  return async function handle(request) {
+    const url = new URL(request.url);
+    const { pathname } = url;
+    const method = request.method;
+
+    if (method === 'GET' && pathname === '/') return json(200, { service: 'moodify-social', version: 2 });
+
+    if (method === 'POST' && pathname === '/v1/auth/challenge') {
+      const nonce = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(24)));
+      await store.putChallenge(nonce, now() + CHALLENGE_SECONDS, now());
+      return json(200, { challenge: nonce, expiresIn: CHALLENGE_SECONDS });
+    }
+    if (method === 'POST' && pathname === '/v1/accounts') return register(request);
+    if (method === 'POST' && pathname === '/v1/auth/verify') return login(request);
+
+    // ── Device linking (M3): the new device needs no account yet ──
+    if (method === 'POST' && pathname === '/v1/link') {
+      const body = await readJson(request);
+      if (!keyBytes(body?.devicePub)) return error(400, 'bad_keys', 'devicePub must be a 32-byte base64url key.');
+      const id = linkCode();
+      await store.putLink({ id, device_pub: body.devicePub, created_at: now(), expires_at: now() + LIMITS.linkSeconds }, now());
+      return json(201, { linkId: id, expiresIn: LIMITS.linkSeconds });
+    }
+    const linkMatch = pathname.match(/^\/v1\/link\/([^/]+)(\/result)?$/);
+    if (linkMatch && method === 'GET') {
+      const id = linkMatch[1].toUpperCase();
+      if (!LINK_ID.test(id)) return error(400, 'bad_link', 'Unknown link code.');
+      const link = await store.getLink(id, now());
+      if (!link) return error(404, 'no_link', 'That link code expired. Start again on the new device.');
+      if (!linkMatch[2]) return json(200, { devicePub: link.device_pub });
+      if (!link.ciphertext) return json(202, { status: 'waiting' });
+      await store.deleteLink(id); // one read only
+      return json(200, { senderPub: link.sender_pub, nonce: link.nonce, ciphertext: link.ciphertext });
+    }
+
+    // Everything below needs a session.
+    const me = await authed(request);
+    if (!me) return error(401, 'unauthorized', 'Sign in again.');
+
+    if (pathname === '/v1/me') {
+      if (method === 'GET') return json(200, { account: profile(me) });
+      if (method === 'PATCH') {
+        const body = await readJson(request);
+        const displayName = cleanDisplayName(body?.displayName);
+        if (!displayName) return error(400, 'bad_name', 'Display names are 2–24 characters.');
+        await store.updateDisplayName(me.code, displayName);
+        return json(200, { account: profile(await store.getAccount(me.code)) });
+      }
+      if (method === 'DELETE') {
+        const friends = await store.friendCodes(me.code);
+        await store.deleteAccount(me.code);
+        await Promise.all(friends.map((code) => notify(code, { type: 'friend.removed', body: { code: me.code } })));
+        return new Response(null, { status: 204 });
+      }
+    }
+
+    const userMatch = pathname.match(/^\/v1\/users\/([^/]+)$/);
+    if (method === 'GET' && userMatch) {
+      const code = normalizeCode(decodeURIComponent(userMatch[1]));
+      const account = code ? await store.getAccount(code) : null;
+      if (!account) return error(404, 'not_found', 'No one has that code.');
+      return json(200, { user: publicUser(account) });
+    }
+
+    if (pathname === '/v1/friends' && method === 'GET') return listFriends(me);
+    if (pathname === '/v1/friends/requests' && method === 'POST') return requestFriend(me, request);
+    const answer = pathname.match(/^\/v1\/friends\/requests\/([^/]+)\/(accept|ignore)$/);
+    if (answer && method === 'POST') {
+      const code = normalizeCode(decodeURIComponent(answer[1]));
+      return code ? answerRequest(me, code, answer[2] === 'accept') : error(400, 'bad_code', 'Unknown code.');
+    }
+    const friend = pathname.match(/^\/v1\/friends\/([^/]+)$/);
+    if (friend && method === 'DELETE') {
+      const code = normalizeCode(decodeURIComponent(friend[1]));
+      return code ? removeFriend(me, code) : error(400, 'bad_code', 'Unknown code.');
+    }
+
+    if (pathname === '/v1/blocks' && method === 'GET') {
+      const blocks = await store.listBlocks(me.code);
+      return json(200, { blocked: blocks.map((b) => ({ code: b.blocked, since: b.created_at })) });
+    }
+    const blockMatch = pathname.match(/^\/v1\/blocks\/([^/]+)$/);
+    if (blockMatch) {
+      const code = normalizeCode(decodeURIComponent(blockMatch[1]));
+      if (!code) return error(400, 'bad_code', 'Unknown code.');
+      if (method === 'PUT') return block(me, code);
+      if (method === 'DELETE') {
+        await store.removeBlock(me.code, code);
+        return new Response(null, { status: 204 });
+      }
+    }
+    if (pathname === '/v1/reports' && method === 'POST') return report(me, request);
+
+    const sealMatch = pathname.match(/^\/v1\/link\/([^/]+)\/seal$/);
+    if (sealMatch && method === 'POST') {
+      const id = sealMatch[1].toUpperCase();
+      const body = await readJson(request);
+      const link = LINK_ID.test(id) ? await store.getLink(id, now()) : null;
+      if (!link) return error(404, 'no_link', 'That link code expired. Start again on the new device.');
+      if (link.ciphertext) return error(409, 'already_linked', 'This link was already used.');
+      const valid = keyBytes(body?.senderPub) && /^[A-Za-z0-9_-]{16}$/.test(body?.nonce ?? '') && /^[A-Za-z0-9_-]{40,120}$/.test(body?.ciphertext ?? '');
+      if (!valid) return error(400, 'bad_link_payload', 'Expected an encrypted seed.');
+      await store.sealLink(id, body.senderPub, body.nonce, body.ciphertext);
+      return json(200, { status: 'sent' });
+    }
+
+    if (pathname === '/v1/push' && method === 'PUT') {
+      const body = await readJson(request);
+      const device = typeof body?.device === 'string' && DEVICE_ID.test(body.device) ? body.device : null;
+      const platform = body?.platform === 'fcm' ? 'fcm' : null;
+      const token = typeof body?.token === 'string' && PUSH_TOKEN.test(body.token) ? body.token : null;
+      if (!device || !platform || !token) return error(400, 'bad_push', 'Expected {device, platform: "fcm", token}.');
+      await store.putPushToken({ code: me.code, device, platform, token, updated_at: now() }, LIMITS.pushDevices);
+      return new Response(null, { status: 204 });
+    }
+    const pushMatch = pathname.match(/^\/v1\/push\/([A-Za-z0-9_-]{8,64})$/);
+    if (pushMatch && method === 'DELETE') {
+      await store.deletePushToken(me.code, pushMatch[1]);
+      return new Response(null, { status: 204 });
+    }
+
+    if (pathname === '/v1/messages' && method === 'POST') return sendMessage(me, request);
+    if (pathname === '/v1/messages' && method === 'GET') return listMessages(me, url);
+    if (pathname === '/v1/messages/ack' && method === 'POST') return ackMessages(me, request);
+
+    return error(404, 'not_found', 'Unknown endpoint.');
+  };
+}
+
+/** D1-backed store used by the deployed Worker. */
+export function d1Store(db) {
+  const all = async (sql, ...args) => (await db.prepare(sql).bind(...args).all()).results ?? [];
+  const run = (sql, ...args) => db.prepare(sql).bind(...args).run();
+  return {
+    async putChallenge(nonce, expiresAt, now) {
+      await db.batch([
+        db.prepare('DELETE FROM challenges WHERE expires_at < ?').bind(now),
+        db.prepare('INSERT INTO challenges (nonce, expires_at) VALUES (?, ?)').bind(nonce, expiresAt),
+      ]);
+    },
+    async takeChallenge(nonce, now) {
+      const result = await run('DELETE FROM challenges WHERE nonce = ? AND expires_at >= ?', nonce, now);
+      return (result.meta?.changes ?? 0) === 1;
+    },
+    getAccount: (code) => db.prepare('SELECT * FROM accounts WHERE code = ?').bind(code).first(),
+    async insertAccount(a) {
+      await run('INSERT INTO accounts (code, sign_pub, box_pub, display_name, created_at) VALUES (?, ?, ?, ?, ?)',
+        a.code, a.sign_pub, a.box_pub, a.display_name, a.created_at);
+    },
+    async updateDisplayName(code, name) { await run('UPDATE accounts SET display_name = ? WHERE code = ?', name, code); },
+    async deleteAccount(code) {
+      await db.batch([
+        db.prepare('DELETE FROM accounts WHERE code = ?').bind(code),
+        db.prepare('DELETE FROM friendships WHERE a = ? OR b = ?').bind(code, code),
+        db.prepare('DELETE FROM blocks WHERE blocker = ? OR blocked = ?').bind(code, code),
+        db.prepare('DELETE FROM ignored_requests WHERE from_code = ? OR to_code = ?').bind(code, code),
+        db.prepare('DELETE FROM messages WHERE sender = ? OR recipient = ? OR peer = ?').bind(code, code, code),
+        db.prepare('DELETE FROM inbox_devices WHERE code = ?').bind(code),
+        db.prepare('DELETE FROM push_tokens WHERE code = ?').bind(code),
+      ]);
+    },
+
+    listFriendships: (code) => all('SELECT * FROM friendships WHERE a = ? OR b = ?', code, code),
+    getFriendship: (a, b) => db.prepare('SELECT * FROM friendships WHERE a = ? AND b = ?').bind(a, b).first(),
+    async insertFriendRequest(f) {
+      await run('INSERT INTO friendships (a, b, status, requested_by, note, created_at) VALUES (?, ?, \'pending\', ?, ?, ?)',
+        f.a, f.b, f.requested_by, f.note, f.created_at);
+    },
+    async acceptFriendship(a, b, now) { await run('UPDATE friendships SET status = \'accepted\', accepted_at = ? WHERE a = ? AND b = ?', now, a, b); },
+    async deleteFriendship(a, b) { await run('DELETE FROM friendships WHERE a = ? AND b = ?', a, b); },
+    async countFriends(code) {
+      const row = await db.prepare('SELECT COUNT(*) AS n FROM friendships WHERE (a = ? OR b = ?) AND status = \'accepted\'').bind(code, code).first();
+      return row?.n ?? 0;
+    },
+    async countRequestsSince(code, since) {
+      const row = await db.prepare('SELECT COUNT(*) AS n FROM friendships WHERE requested_by = ? AND created_at >= ?').bind(code, since).first();
+      return row?.n ?? 0;
+    },
+    async friendCodes(code) {
+      const rows = await all('SELECT a, b FROM friendships WHERE (a = ? OR b = ?) AND status = \'accepted\'', code, code);
+      return rows.map((r) => (r.a === code ? r.b : r.a));
+    },
+
+    async isBlocked(blocker, blocked) {
+      return !!(await db.prepare('SELECT 1 AS x FROM blocks WHERE blocker = ? AND blocked = ?').bind(blocker, blocked).first());
+    },
+    async addBlock(blocker, blocked, now) { await run('INSERT OR IGNORE INTO blocks (blocker, blocked, created_at) VALUES (?, ?, ?)', blocker, blocked, now); },
+    async removeBlock(blocker, blocked) { await run('DELETE FROM blocks WHERE blocker = ? AND blocked = ?', blocker, blocked); },
+    listBlocks: (code) => all('SELECT * FROM blocks WHERE blocker = ?', code),
+    async ignoredUntil(from, to) {
+      const row = await db.prepare('SELECT until FROM ignored_requests WHERE from_code = ? AND to_code = ?').bind(from, to).first();
+      return row?.until ?? 0;
+    },
+    async setIgnored(from, to, until) {
+      await run('INSERT OR REPLACE INTO ignored_requests (from_code, to_code, until) VALUES (?, ?, ?)', from, to, until);
+    },
+    async addReport(r) {
+      await run('INSERT INTO reports (reporter, reported, reason, evidence, created_at) VALUES (?, ?, ?, ?, ?)',
+        r.reporter, r.reported, r.reason, r.evidence, r.created_at);
+    },
+
+    async countSentSince(sender, since) {
+      const row = await db.prepare('SELECT COUNT(*) AS n FROM messages WHERE sender = ? AND recipient != sender AND created_at >= ?').bind(sender, since).first();
+      return row?.n ?? 0;
+    },
+    /** Records a device's position; returns the id every recent device has confirmed (safe to delete). */
+    async ackInbox(code, device, upTo, now, activeSince, maxDevices) {
+      await db.batch([
+        db.prepare(`INSERT INTO inbox_devices (code, device, acked_up_to, seen_at) VALUES (?, ?, ?, ?)
+          ON CONFLICT (code, device) DO UPDATE SET acked_up_to = MAX(acked_up_to, excluded.acked_up_to), seen_at = excluded.seen_at`).bind(code, device, upTo, now),
+        db.prepare('DELETE FROM inbox_devices WHERE code = ? AND seen_at < ?').bind(code, activeSince),
+        db.prepare(`DELETE FROM inbox_devices WHERE code = ? AND device NOT IN
+          (SELECT device FROM inbox_devices WHERE code = ? ORDER BY seen_at DESC LIMIT ?)`).bind(code, code, maxDevices),
+      ]);
+      const row = await db.prepare('SELECT MIN(acked_up_to) AS safe FROM inbox_devices WHERE code = ?').bind(code).first();
+      return row?.safe ?? 0;
+    },
+    /** One token per device; a token moves with the phone if another account signs in on it. */
+    async putPushToken(t, maxDevices) {
+      await db.batch([
+        db.prepare('DELETE FROM push_tokens WHERE token = ? AND code != ?').bind(t.token, t.code),
+        db.prepare(`INSERT INTO push_tokens (code, device, platform, token, updated_at) VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT (code, device) DO UPDATE SET platform = excluded.platform, token = excluded.token, updated_at = excluded.updated_at`)
+          .bind(t.code, t.device, t.platform, t.token, t.updated_at),
+        db.prepare(`DELETE FROM push_tokens WHERE code = ? AND device NOT IN
+          (SELECT device FROM push_tokens WHERE code = ? ORDER BY updated_at DESC LIMIT ?)`).bind(t.code, t.code, maxDevices),
+      ]);
+    },
+    listPushTokens: (code) => all('SELECT device, platform, token FROM push_tokens WHERE code = ?', code),
+    async deletePushToken(code, device) { await run('DELETE FROM push_tokens WHERE code = ? AND device = ?', code, device); },
+    async insertMessage(m) {
+      const result = await run('INSERT INTO messages (sender, recipient, peer, nonce, ciphertext, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        m.sender, m.recipient, m.peer ?? null, m.nonce, m.ciphertext, m.created_at);
+      return result.meta?.last_row_id ?? null;
+    },
+    listMessages: (recipient, after, limit) =>
+      all('SELECT * FROM messages WHERE recipient = ? AND id > ? ORDER BY id LIMIT ?', recipient, after, limit),
+    async deleteMessagesUpTo(recipient, id) { await run('DELETE FROM messages WHERE recipient = ? AND id <= ?', recipient, id); },
+    async deleteMessagesBetween(sender, recipient) { await run('DELETE FROM messages WHERE sender = ? AND recipient = ?', sender, recipient); },
+    async pruneMessages(before) { await run('DELETE FROM messages WHERE created_at < ?', before); },
+
+    async putLink(l, now) {
+      await db.batch([
+        db.prepare('DELETE FROM link_sessions WHERE expires_at < ?').bind(now),
+        db.prepare('INSERT INTO link_sessions (id, device_pub, created_at, expires_at) VALUES (?, ?, ?, ?)').bind(l.id, l.device_pub, l.created_at, l.expires_at),
+      ]);
+    },
+    getLink: (id, now) => db.prepare('SELECT * FROM link_sessions WHERE id = ? AND expires_at >= ?').bind(id, now).first(),
+    async sealLink(id, senderPub, nonce, ciphertext) {
+      await run('UPDATE link_sessions SET sender_pub = ?, nonce = ?, ciphertext = ? WHERE id = ?', senderPub, nonce, ciphertext, id);
+    },
+    async deleteLink(id) { await run('DELETE FROM link_sessions WHERE id = ?', id); },
+  };
+}

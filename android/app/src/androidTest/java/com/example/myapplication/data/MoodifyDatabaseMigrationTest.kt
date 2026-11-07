@@ -77,6 +77,18 @@ class MoodifyDatabaseMigrationTest {
                 )
                 assertEquals(listOf("MPREb_v$oldVersion"), dao.observeSavedCollections().first().map { it.id })
 
+                // v9: chat history lives on the phone.
+                val chat = migrated.chatDao()
+                chat.insert(
+                    com.moodify.app.data.social.ChatMessageEntity(
+                        mid = "mid-v$oldVersion", peer = "MOOD-AAAA-AAAA", fromMe = false, kind = "text",
+                        body = "hi", sentAtMs = 1L, status = "received",
+                    ),
+                )
+                val conversation = chat.observeConversations().first().single()
+                assertEquals("mid-v$oldVersion", conversation.last.mid)
+                assertEquals(1, conversation.unread)
+
                 // v6: favorites carry track metadata, back-filled from history.
                 if (oldVersion >= 2) {
                     val favorite = dao.observeFavorites().first().single()

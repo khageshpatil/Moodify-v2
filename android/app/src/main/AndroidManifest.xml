@@ -41,6 +41,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="moodify" android:host="track" />
+                <data android:scheme="moodify" android:host="add" />
+                <data android:scheme="moodify" android:host="link" />
+                <data android:scheme="moodify" android:host="room" />
+                <data android:scheme="moodify" android:host="chat" />
             </intent-filter>
             <!-- "Open with Moodify" for YouTube and YouTube Music links. -->
             <intent-filter>
@@ -67,6 +71,18 @@
             playback and provides the system media notification automatically.
             foregroundServiceType="mediaPlayback" is required on Android 10+.
         -->
+        <!-- Wake-up pings (chat.md §3): no content, the app fetches and decrypts itself. -->
+        <service
+            android:name=".data.social.MoodifyMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- No token is requested until you have a Moodify code. -->
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+
         <service
             android:name=".player.MoodifyPlaybackService"
             android:exported="true"

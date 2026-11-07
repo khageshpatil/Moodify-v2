@@ -196,7 +196,7 @@ class PlaybackManager private constructor(private val context: Context) {
         addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 if (_state.value.sleepAtEndOfTrack && reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
-                    exoPlayer.pause()
+                    quietly { exoPlayer.pause() }
                     _state.update { it.copy(sleepAtEndOfTrack = false) }
                 }
                 val mediaId = mediaItem?.mediaId ?: return
@@ -259,6 +259,13 @@ class PlaybackManager private constructor(private val context: Context) {
                             .putExtra(android.media.audiofx.AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
                             .putExtra(android.media.audiofx.AudioEffect.EXTRA_CONTENT_TYPE, android.media.audiofx.AudioEffect.CONTENT_TYPE_MUSIC),
                     )
+                }
+            }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                // Buttons, the notification, headphones, Android Auto — not the app itself.
+                if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST && quietDepth == 0) {
+                    _playIntents.tryEmit(playWhenReady)
                 }
             }
 
@@ -713,7 +720,7 @@ class PlaybackManager private constructor(private val context: Context) {
             // current song was playing. Handoff through ExoPlayer's timeline
             // instead of resolving and preparing a new player item.
             exoPlayer.seekToNext()
-            exoPlayer.play()
+            quietly { exoPlayer.play() }
         } else {
             playTrack(nextTrack, current.queue)
         }
@@ -938,7 +945,7 @@ class PlaybackManager private constructor(private val context: Context) {
         _state.update { it.copy(sleepTimerEndsAtMs = endsAt, sleepAtEndOfTrack = false) }
         sleepTimerJob = scope.launch {
             kotlinx.coroutines.delay(minutes * 60_000L)
-            exoPlayer.pause()
+            quietly { exoPlayer.pause() }
             persistState()
             _state.update { it.copy(sleepTimerEndsAtMs = null) }
         }
@@ -1048,6 +1055,44 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     suspend fun isDownloaded(trackId: String): Boolean = downloadManager.get(trackId) != null
+
+    // ── Listening rooms (social M4) ──────────────────────────────────────────
+
+    /** Where the player really is right now (call on the main thread). */
+    private val _playIntents = kotlinx.coroutines.flow.MutableSharedFlow<Boolean>(extraBufferCapacity = 8)
+
+    /**
+     * Play (true) or pause (false) that the person asked for — the play button,
+     * notification, headphones — never ones the app made itself (song loads,
+     * sleep timer, a listening room following its host).
+     */
+    val playIntents: kotlinx.coroutines.flow.SharedFlow<Boolean> = _playIntents
+
+    private var quietDepth = 0
+
+    /** Runs [block] without its play/pause counting as the person's own. */
+    private inline fun quietly(block: () -> Unit) {
+        quietDepth++
+        try { block() } finally { quietDepth-- }
+    }
+
+    fun currentPositionMs(): Long = exoPlayer.currentPosition
+
+    /**
+     * Briefly plays a little faster or slower (pitch unchanged) to drift back
+     * into sync with a room; 1f restores normal speed. Not saved as a setting.
+     */
+    fun nudgeRate(rate: Float) {
+        val target = rate.coerceIn(0.9f, 1.1f)
+        if (exoPlayer.playbackParameters.speed != target) {
+            exoPlayer.setPlaybackParameters(PlaybackParameters(target, _state.value.pitch))
+        }
+    }
+
+    fun setPlaying(play: Boolean) {
+        if (play == exoPlayer.isPlaying) return
+        quietly { if (play) exoPlayer.play() else exoPlayer.pause() }
+    }
 
     fun setPlaybackSpeed(speed: Float) {
         val safe = speed.coerceIn(0.5f, 2.0f)
@@ -1251,7 +1296,7 @@ class PlaybackManager private constructor(private val context: Context) {
                 exoPlayer.stop()
                 exoPlayer.setMediaItem(mediaItem, safeStartMs)
                 exoPlayer.prepare()
-                exoPlayer.play()
+                quietly { exoPlayer.play() }
                 // The contract is in ExoPlayer's hands now: the UI moves from
                 // "finding a stream" to ordinary buffering.
                 _state.update { it.copy(isResolving = false) }
