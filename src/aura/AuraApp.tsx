@@ -8,6 +8,7 @@ import { BrowseScreen, HomeScreen, LibraryScreen, MoodScreen, SearchScreen } fro
 import { RoomProvider } from './social/RoomProvider';
 import { RoomScreen } from './social/RoomScreen';
 import { ChatScreen } from './social/ChatScreen';
+import { useLibrarySync } from './social/librarySync';
 import { SocialProvider, useSocial } from './social/SocialProvider';
 import { AccountScreen, FriendsScreen } from './social/SocialScreens';
 
@@ -30,6 +31,7 @@ function Shell() {
   const [playerOpen, setPlayerOpen] = useState(false);
   const location = useLocation();
   const { unreadTotal } = useSocial();
+  useLibrarySync();
   const badge = (to: string) => (to === '/friends' && unreadTotal > 0
     ? <span className="aura-badge" aria-label={`${unreadTotal} unread`}>{unreadTotal > 99 ? '99+' : unreadTotal}</span> : null);
   useTheme();

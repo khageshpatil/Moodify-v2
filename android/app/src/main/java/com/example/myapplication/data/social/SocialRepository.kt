@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -115,9 +117,21 @@ class SocialRepository(
             if (identity != null) {
                 InboxWorker.schedule(appContext)
                 registerPush()
+                requestLibrarySync()
             }
             // Sends that never finished (app closed mid-send) show as failed, ready to retry.
             runCatching { chat.stuckSending(System.currentTimeMillis() - 60_000).forEach { chat.setStatus(it.mid, STATUS_FAILED) } }
+        }
+        // Your library changed here: sync it to your other devices a moment later.
+        scope.launch {
+            val db = com.moodify.app.data.MoodifyDatabase.get(appContext).moodifyDao()
+            kotlinx.coroutines.flow.merge(
+                db.observeFavorites().map { it.size to it.firstOrNull()?.trackId },
+                db.observePlaylists().map { it.map { p -> p.id to p.updatedAtMs } },
+                db.observePlaylistTracks().map { it.size },
+                db.observeSavedCollections().map { it.size },
+                db.observeHistory(1).map { it.firstOrNull()?.playedAtMs },
+            ).drop(5).debounce(3_000).collect { requestLibrarySync() }
         }
         // Publish "listening now" when the song or play/pause changes, at once
         // after a seek (friends following you jump too), and every 15 s while playing.
@@ -189,6 +203,7 @@ class SocialRepository(
                 InboxWorker.schedule(appContext)
                 connect()
                 registerPush()
+                requestLibrarySync()
             }
         }
     }
@@ -335,6 +350,51 @@ class SocialRepository(
     suspend fun syncInBackground() {
         if (identity == null) reloadIdentity()
         fetchInbox()
+        runLibrarySync()
+    }
+
+    // ── Library sync (sync.md) ──────────────────────────────────────────────
+
+    private val librarySyncLock = Mutex()
+    @Volatile private var librarySyncAgain = false
+    private val libraryAdapter by lazy { AndroidLibraryAdapter(com.moodify.app.data.MoodifyDatabase.get(appContext).moodifyDao()) }
+
+    /** Likes, playlists, saved items and recent plays, to and from your other devices. */
+    fun requestLibrarySync() {
+        scope.launch { runLibrarySync() }
+    }
+
+    private suspend fun runLibrarySync() {
+        if (librarySyncLock.isLocked) { librarySyncAgain = true; return }
+        librarySyncLock.withLock {
+            do {
+                librarySyncAgain = false
+                val me = identity?.identity ?: return
+                val session = token() ?: return
+                val keys = SyncKeys.fromSeed(me.seed)
+                val file = File(appContext.filesDir, "library_sync_${me.code}.json")
+                val saveState = { s: SyncState -> runCatching { file.writeText(s.toJson()) }; Unit }
+                runCatching {
+                    LibrarySync.syncOnce(
+                        adapter = libraryAdapter,
+                        transport = object : SyncTransport {
+                            override suspend fun pull(after: Long) = client.syncPull(session, after)
+                            override suspend fun push(records: List<WireRecord>) = client.syncPush(session, records)
+                        },
+                        crypto = object : RecordCrypto {
+                            override fun itemId(c: String, id: String) = keys.itemId(c, id)
+                            override fun seal(item: String, plaintext: String) = keys.seal(me.code, item, plaintext)
+                            override fun open(item: String, nonce: String, ciphertext: String) = keys.open(me.code, item, nonce, ciphertext)
+                        },
+                        state = SyncState.fromJson(file.takeIf(File::exists)?.readText()),
+                        onState = saveState,
+                    )
+                }.onSuccess { result ->
+                    saveState(result.state)
+                    if (result.pulled + result.pushed > 0) android.util.Log.i("MoodifySync", "pulled ${result.pulled}, pushed ${result.pushed}")
+                }.onFailure { android.util.Log.w("MoodifySync", "sync failed: ${it.message}") }
+            } while (librarySyncAgain)
+        }
     }
 
     /** For the listening-room connection, which shares this phone's session. */
@@ -459,6 +519,7 @@ class SocialRepository(
             if (!shareListening) send("settings.update", JSONObject().put("sharing", false))
             sendPresence()
             syncClock()
+            requestLibrarySync()
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -504,6 +565,7 @@ class SocialRepository(
             }
             "friend.request", "friend.accepted", "friend.removed" -> refresh()
             "msg.new" -> fetchInbox()
+            "sync.changed" -> requestLibrarySync()
         }
     }
 

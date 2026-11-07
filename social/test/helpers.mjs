@@ -17,6 +17,7 @@ export function memoryStore() {
   let nextId = 1;
   const inboxDevices = new Map(); // "code|device" -> { acked, seen }
   const pushTokens = new Map(); // "code|device" -> { code, device, platform, token, updated_at }
+  const syncRecords = new Map(); // "code|item" -> { code, item, seq, updated_at, nonce, ciphertext }
   const key = (a, b) => `${a}|${b}`;
   return {
     accounts, friendships, blocks, reports,
@@ -37,6 +38,7 @@ export function memoryStore() {
       messages = messages.filter((m) => m.sender !== code && m.recipient !== code && m.peer !== code);
       for (const k of [...inboxDevices.keys()]) if (k.startsWith(`${code}|`)) inboxDevices.delete(k);
       for (const k of [...pushTokens.keys()]) if (k.startsWith(`${code}|`)) pushTokens.delete(k);
+      for (const k of [...syncRecords.keys()]) if (k.startsWith(`${code}|`)) syncRecords.delete(k);
     },
     async listFriendships(code) { return [...friendships.values()].filter((f) => f.a === code || f.b === code); },
     async getFriendship(a, b) { return friendships.get(key(a, b)) ?? null; },
@@ -58,6 +60,27 @@ export function memoryStore() {
     async insertMessage(m) { const id = nextId++; messages.push({ peer: null, ...m, id }); return id; },
     async countSentSince(sender, since) { return messages.filter((m) => m.sender === sender && m.recipient !== sender && m.created_at >= since).length; },
     pushTokens,
+    syncRecords,
+    async syncUsage(code) {
+      const mine = [...syncRecords.values()].filter((r) => r.code === code);
+      return { records: mine.length, bytes: mine.reduce((n, r) => n + r.ciphertext.length, 0) };
+    },
+    async putSyncRecords(code, records) {
+      const accepted = [];
+      for (const r of records) {
+        const k = key(code, r.item);
+        const existing = syncRecords.get(k);
+        if (existing && existing.updated_at >= r.updatedAt) continue;
+        const seq = Math.max(0, ...[...syncRecords.values()].filter((x) => x.code === code).map((x) => x.seq)) + 1;
+        syncRecords.set(k, { code, item: r.item, seq, updated_at: r.updatedAt, nonce: r.nonce, ciphertext: r.ciphertext });
+        accepted.push(r.item);
+      }
+      const latest = Math.max(0, ...[...syncRecords.values()].filter((x) => x.code === code).map((x) => x.seq));
+      return { accepted, latest };
+    },
+    async listSyncRecords(code, after, limit) {
+      return [...syncRecords.values()].filter((r) => r.code === code && r.seq > after).sort((a, b) => a.seq - b.seq).slice(0, limit);
+    },
     async putPushToken(t, maxDevices) {
       for (const [k, v] of pushTokens) if (v.token === t.token && v.code !== t.code) pushTokens.delete(k);
       pushTokens.set(key(t.code, t.device), { ...t });

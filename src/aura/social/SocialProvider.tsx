@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  identityFromSeed, linkCheckWords, newLinkKeyPair, open, openLinkedSeed, openOwn, seal, seedToWords, sign, wordsToSeed, type Identity,
+  identityFromSeed, linkCheckWords, syncKeysFromSeed, newLinkKeyPair, open, openLinkedSeed, openOwn, seal, seedToWords, sign, wordsToSeed, type Identity,
 } from '@social/client-keys.mjs';
 import { base64UrlToBytes, bytesToBase64Url, normalizeCode, signedMessages } from '@social/identity.mjs';
 import type { Track } from '@/data/mockMusic';
@@ -67,6 +67,10 @@ interface SocialContextValue {
   enableNotifications(): Promise<void>;
   /** Server time (ms) by the clock measured over the live connection. */
   serverNow(): number;
+  /** Library sync (sync.md): this identity's keys, or null without one. */
+  syncKeys(): Promise<{ enc: Uint8Array; id: Uint8Array } | null>;
+  /** Goes up when another of your devices changed the synced library. */
+  syncSignal: number;
 }
 
 export interface LinkSession {
@@ -184,6 +188,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const checkedIn = useRef<string | null>(null);
   const hubClock = useRef(new ClockSync());
   const [notifications, setNotifications] = useState(notificationState);
+  const [syncSignal, setSyncSignal] = useState(0);
   const myCode = identity?.code ?? null;
 
   /** Every chat change goes through here, so the ref, the screen and storage agree. */
@@ -403,6 +408,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           if (message.type === 'presence.friend') setPresence((p) => ({ ...p, [body.code]: toPresence(body) }));
           if (message.type?.startsWith('friend.')) void refresh();
           if (message.type === 'msg.new') void fetchInbox();
+          if (message.type === 'sync.changed') setSyncSignal((n) => n + 1);
         };
         ws.onclose = () => {
           setConnected(false);
@@ -546,6 +552,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     },
     notifications,
     serverNow: () => hubClock.current.serverNow(Date.now()),
+    async syncKeys() { return seed ? syncKeysFromSeed(seed) : null; },
+    syncSignal,
     async enableNotifications() {
       if (typeof Notification === 'undefined') return;
       setNotifications(await Notification.requestPermission());
@@ -573,7 +581,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       })();
       return { linkId: data.linkId, qrText: `moodify://link/${data.linkId}?k=${devicePub}`, words, done, cancel: () => { cancelled = true; } };
     },
-  }), [ready, identity, meta, connected, lists, presence, shared, seed, adopt, token, refresh, threads, notifications, mutate, deliver, sendRecorded]);
+  }), [ready, identity, meta, connected, lists, presence, shared, seed, adopt, token, refresh, threads, notifications, mutate, deliver, sendRecorded, syncSignal]);
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

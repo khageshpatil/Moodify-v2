@@ -304,7 +304,7 @@ Each milestone ends with an installable build and a test on your phone.
 | **M3** | **Web rebuild, part 1:** design values, the new interface, new identity and friends, linking via QR | The web app looks like Android; linking a phone by QR shows the same code and friends |
 | **M4** | **Listen together (Android + web):** rooms, follow mode, clock sync, scheduled song starts | A phone and a browser stay within about 50 ms over a 10-minute room, including skips, seeks and a guest rejoining |
 | **M5** | **Chat:** encrypted text, reactions, Android notifications, read receipts and typing (optional) | A message to a phone with the app closed arrives as a notification; the server stores only ciphertext |
-| **M6** | **Library sync:** likes, playlists, saved items, history | A like on the phone shows on the web within seconds; edits made offline merge correctly |
+| **M6** | **Library sync:** likes, playlists, saved items, history | A like on the phone shows on the web within seconds; edits made offline merge correctly. **Built (2026-11-07), protocol `social-protocol/sync.md`.** |
 | **M7** | **Hardening:** a load test with 20 people in one room, rate limits, report review, privacy page, account deletion | A full pass of the privacy checklist (§2); deleting an account removes everything |
 
 **Suggested order:** M0 → M1 → M2 → (M3 alongside M4) → M5 → M6 → M7.

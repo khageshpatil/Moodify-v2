@@ -25,7 +25,14 @@ export const LIMITS = {
   messagesPerHour: 600,
   /** Devices per account that can get wake-up pings (oldest dropped). */
   pushDevices: 10,
+  /** Library sync (sync.md): records per push, per page, per account; ciphertext size. */
+  syncPerPush: 200,
+  syncPerPage: 500,
+  syncRecords: 20_000,
+  syncBytes: 32 * 1024 * 1024,
+  syncRecordChars: 512 * 1024,
 };
+const SYNC_ITEM = /^[A-Za-z0-9_-]{22}$/;
 const PUSH_TOKEN = /^[A-Za-z0-9:_-]{20,4096}$/;
 const B64URL = /^[A-Za-z0-9_-]+$/;
 
@@ -306,6 +313,47 @@ export function createApi({
     });
   }
 
+  // ── Library sync (sync.md) ─────────────────────────────────────────────────
+
+  async function pushSync(me, request) {
+    const body = await readJson(request);
+    const records = Array.isArray(body?.records) ? body.records : null;
+    if (!records || records.length === 0 || records.length > LIMITS.syncPerPush) {
+      return error(400, 'bad_sync', `Send 1 to ${LIMITS.syncPerPush} records.`);
+    }
+    const latestAllowed = (now() + 600) * 1000; // a device's clock may run a little fast
+    const clean = [];
+    const seen = new Set();
+    for (const r of records) {
+      const ok = typeof r?.item === 'string' && SYNC_ITEM.test(r.item) && !seen.has(r.item)
+        && Number.isInteger(r.updatedAt) && r.updatedAt > 0 && r.updatedAt <= latestAllowed
+        && typeof r.nonce === 'string' && /^[A-Za-z0-9_-]{16}$/.test(r.nonce)
+        && typeof r.ciphertext === 'string' && /^[A-Za-z0-9_-]+$/.test(r.ciphertext) && r.ciphertext.length <= LIMITS.syncRecordChars;
+      if (!ok) return error(400, 'bad_sync', 'Each record needs {item, updatedAt, nonce, ciphertext}, encrypted.');
+      seen.add(r.item);
+      clean.push({ item: r.item, updatedAt: r.updatedAt, nonce: r.nonce, ciphertext: r.ciphertext });
+    }
+    const usage = await store.syncUsage(me.code);
+    const incoming = clean.reduce((n, r) => n + r.ciphertext.length, 0);
+    if (usage.records + clean.length > LIMITS.syncRecords || usage.bytes + incoming > LIMITS.syncBytes) {
+      return error(413, 'sync_full', 'Your synced library is full.');
+    }
+    // An item only changes when this version is newer; older ones lose silently.
+    const { accepted, latest } = await store.putSyncRecords(me.code, clean);
+    if (accepted.length) await notify(me.code, { type: 'sync.changed', body: { latest } });
+    return json(200, { accepted, latest });
+  }
+
+  async function pullSync(me, url) {
+    const after = Math.max(0, Math.floor(Number(url.searchParams.get('after')) || 0));
+    const rows = await store.listSyncRecords(me.code, after, LIMITS.syncPerPage);
+    return json(200, {
+      records: rows.map((r) => ({ item: r.item, seq: r.seq, updatedAt: r.updated_at, nonce: r.nonce, ciphertext: r.ciphertext })),
+      latest: rows.length ? rows[rows.length - 1].seq : after,
+      more: rows.length === LIMITS.syncPerPage,
+    });
+  }
+
   async function ackMessages(me, request) {
     const body = await readJson(request);
     const upTo = Number(body?.upTo);
@@ -449,6 +497,9 @@ export function createApi({
       return new Response(null, { status: 204 });
     }
 
+    if (pathname === '/v1/sync' && method === 'PUT') return pushSync(me, request);
+    if (pathname === '/v1/sync' && method === 'GET') return pullSync(me, url);
+
     if (pathname === '/v1/messages' && method === 'POST') return sendMessage(me, request);
     if (pathname === '/v1/messages' && method === 'GET') return listMessages(me, url);
     if (pathname === '/v1/messages/ack' && method === 'POST') return ackMessages(me, request);
@@ -487,6 +538,7 @@ export function d1Store(db) {
         db.prepare('DELETE FROM messages WHERE sender = ? OR recipient = ? OR peer = ?').bind(code, code, code),
         db.prepare('DELETE FROM inbox_devices WHERE code = ?').bind(code),
         db.prepare('DELETE FROM push_tokens WHERE code = ?').bind(code),
+        db.prepare('DELETE FROM sync_records WHERE code = ?').bind(code),
       ]);
     },
 
@@ -556,6 +608,22 @@ export function d1Store(db) {
           (SELECT device FROM push_tokens WHERE code = ? ORDER BY updated_at DESC LIMIT ?)`).bind(t.code, t.code, maxDevices),
       ]);
     },
+    async syncUsage(code) {
+      const row = await db.prepare('SELECT COUNT(*) AS n, COALESCE(SUM(LENGTH(ciphertext)), 0) AS bytes FROM sync_records WHERE code = ?').bind(code).first();
+      return { records: row?.n ?? 0, bytes: row?.bytes ?? 0 };
+    },
+    /** Newer versions win per item; each accepted change gets the next `seq` for the account. */
+    async putSyncRecords(code, records) {
+      const results = await db.batch(records.map((r) => db.prepare(`INSERT INTO sync_records (code, item, seq, updated_at, nonce, ciphertext)
+        VALUES (?1, ?2, (SELECT COALESCE(MAX(seq), 0) + 1 FROM sync_records WHERE code = ?1), ?3, ?4, ?5)
+        ON CONFLICT (code, item) DO UPDATE SET seq = excluded.seq, updated_at = excluded.updated_at, nonce = excluded.nonce, ciphertext = excluded.ciphertext
+        WHERE excluded.updated_at > sync_records.updated_at`).bind(code, r.item, r.updatedAt, r.nonce, r.ciphertext)));
+      const accepted = records.filter((_, i) => (results[i]?.meta?.changes ?? 0) > 0).map((r) => r.item);
+      const row = await db.prepare('SELECT COALESCE(MAX(seq), 0) AS latest FROM sync_records WHERE code = ?').bind(code).first();
+      return { accepted, latest: row?.latest ?? 0 };
+    },
+    listSyncRecords: (code, after, limit) =>
+      all('SELECT item, seq, updated_at, nonce, ciphertext FROM sync_records WHERE code = ? AND seq > ? ORDER BY seq LIMIT ?', code, after, limit),
     listPushTokens: (code) => all('SELECT device, platform, token FROM push_tokens WHERE code = ?', code),
     async deletePushToken(code, device) { await run('DELETE FROM push_tokens WHERE code = ? AND device = ?', code, device); },
     async insertMessage(m) {
