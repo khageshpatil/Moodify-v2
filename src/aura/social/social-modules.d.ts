@@ -9,6 +9,10 @@ declare module '@social/client-keys.mjs' {
   export function open(args: { myBoxPrivate: Uint8Array; myCode: string; theirBoxPub: Uint8Array; theirCode: string; nonce: Uint8Array; ciphertext: Uint8Array }): Promise<string>;
   /** Opens a copy of a message I sent them (chat.md §2). */
   export function openOwn(args: { myBoxPrivate: Uint8Array; myCode: string; theirBoxPub: Uint8Array; theirCode: string; nonce: Uint8Array; ciphertext: Uint8Array }): Promise<string>;
+  export function syncKeysFromSeed(seed: Uint8Array): Promise<{ enc: Uint8Array; id: Uint8Array }>;
+  export function syncItemId(idKey: Uint8Array, collection: string, id: string): Promise<string>;
+  export function sealRecord(args: { encKey: Uint8Array; code: string; item: string; plaintext: string; nonce?: Uint8Array }): Promise<{ nonce: Uint8Array; ciphertext: Uint8Array }>;
+  export function openRecord(args: { encKey: Uint8Array; code: string; item: string; nonce: Uint8Array; ciphertext: Uint8Array }): Promise<string>;
   export function newLinkKeyPair(): Promise<{ privateKey: Uint8Array; publicKey: Uint8Array }>;
   export function sealSeedForLink(args: { seed: Uint8Array; devicePub: Uint8Array; linkId: string }): Promise<{ senderPub: Uint8Array; nonce: Uint8Array; ciphertext: Uint8Array }>;
   export function openLinkedSeed(args: { devicePrivate: Uint8Array; senderPub: Uint8Array; linkId: string; nonce: Uint8Array; ciphertext: Uint8Array }): Promise<Uint8Array>;

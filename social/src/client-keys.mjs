@@ -165,3 +165,35 @@ export async function linkCheckWords(devicePub) {
   const bits = (digest[0] << 16) | (digest[1] << 8) | digest[2];
   return [BIP39_ENGLISH[(bits >> 13) & 2047], BIP39_ENGLISH[(bits >> 2) & 2047]];
 }
+
+// ── Library sync (docs/social-protocol/sync.md) ─────────────────────────────
+// Records are encrypted with a key only your devices can derive from the seed.
+// The server sees an opaque item id (an HMAC), a timestamp and ciphertext.
+
+/** The two sync keys: `enc` (AES-256-GCM) and `id` (HMAC-SHA256 for item ids). */
+export async function syncKeysFromSeed(seed) {
+  if (!(seed instanceof Uint8Array) || seed.length !== 32) throw new Error('seed must be 32 bytes');
+  return { enc: await hkdf(seed, 'sync-enc'), id: await hkdf(seed, 'sync-id') };
+}
+
+/** The server's id for one item: HMAC(idKey, "collection\nid"), first 16 bytes, base64url (22 chars). */
+export async function syncItemId(idKey, collection, id) {
+  const key = await crypto.subtle.importKey('raw', idKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(`${collection}\n${id}`)));
+  return btoa(String.fromCharCode(...mac.slice(0, 16))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+const syncAad = (code, item) => enc.encode(`moodify-sync:v1:${code}:${item}`);
+
+export async function sealRecord({ encKey, code, item, plaintext, nonce = crypto.getRandomValues(new Uint8Array(12)) }) {
+  const key = await crypto.subtle.importKey('raw', encKey, 'AES-GCM', false, ['encrypt']);
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, additionalData: syncAad(code, item) }, key, enc.encode(plaintext)));
+  return { nonce, ciphertext };
+}
+
+/** Throws if the record was altered, moved to another item, or isn't yours. */
+export async function openRecord({ encKey, code, item, nonce, ciphertext }) {
+  const key = await crypto.subtle.importKey('raw', encKey, 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce, additionalData: syncAad(code, item) }, key, ciphertext);
+  return new TextDecoder().decode(plain);
+}

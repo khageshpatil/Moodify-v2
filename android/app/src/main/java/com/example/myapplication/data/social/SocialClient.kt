@@ -167,6 +167,27 @@ class SocialClient(
         return "$base/v1/live?token=${java.net.URLEncoder.encode(token, "UTF-8")}$deviceParam"
     }
 
+    // ── Library sync (sync.md) ──────────────────────────────────────────────
+
+    suspend fun syncPull(token: String, after: Long): SyncPage {
+        val json = call("GET", "/v1/sync?after=$after", null, token)
+        val rows = json.optJSONArray("records") ?: org.json.JSONArray()
+        val records = (0 until rows.length()).map { i ->
+            val r = rows.getJSONObject(i)
+            WireRecord(item = r.getString("item"), updatedAt = r.getLong("updatedAt"), nonce = r.getString("nonce"), ciphertext = r.getString("ciphertext"), seq = r.optLong("seq"))
+        }
+        return SyncPage(records, json.optLong("latest", after), json.optBoolean("more"))
+    }
+
+    /** Returns the items the server accepted. */
+    suspend fun syncPush(token: String, records: List<WireRecord>): List<String> {
+        val body = JSONObject().put("records", org.json.JSONArray(records.map {
+            JSONObject().put("item", it.item).put("updatedAt", it.updatedAt).put("nonce", it.nonce).put("ciphertext", it.ciphertext)
+        }))
+        val accepted = call("PUT", "/v1/sync", body, token).optJSONArray("accepted") ?: org.json.JSONArray()
+        return (0 until accepted.length()).map { accepted.getString(it) }
+    }
+
     /** Wake-up pings for this device (chat.md §3). */
     suspend fun registerPush(token: String, device: String, pushToken: String) {
         call("PUT", "/v1/push", JSONObject().put("device", device).put("platform", "fcm").put("token", pushToken), token)

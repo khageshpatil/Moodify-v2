@@ -112,7 +112,7 @@ class MoodifyIdentity private constructor(
             return "MOOD-${compact.take(4)}-${compact.drop(4)}"
         }
 
-        private fun hkdf(seed: ByteArray, info: String): ByteArray {
+        internal fun hkdf(seed: ByteArray, info: String): ByteArray {
             val generator = HKDFBytesGenerator(SHA256Digest())
             generator.init(HKDFParameters(seed, SALT, info.toByteArray()))
             return ByteArray(32).also { generator.generateBytes(it, 0, 32) }

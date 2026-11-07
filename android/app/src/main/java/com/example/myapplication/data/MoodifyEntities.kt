@@ -132,6 +132,16 @@ interface MoodifyDao {
     @Query("SELECT * FROM saved_collections ORDER BY savedAtMs DESC")
     fun observeSavedCollections(): kotlinx.coroutines.flow.Flow<List<SavedCollectionEntity>>
 
+    // Library sync (data/social/LibrarySync.kt): the whole library at once.
+    @Query("SELECT * FROM saved_collections")
+    suspend fun savedCollections(): List<SavedCollectionEntity>
+
+    @Query("SELECT * FROM favorites")
+    suspend fun favorites(): List<FavoriteEntity>
+
+    @Query("SELECT * FROM playlist_tracks ORDER BY playlistId, position")
+    suspend fun allPlaylistTracks(): List<PlaylistTrackEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSavedCollection(entry: SavedCollectionEntity)
 
