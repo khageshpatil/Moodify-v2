@@ -28,9 +28,8 @@ android {
         versionName = buildVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // moodify-social server. Empty = not live yet: identities are created on
-        // the device and register once a server is configured.
-        buildConfigField("String", "SOCIAL_BASE_URL", "\"${project.findProperty("socialBaseUrl") ?: ""}\"")
+        // moodify-social server (Cloudflare Worker, social/). Override with -PsocialBaseUrl=…
+        buildConfigField("String", "SOCIAL_BASE_URL", "\"${project.findProperty("socialBaseUrl") ?: "https://moodify-social.moodify-kp.workers.dev"}\"")
 
         // Firebase, for content-free wake-up pings only. Read from google-services.json
         // (no Google Services plugin needed); without the file, pings are off and the
