@@ -680,6 +680,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onReport = friendsViewModel::report,
                         onDismissShared = friendsViewModel::dismissShared,
                         onJoinRoom = { roomId -> friendsViewModel.joinRoom(roomId); viewModel.setRoomSheetOpen(true) },
+                        onFollow = { friend -> friendsViewModel.followFriend(friend); viewModel.setRoomSheetOpen(true) },
                         onRefresh = friendsViewModel::refresh,
                         conversations = conversations,
                         onOpenChat = { code -> navController.navigate(com.moodify.app.ui.navigation.ChatRoute(code)) },
@@ -1031,7 +1032,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                                     showRelated = true
                                 },
                                 onOpenSleepTimer = { showSleep = true },
-                                roomId = room?.roomId,
+                                roomLabel = room?.let { r -> if (r.isFollowing) "Following ${r.followingName}" else "Listening room · ${r.roomId}" },
                                 onListenTogether = { viewModel.setRoomSheetOpen(true) },
                                 onOpenEqualizer = {
                                     val eq = Intent(android.media.audiofx.AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)

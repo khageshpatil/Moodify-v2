@@ -5,8 +5,10 @@ import {
 } from '@social/client-keys.mjs';
 import { base64UrlToBytes, bytesToBase64Url, normalizeCode, signedMessages } from '@social/identity.mjs';
 import type { Track } from '@/data/mockMusic';
+import { getCanonicalPlaybackEngine } from '@/playback/PlaybackEngine';
 import { usePlayer } from '../PlayerContext';
 import { clearIdentity, loadIdentity, saveIdentity, updateIdentity } from './identityStore';
+import { ClockSync } from './roomSync';
 import {
   addMessage, applyReaction, conversations as listConversations, markRead as markThreadRead, newMid, parsePayload, payloads, preview,
   toMessage, updateMessage, type ChatMessage, type ChatThreads, type Conversation, type SharedCollection,
@@ -17,7 +19,8 @@ import type { WireFriendPresence, WireInboxMessage } from './wire';
 export const SOCIAL_URL = (import.meta.env.VITE_SOCIAL_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8790' : '')).replace(/\/$/, '');
 
 export interface SocialUser { code: string; displayName: string; boxPub: string; since?: number; note?: string | null }
-export interface Presence { online: boolean; track?: Track; playing: boolean; lastSeenAt?: number | null }
+/** [positionMs] was the position at server time [at] (ms; 0 from older servers). */
+export interface Presence { online: boolean; track?: Track; playing: boolean; lastSeenAt?: number | null; positionMs: number; at: number }
 export interface SharedItem { id: number; fromCode: string; fromName: string; sentAt: number; track?: Track; collection?: SharedCollection; roomId?: string }
 interface Lists { friends: SocialUser[]; incoming: SocialUser[]; outgoing: SocialUser[] }
 
@@ -62,6 +65,8 @@ interface SocialContextValue {
   setActiveThread(code: string | null): void;
   notifications: NotificationPermission | 'unsupported';
   enableNotifications(): Promise<void>;
+  /** Server time (ms) by the clock measured over the live connection. */
+  serverNow(): number;
 }
 
 export interface LinkSession {
@@ -177,6 +182,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const activeThread = useRef<string | null>(null);
   const fetching = useRef<{ again: boolean } | null>(null);
   const checkedIn = useRef<string | null>(null);
+  const hubClock = useRef(new ClockSync());
   const [notifications, setNotifications] = useState(notificationState);
   const myCode = identity?.code ?? null;
 
@@ -379,12 +385,18 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         await fetchInbox();
         const ws = new WebSocket(`${SOCIAL_URL.replace(/^http/, 'ws')}/v1/live?token=${encodeURIComponent(t)}&device=${deviceId()}`);
         socket.current = ws;
-        ws.onopen = () => { backoff = 2000; setConnected(true); };
+        ws.onopen = () => {
+          backoff = 2000; setConnected(true);
+          hubClock.current.reset();
+          for (let i = 0; i < 5; i++) setTimeout(() => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ v: 1, type: 'ping', body: { t: Date.now() } })); }, i * 200);
+        };
         ws.onmessage = (event) => {
           const message = JSON.parse(event.data);
           const body = message.body ?? {};
+          if (message.type === 'pong') { hubClock.current.onPong(Number(body.t), Number(message.ts), Date.now()); return; }
           const toPresence = (p: WireFriendPresence): Presence => ({
             online: !!p.online, playing: !!p.presence?.playing, lastSeenAt: p.lastSeenAt,
+            positionMs: Number(p.presence?.positionMs) || 0, at: Number(p.presence?.at) || 0,
             track: p.presence ? { id: p.presence.trackId, title: p.presence.title, artist: p.presence.artist, album: '', albumArt: p.presence.artworkUrl, duration: Math.round((p.presence.durationMs ?? 0) / 1000), provider: 'youtube-music', providerId: p.presence.trackId } : undefined,
           });
           if (message.type === 'hello') setPresence(Object.fromEntries((body.friends ?? []).map((f: WireFriendPresence) => [f.code, toPresence(f)])));
@@ -406,19 +418,32 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity]);
 
-  // Publish "listening now" when the song or play/pause changes.
+  // Publish "listening now" when the song or play/pause changes, at once after a
+  // seek (friends following you jump too), and every 15 s while playing.
   const track = player.currentTrack;
-  useEffect(() => {
+  const playerRef = useRef(player);
+  playerRef.current = player;
+  const publishPresence = useCallback((seek = false) => {
     const ws = socket.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const id = track?.providerId || track?.id;
-    const body = track && id ? {
-      trackId: id, title: track.title, artist: track.artist, artworkUrl: track.albumArt, durationMs: Math.round((track.duration || player.duration || 0) * 1000),
-      positionMs: Math.round(player.currentTime * 1000), playing: player.isPlaying,
+    const p = playerRef.current;
+    const t = p.currentTrack;
+    const id = t?.providerId || t?.id;
+    const audio = getCanonicalPlaybackEngine().getAudioElement();
+    const body = t && id ? {
+      trackId: id, title: t.title, artist: t.artist, artworkUrl: t.albumArt, durationMs: Math.round((t.duration || p.duration || 0) * 1000),
+      positionMs: Math.round(audio.currentTime * 1000), playing: p.isPlaying, ...(seek ? { seek: true } : {}),
     } : { cleared: true };
     ws.send(JSON.stringify({ v: 1, type: 'presence.update', body }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [track?.id, player.isPlaying, connected]);
+  }, []);
+  useEffect(() => { publishPresence(); }, [track?.id, player.isPlaying, connected, publishPresence]);
+  useEffect(() => {
+    const audio = getCanonicalPlaybackEngine().getAudioElement();
+    const onSeeked = () => publishPresence(true);
+    audio.addEventListener('seeked', onSeeked);
+    const tick = setInterval(() => { if (playerRef.current.isPlaying) publishPresence(); }, 15_000);
+    return () => { audio.removeEventListener('seeked', onSeeked); clearInterval(tick); };
+  }, [publishPresence]);
 
   const adopt = useCallback(async (newSeed: Uint8Array, displayName: string, backedUp: boolean) => {
     const id = await identityFromSeed(newSeed);
@@ -520,6 +545,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       if (code) mutate((th) => markThreadRead(th, code));
     },
     notifications,
+    serverNow: () => hubClock.current.serverNow(Date.now()),
     async enableNotifications() {
       if (typeof Notification === 'undefined') return;
       setNotifications(await Notification.requestPermission());

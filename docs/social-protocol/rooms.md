@@ -123,3 +123,13 @@ A `track` is `{trackId, title, artist, artworkUrl, durationMs}` and is cleaned l
 - **Reconnecting.** A dropped connection is retried with backoff from 2 to 30 seconds while the person is still in the room. `404` means the room has ended; the client stops.
 - **Keep-alive.** Clients send a WebSocket ping every 20 s, with no read timeout; a quiet room is normal.
 - **Links.** A `moodify://room/{id}` link is joined once. Android replays a task's original link when it relaunches the app, and room codes are single-use, so a replayed link is ignored.
+
+## 7. Following a friend
+
+Following is a one-way room with no server room: a friend's "listening now" (`friends.md` §4) is the room state.
+
+- **The room clock:** song = `presence.trackId`, playing = `presence.playing`, anchor = `presence.positionMs` at server time `presence.at`. The follower's clock offset comes from `ping`/`pong` on its live connection. Following then works exactly as in §3: seek when more than 1 s off, nudge the rate in between, hold for a moment when ahead on the web.
+- **Seeks:** the friend's app sends `presence.update` with `seek: true` as soon as their position jumps, so followers jump within about a second instead of waiting for the 15-second refresh.
+- **Stopping:** pressing play or pause yourself, picking another song, or "Stop following". If the friend goes offline or stops sharing, the follower pauses and says so, and picks up again when they're back.
+- **Privacy:** nothing new is shared. A follower sees only what friends already see; the friend isn't told they're being followed.
+- **Clients:** Android `data/social/Rooms.kt` (`followFriend`), the web `src/aura/social/RoomProvider.tsx` (`followFriend`). Started from a friend's card under "Listening now".

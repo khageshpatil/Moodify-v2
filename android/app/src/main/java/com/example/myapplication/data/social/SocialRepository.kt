@@ -37,6 +37,8 @@ data class FriendPresence(
     val track: Track? = null,
     val playing: Boolean = false,
     val positionMs: Long = 0,
+    /** Server time (ms) when [positionMs] was reported; 0 from older servers. */
+    val atServerMs: Long = 0,
     val receivedAtMs: Long = System.currentTimeMillis(),
     val lastSeenAtSeconds: Long? = null,
 )
@@ -74,6 +76,8 @@ data class SocialState(
 class SocialRepository(
     context: Context,
     private val playback: StateFlow<PlaybackState>,
+    /** The player's live position; read on the main thread. */
+    private val livePositionMs: () -> Long = { playback.value.positionMs },
 ) {
     private val appContext = context.applicationContext
     private val store = IdentityStore(appContext)
@@ -115,15 +119,31 @@ class SocialRepository(
             // Sends that never finished (app closed mid-send) show as failed, ready to retry.
             runCatching { chat.stuckSending(System.currentTimeMillis() - 60_000).forEach { chat.setStatus(it.mid, STATUS_FAILED) } }
         }
-        // Publish "listening now" when the song or play/pause changes, plus a
-        // position refresh every 15 s while playing (for listening along later).
+        // Publish "listening now" when the song or play/pause changes, at once
+        // after a seek (friends following you jump too), and every 15 s while playing.
         scope.launch {
             playback.map { PresenceKey(it.currentTrack?.id, it.isPlaying) }.distinctUntilChanged().collect { sendPresence() }
         }
-        scope.launch {
+        scope.launch(Dispatchers.Main) {
+            var lastPos = -1L
+            var lastAt = 0L
+            var lastTrack: String? = null
             while (isActive) {
-                delay(15_000)
-                if (playback.value.isPlaying) sendPresence()
+                delay(1_000)
+                val s = playback.value
+                val pos = livePositionMs()
+                val now = System.currentTimeMillis()
+                val step = if (s.isPlaying) now - lastAt else 0L
+                val busy = s.isLoading || s.isResolving
+                val seeked = !busy && s.currentTrack?.id != null && s.currentTrack.id == lastTrack && lastPos >= 0 &&
+                    kotlin.math.abs((pos - lastPos) - step) > SEEK_DETECT_MS
+                when {
+                    seeked -> sendPresence(seek = true)
+                    s.isPlaying && now - lastPresenceAt > 15_000 -> sendPresence()
+                }
+                lastPos = if (busy) -1 else pos
+                lastAt = now
+                lastTrack = s.currentTrack?.id
             }
         }
     }
@@ -438,6 +458,7 @@ class SocialRepository(
             _state.update { it.copy(connected = true) }
             if (!shareListening) send("settings.update", JSONObject().put("sharing", false))
             sendPresence()
+            syncClock()
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -461,6 +482,14 @@ class SocialRepository(
         val message = runCatching { JSONObject(text) }.getOrNull() ?: return
         val body = message.optJSONObject("body") ?: JSONObject()
         when (message.optString("type")) {
+            "pong" -> {
+                val t0 = body.optLong("t")
+                val rtt = System.currentTimeMillis() - t0
+                if (t0 > 0 && rtt in 0 until bestRttMs) {
+                    bestRttMs = rtt
+                    clockOffsetMs = message.optLong("ts") - (t0 + rtt / 2)
+                }
+            }
             "hello" -> {
                 val friends = body.optJSONArray("friends")
                 val presence = (0 until (friends?.length() ?: 0)).associate { index ->
@@ -494,28 +523,56 @@ class SocialRepository(
             track = track,
             playing = p?.optBoolean("playing") == true,
             positionMs = p?.optLong("positionMs") ?: 0,
+            atServerMs = p?.optLong("at") ?: 0,
             lastSeenAtSeconds = if (body.isNull("lastSeenAt")) null else body.optLong("lastSeenAt"),
         )
     }
 
-    private fun sendPresence() {
-        if (!shareListening) return
-        val s = playback.value
-        val track = s.currentTrack
-        val body = if (track == null) {
-            JSONObject().put("cleared", true)
-        } else {
-            JSONObject()
-                .put("trackId", track.id)
-                .put("title", track.title)
-                .put("artist", track.artist)
-                .put("artworkUrl", track.albumArtUrl)
-                .put("durationMs", track.durationSeconds * 1000L)
-                .put("positionMs", s.positionMs)
-                .put("playing", s.isPlaying)
+    @Volatile private var lastPresenceAt = 0L
+    @Volatile private var clockOffsetMs: Long? = null
+    @Volatile private var bestRttMs = Long.MAX_VALUE
+
+    /** Server time minus this phone's, measured over the live connection; null until measured. */
+    fun serverClockOffsetMs(): Long? = clockOffsetMs
+
+    /** Measures the server clock a few times (the shortest round trip wins). */
+    fun syncClock() {
+        scope.launch {
+            bestRttMs = Long.MAX_VALUE
+            repeat(5) {
+                send("ping", JSONObject().put("t", System.currentTimeMillis()))
+                delay(200)
+            }
         }
-        send("presence.update", body)
     }
+
+    /** [seek]: the position jumped; the server passes it on at once. */
+    private fun sendPresence(seek: Boolean = false) {
+        if (!shareListening) return
+        scope.launch(Dispatchers.Main) {
+            val s = playback.value
+            val track = s.currentTrack
+            val body = if (track == null) {
+                JSONObject().put("cleared", true)
+            } else {
+                JSONObject()
+                    .put("trackId", track.id)
+                    .put("title", track.title)
+                    .put("artist", track.artist)
+                    .put("artworkUrl", track.albumArtUrl)
+                    .put("durationMs", track.durationSeconds * 1000L)
+                    .put("positionMs", livePositionMs().coerceAtLeast(0))
+                    .put("playing", s.isPlaying)
+                    .apply { if (seek) put("seek", true) }
+            }
+            lastPresenceAt = System.currentTimeMillis()
+            send("presence.update", body)
+        }
+    }
+
+    /** One friend's "listening now", for following them. */
+    fun presenceOf(code: String): kotlinx.coroutines.flow.Flow<FriendPresence?> =
+        state.map { it.presence[code] }.distinctUntilChanged()
 
     private fun send(type: String, body: JSONObject) {
         socket?.send(JSONObject().put("v", 1).put("type", type).put("body", body).toString())
@@ -566,6 +623,8 @@ class SocialRepository(
         const val INITIAL_BACKOFF_MS = 2_000L
         const val MAX_BACKOFF_MS = 60_000L
         const val BACKGROUND_GRACE_MS = 30_000L
+        /** A position jump bigger than this (beyond normal playing) is a seek. */
+        const val SEEK_DETECT_MS = 2_500L
         const val MAX_SHARED = 100
         const val INBOX_PAGE = 100
         const val PREFS = "moodify_social"

@@ -43,9 +43,13 @@ data class RoomUiState(
     val suggestions: List<Pair<String, Track>> = emptyList(),
     val connected: Boolean = false,
     val error: String? = null,
+    /** Following a friend: a one-way "room" fed by their listening now, no server room (rooms.md §7). */
+    val followingCode: String? = null,
+    val followingName: String? = null,
 ) {
-    val canControl: Boolean get() = role == "host" || role == "dj"
-    val isHost: Boolean get() = role == "host"
+    val isFollowing: Boolean get() = followingCode != null
+    val canControl: Boolean get() = !isFollowing && (role == "host" || role == "dj")
+    val isHost: Boolean get() = !isFollowing && role == "host"
 }
 
 /**
@@ -59,6 +63,9 @@ class RoomController(
     private val playback: PlaybackManager,
     private val token: suspend () -> String?,
     private val sendInvite: suspend (SocialUser, String, Track?) -> Unit,
+    private val presenceOf: (String) -> kotlinx.coroutines.flow.Flow<FriendPresence?> = { kotlinx.coroutines.flow.flowOf(null) },
+    private val serverClock: () -> Long? = { null },
+    private val syncClock: () -> Unit = {},
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val _room = MutableStateFlow<RoomUiState?>(null)
@@ -75,6 +82,9 @@ class RoomController(
     private var autoplayBefore: Boolean? = null
     /** After this phone changed the room itself, don't follow until the room echoes it. */
     private var localActionUntil = 0L
+    /** Following: the song this phone last loaded to match the friend, and when. */
+    private var followLoaded: String? = null
+    private var followLoadedAt = 0L
 
     private fun serverNow() = System.currentTimeMillis() + clockOffsetMs
 
@@ -100,6 +110,46 @@ class RoomController(
         jobs += scope.launch { followLoop() }
         jobs += scope.launch { mirrorLocalPlayback() }
         jobs += scope.launch { mirrorPlayIntents() }
+    }
+
+    /**
+     * Follow a friend: this player mirrors theirs (same song, same moment) using
+     * their "listening now", until you leave or play something yourself.
+     */
+    fun followFriend(code: String, name: String) {
+        leave()
+        Log.i(TAG, "following $code")
+        _room.value = RoomUiState(roomId = "", hostCode = code, followingCode = code, followingName = name, connected = true)
+        autoplayBefore = playback.autoplayEnabled
+        playback.autoplayEnabled = false // their next song decides
+        followLoaded = playback.state.value.currentTrack?.id
+        followLoadedAt = System.currentTimeMillis()
+        syncClock()
+        jobs += scope.launch {
+            presenceOf(code).collect { p ->
+                val listening = p != null && p.online && p.track != null
+                _room.update { s ->
+                    if (s?.followingCode != code) return@update s
+                    if (listening) s.copy(
+                        track = p!!.track,
+                        playing = p.playing,
+                        anchorPositionMs = p.positionMs,
+                        anchorServerTime = if (p.atServerMs > 0) p.atServerMs else p.receivedAtMs + (serverClock() ?: 0L),
+                        error = null,
+                    ) else s.copy(
+                        playing = false,
+                        anchorPositionMs = playback.currentPositionMs(),
+                        anchorServerTime = serverNow(),
+                        error = "$name isn't listening right now",
+                    )
+                }
+                val s = _room.value ?: return@collect
+                s.track?.let { follow(s, it) }
+            }
+        }
+        jobs += scope.launch { followLoop() }
+        // Pressing play or pause yourself means you're done following.
+        jobs += scope.launch { playback.playIntents.collect { if (_room.value?.isFollowing == true) leave() } }
     }
 
     private suspend fun connect() {
@@ -204,6 +254,18 @@ class RoomController(
         while (scope.isActive) {
             delay(1000)
             val s = _room.value ?: continue
+            if (s.isFollowing) {
+                clockOffsetMs = serverClock() ?: 0L
+                // You picked another song yourself: stop following.
+                val local = playback.state.value
+                val mine = local.currentTrack?.id
+                val busy = local.isLoading || local.isResolving
+                if (!busy && mine != null && mine != followLoaded && System.currentTimeMillis() - followLoadedAt > 5_000) {
+                    Log.i(TAG, "stopped following: playing something else")
+                    leave()
+                    continue
+                }
+            }
             val track = s.track ?: continue
             val local = playback.state.value
             if (s.canControl && local.currentTrack?.id == track.id && !local.isLoading && !local.isResolving) {
@@ -230,7 +292,10 @@ class RoomController(
         if (System.currentTimeMillis() < localActionUntil) return false
         val local = playback.state.value
         if (local.currentTrack?.id != track.id) {
-            playback.playTrack(track, listOf(track), source = "Listening room ${s.roomId}")
+            val source = if (s.isFollowing) "Following ${s.followingName}" else "Listening room ${s.roomId}"
+            followLoaded = track.id
+            followLoadedAt = System.currentTimeMillis()
+            playback.playTrack(track, listOf(track), source = source)
             return true
         }
         val expected = expectedPositionMs(s)

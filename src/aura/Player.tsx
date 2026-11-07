@@ -55,11 +55,11 @@ export function FullPlayer({ onClose }: { onClose: () => void }) {
       <div className="aura-row" style={{ padding: '12px 12px 0' }}>
         <button className="aura-icon-btn" aria-label="Close player" onClick={onClose}><ChevronDown size={28} /></button>
         <div style={{ flex: 1, textAlign: 'center' }} className="type-label-small" aria-hidden>
-          <div style={{ opacity: 0.6 }}>{room ? 'LISTENING ROOM' : 'NOW PLAYING'}</div>
-          {room ? <div className="type-label-medium aura-mono">{room.roomId}</div>
+          <div style={{ opacity: 0.6 }}>{room?.following ? 'FOLLOWING' : room ? 'LISTENING ROOM' : 'NOW PLAYING'}</div>
+          {room ? <div className="type-label-medium aura-mono">{room.following ? room.following.name : room.roomId}</div>
             : player.queue.length > 1 && <div className="type-label-medium">{player.currentTrackIndex + 1} of {player.queue.length}</div>}
         </div>
-        <Link to="/room" onClick={onClose} className="aura-icon-btn" aria-label={room ? `Listening room ${room.roomId}` : 'Listen together'}><Users size={22} /></Link>
+        <Link to="/room" onClick={onClose} className="aura-icon-btn" aria-label={room?.following ? `Following ${room.following.name}` : room ? `Listening room ${room.roomId}` : 'Listen together'}><Users size={22} /></Link>
         <button className="aura-icon-btn" aria-label="Queue" aria-pressed={showQueue} onClick={() => setShowQueue((v) => !v)}><ListMusic size={22} /></button>
       </div>
       <div className="aura-full-body">

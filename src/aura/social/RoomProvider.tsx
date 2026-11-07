@@ -24,6 +24,8 @@ export interface RoomState {
   suggestions: Array<{ displayName: string; track: Track }>;
   connected: boolean;
   error: string | null;
+  /** Following a friend: a one-way "room" fed by their listening now, no server room (rooms.md §7). */
+  following: { code: string; name: string } | null;
 }
 
 interface RoomContextValue {
@@ -33,6 +35,8 @@ interface RoomContextValue {
   unblock(): void;
   start(): Promise<void>;
   join(roomId: string): void;
+  /** Your player mirrors this friend's until you leave or play something yourself. */
+  followFriend(friend: SocialUser): void;
   leave(): void;
   chat(text: string): void;
   setRole(code: string, role: RoomMember['role']): void;
@@ -48,7 +52,7 @@ export const useRoom = () => {
   return value;
 };
 
-const canControl = (room: RoomState | null) => room?.role === 'host' || room?.role === 'dj';
+const canControl = (room: RoomState | null) => !room?.following && (room?.role === 'host' || room?.role === 'dj');
 const trackKey = (track: Track | null | undefined) => (track ? track.providerId || track.id : null);
 
 const toWire = (track: Track) => ({
@@ -92,6 +96,10 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const reopenStartedAt = useRef(0);
   const lastDebugLog = useRef(0);
   const [needsTap, setNeedsTap] = useState(false);
+  const socialRef = useRef(social);
+  socialRef.current = social;
+  /** Server time: the room's clock in a room, the live connection's while following. */
+  const serverNow = () => (roomRef.current?.following ? socialRef.current.serverNow() : clock.current.serverNow(Date.now()));
 
   // Joining from a link has no tap yet, so the browser may refuse to play.
   useEffect(() => {
@@ -134,14 +142,14 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       busy: busy(),
       nudging: nudging.current,
       room: s,
-      serverNow: clock.current.serverNow(Date.now()),
+      serverNow: serverNow(),
       durationMs: s.track.duration * 1000 || undefined,
       waitWhenAheadMs: WAIT_WHEN_AHEAD_MS,
     });
     if (!step) return;
     if (import.meta.env.DEV && step.kind === 'match' && Date.now() - lastDebugLog.current > 5000) {
       lastDebugLog.current = Date.now();
-      const expected = roomPositionMs(s, clock.current.serverNow(Date.now()));
+      const expected = roomPositionMs(s, serverNow());
       console.debug(`[room] follow local=${positionMs()} room=${Math.round(expected)} drift=${Math.round(positionMs() - expected)} rate=${step.rate} offset=${Math.round(clock.current.offsetMs)}`);
     }
     if (step.kind === 'load') { quiet(4000); playerRef.current.playTrack(s.track, [s.track]); return; }
@@ -299,13 +307,53 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
+  // Following a friend: their "listening now" is the room; your own play, pause
+  // or pick ends it.
+  const followingCode = room?.following?.code ?? null;
+  const friendPresence = followingCode ? social.presence[followingCode] : undefined;
+  useEffect(() => {
+    const current = roomRef.current;
+    if (!followingCode || !current?.following) return;
+    const listening = !!friendPresence?.online && !!friendPresence.track;
+    const next: RoomState = listening ? {
+      ...current, error: null, track: friendPresence!.track!, playing: friendPresence!.playing,
+      anchorPositionMs: friendPresence!.positionMs, anchorServerTime: friendPresence!.at || socialRef.current.serverNow(),
+    } : {
+      ...current, playing: false, anchorPositionMs: positionMs(), anchorServerTime: socialRef.current.serverNow(),
+      error: `${current.following.name} isn't listening right now`,
+    };
+    roomRef.current = next;
+    setRoom(next);
+    follow(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followingCode, friendPresence]);
+  useEffect(() => {
+    if (!followingCode) return;
+    const loop = setInterval(() => { const s = roomRef.current; if (s?.following) follow(s); }, 1000);
+    const audio = engine.getAudioElement();
+    const mine = () => Date.now() > quietUntil.current && !busy();
+    const stop = () => { if (mine() && !audio.ended) { setRoom(null); blocked.current = false; setNeedsTap(false); } };
+    audio.addEventListener('play', stop);
+    audio.addEventListener('pause', stop);
+    return () => {
+      clearInterval(loop);
+      audio.removeEventListener('play', stop);
+      audio.removeEventListener('pause', stop);
+      audio.playbackRate = 1;
+      nudging.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followingCode]);
+
   // A host or DJ who picks a song plays it for everyone. (After a song ends, the
   // player's own autoplay isn't a pick: the room moves on from its queue.)
   const localKey = trackKey(player.currentTrack);
   useEffect(() => {
     const s = roomRef.current;
-    if (!s || !localKey || !canControl(s) || localKey === trackKey(s.track)) return;
+    if (!s || !localKey || localKey === trackKey(s.track)) return;
     if (Date.now() < quietUntil.current || Date.now() - endedAt.current < 5000) return;
+    if (s.following) { setRoom(null); return; } // you picked your own song: stop following
+    if (!canControl(s)) return;
     localAction();
     control('setTrack', { track: toWire(playerRef.current.currentTrack!) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -329,6 +377,13 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       if (!id) return;
       if (roomRef.current?.roomId !== id) setRoom(blankRoom(id));
     },
+    followFriend(friend) {
+      blocked.current = false;
+      setNeedsTap(false);
+      const next: RoomState = { ...blankRoom(''), hostCode: friend.code, connected: true, following: { code: friend.code, name: friend.displayName } };
+      roomRef.current = next;
+      setRoom(next);
+    },
     leave() { setRoom(null); blocked.current = false; setNeedsTap(false); },
     chat(text) { const t = text.trim(); if (t) send('room.chat', { text: t }); },
     setRole(code, role) { send('room.role', { code, role }); },
@@ -345,5 +400,5 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
 const blankRoom = (roomId: string): RoomState => ({
   roomId, you: '', role: 'listener', hostCode: null, members: [], track: null, playing: false,
-  anchorPositionMs: 0, anchorServerTime: 0, queue: [], chat: [], suggestions: [], connected: false, error: null,
+  anchorPositionMs: 0, anchorServerTime: 0, queue: [], chat: [], suggestions: [], connected: false, error: null, following: null,
 });

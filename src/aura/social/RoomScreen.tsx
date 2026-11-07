@@ -64,6 +64,29 @@ export function RoomScreen() {
     );
   }
 
+  if (room.following) {
+    const name = room.following.name;
+    return (
+      <div className="aura-page" style={{ maxWidth: 640 }}>
+        <div className="aura-glow" />
+        <h1 className="type-display-small">Following {name}</h1>
+        <p className="type-body-medium aura-muted">{room.error ?? `Your player mirrors ${name}'s: the same song at the same moment. Play or pause yourself to stop.`}</p>
+        {rooms.needsTap && <button className="aura-btn aura-btn-primary" style={{ width: '100%' }} onClick={rooms.unblock}>Tap to start listening</button>}
+        {room.track && (
+          <div className="aura-card aura-row" style={{ marginTop: 16 }}>
+            <Artwork src={room.track.albumArt} size={64} radius="var(--radius-md)" placeholder={room.track.id} />
+            <div className="aura-track-text">
+              <div className="type-title-medium aura-ellipsis">{room.track.title}</div>
+              <div className="type-body-small aura-muted aura-ellipsis">{room.track.artist}{room.playing ? '' : ' · paused'}</div>
+            </div>
+          </div>
+        )}
+        <button className="aura-btn aura-btn-tonal" style={{ width: '100%', marginTop: 16 }} onClick={() => rooms.leave()}>Stop following</button>
+        {toast}
+      </div>
+    );
+  }
+
   const status = !room.connected ? room.error ?? 'Connecting…' : room.role === 'host' ? "You're the host" : room.role === 'dj' ? "You're a DJ" : 'Following the host';
   const controls = room.role === 'host' || room.role === 'dj';
   const inRoom = new Set(room.members.map((m) => m.code));
