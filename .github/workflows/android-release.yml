@@ -35,6 +35,7 @@ jobs:
 
       # With the signing secrets set, CI publishes the smaller, optimised release
       # build signed with the Moodify key; without them it falls back to debug.
+      # Both talk to the live social server (debug builds otherwise expect one on the PC).
       - name: Build APK
         working-directory: android
         env:
@@ -49,12 +50,12 @@ jobs:
             export MOODIFY_KEYSTORE_FILE="$RUNNER_TEMP/moodify-release.jks"
             ./gradlew :app:assembleRelease --no-daemon --stacktrace \
               -PversionCode=${{ github.run_number }} \
-              -PversionName=1.1.${{ github.run_number }}
+              -PversionName=1.1.${{ github.run_number }} \n              -PsocialBaseUrl=https://moodify-social.moodify-kp.workers.dev
             cp app/build/outputs/apk/release/app-release.apk ../Moodify.apk
           else
             ./gradlew :app:assembleDebug --no-daemon --stacktrace \
               -PversionCode=${{ github.run_number }} \
-              -PversionName=1.1.${{ github.run_number }}
+              -PversionName=1.1.${{ github.run_number }} \n              -PsocialBaseUrl=https://moodify-social.moodify-kp.workers.dev
             cp app/build/outputs/apk/debug/app-debug.apk ../Moodify.apk
           fi
 
