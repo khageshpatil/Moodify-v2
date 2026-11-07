@@ -44,6 +44,16 @@ class FriendsViewModel : ViewModel() {
 
     fun dismissShared(id: Long) = social.dismissShared(id)
 
+    fun sendPlaylist(to: SocialUser, name: String, tracks: List<Track>) =
+        run { social.sendPlaylist(to, name, tracks); say("Sent “$name” to ${to.displayName}") }
+
+    /** Opens a room and invites [friend] to it. */
+    fun listenWith(friend: SocialUser) = run {
+        rooms.create()
+        rooms.invite(friend)
+        say("Invited ${friend.displayName} to listen together")
+    }
+
     // ── Listen together (M4) ────────────────────────────────────────────────
 
     private val rooms = AppGraph.rooms

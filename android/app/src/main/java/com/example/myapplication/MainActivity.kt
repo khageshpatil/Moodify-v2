@@ -350,6 +350,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
     // "Send to a friend": a song or a collection waiting for a friend to be picked.
     var sendTrack by remember { mutableStateOf<Track?>(null) }
     var sendCollection by remember { mutableStateOf<com.moodify.app.data.CatalogItem?>(null) }
+    var sendPlaylist by remember { mutableStateOf<com.moodify.app.data.LocalPlaylist?>(null) }
     val friendsViewModel: com.moodify.app.ui.social.FriendsViewModel = viewModel()
     val social by friendsViewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(friendsViewModel) { friendsViewModel.messages.collect { snackbar.showSnackbar(it) } }
@@ -359,6 +360,20 @@ fun MoodifyApp(viewModel: MainViewModel) {
         if (pendingDeviceLinkNav != null) navController.navigate(com.moodify.app.ui.navigation.AccountRoute) { launchSingleTop = true }
     }
     val pendingChat by viewModel.pendingChat.collectAsStateWithLifecycle()
+    // A message while you're in the app (not in that chat): a banner, not a notification.
+    LaunchedEffect(Unit) {
+        com.moodify.app.AppGraph.social.inAppMessages.collect { m ->
+            val result = snackbar.showSnackbar(
+                message = "${m.name}: ${m.preview}",
+                actionLabel = "Open",
+                duration = androidx.compose.material3.SnackbarDuration.Long,
+            )
+            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                navController.navigate(com.moodify.app.ui.navigation.ChatRoute(m.peer)) { launchSingleTop = true }
+            }
+        }
+    }
+    val unreadMessages by remember { com.moodify.app.AppGraph.social.unreadTotal() }.collectAsStateWithLifecycle(0)
     LaunchedEffect(pendingChat) {
         val code = pendingChat ?: return@LaunchedEffect
         viewModel.consumeChat()
@@ -681,6 +696,9 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onDismissShared = friendsViewModel::dismissShared,
                         onJoinRoom = { roomId -> friendsViewModel.joinRoom(roomId); viewModel.setRoomSheetOpen(true) },
                         onFollow = { friend -> friendsViewModel.followFriend(friend); viewModel.setRoomSheetOpen(true) },
+                        onListenTogether = { friend -> friendsViewModel.listenWith(friend); viewModel.setRoomSheetOpen(true) },
+                        nowPlayingTitle = playback.currentTrack?.title,
+                        onSendNowPlaying = { friend -> playback.currentTrack?.let { friendsViewModel.sendTrack(friend, it) } },
                         onRefresh = friendsViewModel::refresh,
                         conversations = conversations,
                         onOpenChat = { code -> navController.navigate(com.moodify.app.ui.navigation.ChatRoute(code)) },
@@ -753,6 +771,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onRetry = chatViewModel::retry,
                         onReact = chatViewModel::react,
                         onJoinRoom = { roomId -> friendsViewModel.joinRoom(roomId); viewModel.setRoomSheetOpen(true) },
+                        onSavePlaylist = chatViewModel::savePlaylist,
                     )
                 }
                 screen<com.moodify.app.ui.navigation.AccountRoute> {
@@ -819,6 +838,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onDownloadAll = {
                             playlists.firstOrNull { it.id == id }?.let { viewModel.downloadAll(it.tracks, it.name) }
                         },
+                        onSend = { sendPlaylist = playlists.firstOrNull { it.id == id } },
                     )
                 }
                 screen<LikedRoute> {
@@ -944,7 +964,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                             Spacer(Modifier.height(Spacing.sm))
                         }
                     }
-                    MoodifyNavBar(selected = selectedTab, onSelect = ::selectTab)
+                    MoodifyNavBar(selected = selectedTab, onSelect = ::selectTab, badges = mapOf(MainTab.FRIENDS to unreadMessages))
                 }
             }
 
@@ -1117,23 +1137,26 @@ fun MoodifyApp(viewModel: MainViewModel) {
                 },
             )
         }
-        if (sendTrack != null || sendCollection != null) {
+        if (sendTrack != null || sendCollection != null || sendPlaylist != null) {
             com.moodify.app.ui.social.SendToFriendSheet(
-                title = sendTrack?.title ?: sendCollection?.title.orEmpty(),
+                title = sendTrack?.title ?: sendCollection?.title ?: sendPlaylist?.name.orEmpty(),
                 friends = social.lists.friends,
                 hasIdentity = social.myCode != null,
                 onPick = { friend ->
                     sendTrack?.let { friendsViewModel.sendTrack(friend, it) }
                     sendCollection?.let { friendsViewModel.sendCollection(friend, it) }
+                    sendPlaylist?.let { friendsViewModel.sendPlaylist(friend, it.name, it.tracks) }
                     sendTrack = null
                     sendCollection = null
+                    sendPlaylist = null
                 },
                 onGetCode = {
                     sendTrack = null
                     sendCollection = null
+                    sendPlaylist = null
                     navController.navigate(com.moodify.app.ui.navigation.AccountRoute)
                 },
-                onDismiss = { sendTrack = null; sendCollection = null },
+                onDismiss = { sendTrack = null; sendCollection = null; sendPlaylist = null },
             )
         }
         pickerTrack?.let { track ->

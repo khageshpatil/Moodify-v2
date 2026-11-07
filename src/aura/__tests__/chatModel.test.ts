@@ -90,3 +90,22 @@ describe('chat threads', () => {
     expect(preview({ kind: 'text', text: 'hey' })).toBe('hey');
   });
 });
+
+describe('shared playlists', () => {
+  const song = (id: string) => ({ id, title: id, artist: 'A', album: '', albumArt: 'https://a/b.jpg', duration: 200, provider: 'youtube-music' as const, providerId: id });
+  it('round-trips, caps at 300 songs, and drops unplayable ones', () => {
+    const tracks = ['JGwWNGJdvx8', 'kJQP7kiw5Fk'].map(song);
+    const p = parsePayload(payloads.playlist('Road trip', tracks, MID), 'x');
+    expect(p).toMatchObject({ type: 'playlist', mid: MID, playlist: { name: 'Road trip' } });
+    expect(p && p.type === 'playlist' && p.playlist.tracks.map((t) => t.id)).toEqual(['JGwWNGJdvx8', 'kJQP7kiw5Fk']);
+    const many = Array.from({ length: 400 }, (_, i) => song(`x${String(i).padStart(10, '0')}`));
+    const big = parsePayload(payloads.playlist('Big', many), 'x');
+    expect(big && big.type === 'playlist' && big.playlist.tracks.length).toBe(300);
+    expect(parsePayload('{"v":1,"type":"playlist","mid":"abcdefgh","playlist":{"name":"x","tracks":[{"id":"bad"}]}}', 'x')).toBeNull();
+    expect(p && p.type === 'playlist' && preview(toMessage(p, RAVI, false, 1, 'received'))).toBe('📃 Road trip');
+  });
+  it('reads what Android sends', () => {
+    const android = '{"v":1,"type":"playlist","mid":"mid-0001-abcd","playlist":{"name":"Gym","tracks":[{"id":"JGwWNGJdvx1","title":"Song 1","artist":"Artist","artworkUrl":"https://i.ytimg.com/1.jpg","durationSeconds":200}]}}';
+    expect(parsePayload(android, 'x')).toMatchObject({ type: 'playlist', playlist: { name: 'Gym', tracks: [{ id: 'JGwWNGJdvx1', title: 'Song 1', duration: 200 }] } });
+  });
+});

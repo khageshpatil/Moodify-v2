@@ -9,6 +9,7 @@ import {
 import { MOODS, greeting, moodById } from './moods';
 import { usePlayer } from './PlayerContext';
 import { Artwork, EmptyState, MediaCard, SectionHeader, SkeletonRows, TrackRow, browsePath } from './ui';
+import { SendPlaylistDialog } from './social/SocialScreens';
 
 const NON_MUSIC = new Set(['video', 'podcast']);
 const musicOnly = (section: DiscoveryCatalogSection): DiscoveryCatalogSection => ({
@@ -302,6 +303,7 @@ export function MoodScreen() {
 export function LibraryScreen() {
   const player = usePlayer();
   const [view, setView] = useState<'liked' | 'recent' | string>('liked');
+  const [sending, setSending] = useState(false);
   const playlist = player.playlists.find((p) => p.id === view);
   const tracks = view === 'liked' ? player.favorites : view === 'recent' ? player.recentlyPlayed : playlist?.tracks ?? [];
   const tiles = [
@@ -338,10 +340,14 @@ export function LibraryScreen() {
           <EmptyState icon={<LibraryIcon />} title="Nothing here yet" message="Like songs with the heart, and they'll collect here." />
         ) : tracks.map((track) => <TrackRow key={track.id} track={track} queue={tracks} />)}
         {playlist && (
-          <button className="aura-btn-text" style={{ marginTop: 12, color: 'var(--aura-error)' }} onClick={() => { player.deletePlaylist(playlist.id); setView('liked'); }}>
-            <X size={14} /> Delete playlist
-          </button>
+          <div className="aura-row" style={{ marginTop: 12, gap: 16 }}>
+            {playlist.tracks.length > 0 && <button className="aura-btn aura-btn-tonal" onClick={() => setSending(true)}>Send to a friend</button>}
+            <button className="aura-btn-text" style={{ color: 'var(--aura-error)' }} onClick={() => { player.deletePlaylist(playlist.id); setView('liked'); }}>
+              <X size={14} /> Delete playlist
+            </button>
+          </div>
         )}
+        {playlist && sending && <SendPlaylistDialog name={playlist.name} tracks={playlist.tracks} onClose={() => setSending(false)} />}
       </section>
     </div>
   );

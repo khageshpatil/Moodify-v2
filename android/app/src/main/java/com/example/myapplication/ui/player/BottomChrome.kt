@@ -273,6 +273,8 @@ fun MoodifyNavBar(
     selected: MainTab,
     onSelect: (MainTab) -> Unit,
     modifier: Modifier = Modifier,
+    /** Unread counts by tab (Friends: unread messages). */
+    badges: Map<MainTab, Int> = emptyMap(),
 ) {
     val colors = MaterialTheme.colorScheme
     val haptics = LocalHapticFeedback.current
@@ -317,17 +319,35 @@ fun MoodifyNavBar(
                         .semantics {
                             this.selected = isSelected
                             role = Role.Tab
-                            contentDescription = tab.label
+                            val count = badges[tab] ?: 0
+                            contentDescription = if (count > 0) "${tab.label}, $count unread" else tab.label
                         },
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(
-                        if (isSelected) tab.selectedIcon else tab.icon,
-                        contentDescription = null,
-                        tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp),
-                    )
+                    Box {
+                        Icon(
+                            if (isSelected) tab.selectedIcon else tab.icon,
+                            contentDescription = null,
+                            tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        val count = badges[tab] ?: 0
+                        if (count > 0) {
+                            Text(
+                                if (count > 99) "99+" else count.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colors.onPrimary,
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 10.dp, y = (-6).dp)
+                                    .clip(CircleShape)
+                                    .background(colors.primary)
+                                    .padding(horizontal = 5.dp),
+                            )
+                        }
+                    }
                     Text(
                         tab.label,
                         style = MaterialTheme.typography.labelSmall,

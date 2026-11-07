@@ -61,6 +61,7 @@ fun PlaylistScreen(
     onTogglePin: () -> Unit,
     onDelete: () -> Unit,
     onDownloadAll: () -> Unit = {},
+    onSend: () -> Unit = {},
 ) {
     if (playlist == null) {
         // Deleted (or not yet loaded): leave quietly.
@@ -102,6 +103,11 @@ fun PlaylistScreen(
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, contentDescription = "Playlist options") }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Send to a friend") },
+                        onClick = { menu = false; onSend() },
+                        enabled = playlist.tracks.isNotEmpty(),
+                    )
                     DropdownMenuItem(
                         text = { Text("Rename") },
                         leadingIcon = { Icon(Icons.Rounded.Edit, null) },

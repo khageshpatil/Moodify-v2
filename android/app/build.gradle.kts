@@ -148,6 +148,8 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.zxing.core)
+    implementation(libs.play.services.code.scanner)
 
     ksp(libs.room.compiler)
 

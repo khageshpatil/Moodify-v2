@@ -12,13 +12,17 @@ export const EMOJI_MAX = 16;
 export const QUICK_REACTIONS = ['❤️', '😂', '🔥', '👍', '😮', '😢'];
 /** Messages kept per conversation in this browser. */
 export const KEEP_PER_THREAD = 300;
+/** Songs per shared playlist, as on Android. */
+export const MAX_PLAYLIST = 300;
 
 const MID = /^[A-Za-z0-9_-]{8,64}$/;
 const BROWSE_ID = /^[A-Za-z0-9_-]{2,80}$/;
 
 export interface SharedCollection { kind: string; browseId: string; title: string; artworkUrl?: string; params?: string; pageType?: string }
 
-export type ChatKind = 'text' | 'track' | 'collection' | 'room';
+export type ChatKind = 'text' | 'track' | 'collection' | 'room' | 'playlist';
+
+export interface SharedPlaylist { name: string; tracks: Track[] }
 export type ChatStatus = 'sending' | 'sent' | 'failed' | 'received';
 
 export interface ChatMessage {
@@ -31,6 +35,7 @@ export interface ChatMessage {
   track?: Track;
   collection?: SharedCollection;
   roomId?: string;
+  playlist?: SharedPlaylist;
   /** Seconds. */
   sentAt: number;
   status: ChatStatus;
@@ -49,7 +54,8 @@ export type ParsedPayload =
   | { type: 'reaction'; mid: string; target: string; emoji: string }
   | { type: 'track'; mid: string; track: Track }
   | { type: 'collection'; mid: string; collection: SharedCollection }
-  | { type: 'room'; mid: string; roomId: string; track?: Track };
+  | { type: 'room'; mid: string; roomId: string; track?: Track }
+  | { type: 'playlist'; mid: string; playlist: SharedPlaylist };
 
 /** A song inside a share or room invite, cleaned like Android's SharePayload. */
 export function sharedTrack(t: WireSharedTrack | null | undefined): Track | null {
@@ -103,6 +109,12 @@ export function parsePayload(plain: string, fallbackMid: string): ParsedPayload 
         },
       };
     }
+    case 'playlist': {
+      const p = (json.playlist ?? {}) as Record<string, unknown>;
+      const tracks = (Array.isArray(p.tracks) ? p.tracks : []).slice(0, MAX_PLAYLIST).map((t) => sharedTrack(t as WireSharedTrack)).filter((t): t is Track => !!t);
+      if (!tracks.length) return null;
+      return { type: 'playlist', mid, playlist: { name: String(p.name ?? '').slice(0, 100) || 'Playlist', tracks } };
+    }
     case 'room': {
       const r = (json.room ?? {}) as Record<string, unknown>;
       const roomId = normalizeRoomId(String(r.id ?? ''));
@@ -121,6 +133,8 @@ export const payloads = {
   reaction: (target: string, emoji: string, mid = newMid()) => JSON.stringify({ v: 1, type: 'reaction', mid, target, emoji }),
   track: (t: Track, mid = newMid()) => JSON.stringify({ v: 1, type: 'track', mid, track: trackWire(t) }),
   collection: (c: SharedCollection, mid = newMid()) => JSON.stringify({ v: 1, type: 'collection', mid, collection: c }),
+  playlist: (name: string, tracks: Track[], mid = newMid()) =>
+    JSON.stringify({ v: 1, type: 'playlist', mid, playlist: { name: name.slice(0, 100), tracks: tracks.slice(0, MAX_PLAYLIST).map(trackWire) } }),
   room: (roomId: string, t?: Track | null, mid = newMid()) => JSON.stringify({ v: 1, type: 'room', mid, room: { id: roomId, ...(t ? { track: trackWire(t) } : {}) } }),
 };
 
@@ -132,6 +146,7 @@ export function toMessage(p: Exclude<ParsedPayload, { type: 'reaction' }>, peer:
     case 'track': return { ...base, kind: 'track', track: p.track };
     case 'collection': return { ...base, kind: 'collection', collection: p.collection };
     case 'room': return { ...base, kind: 'room', roomId: p.roomId, track: p.track };
+    case 'playlist': return { ...base, kind: 'playlist', playlist: p.playlist };
   }
 }
 
@@ -177,11 +192,12 @@ export function conversations(threads: ChatThreads): Conversation[] {
 }
 
 /** A one-line preview: "hey!", "🎵 Chaleya", "💿 Aashiqui 2", "🎧 Listen together". */
-export function preview(m: Pick<ChatMessage, 'kind' | 'text' | 'track' | 'collection'>): string {
+export function preview(m: Pick<ChatMessage, 'kind' | 'text' | 'track' | 'collection' | 'playlist'>): string {
   switch (m.kind) {
     case 'text': return m.text ?? '';
     case 'track': return `🎵 ${m.track?.title ?? 'A song'}`;
     case 'collection': return `💿 ${m.collection?.title ?? 'A collection'}`;
     case 'room': return '🎧 Listen together';
+    case 'playlist': return `📃 ${m.playlist?.name ?? 'A playlist'}`;
   }
 }

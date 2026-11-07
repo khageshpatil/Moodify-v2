@@ -29,6 +29,8 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -94,6 +96,9 @@ fun FriendsScreen(
     onFollow: (SocialUser) -> Unit = {},
     conversations: List<com.moodify.app.data.social.ConversationRow> = emptyList(),
     onOpenChat: (String) -> Unit = {},
+    onListenTogether: (SocialUser) -> Unit = {},
+    nowPlayingTitle: String? = null,
+    onSendNowPlaying: (SocialUser) -> Unit = {},
     prefillCode: String? = null,
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -101,6 +106,16 @@ fun FriendsScreen(
     val context = LocalContext.current
     var adding by rememberSaveable { mutableStateOf(prefillCode != null) }
     var menuFor by remember { mutableStateOf<SocialUser?>(null) }
+    var profileFor by remember { mutableStateOf<SocialUser?>(null) }
+    var showingCode by rememberSaveable { mutableStateOf(false) }
+    var scanned by rememberSaveable { mutableStateOf<String?>(null) }
+    val scan = {
+        scanFriendCode(
+            context,
+            onCode = { scanned = it; adding = true },
+            onError = { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() },
+        )
+    }
     LaunchedEffect(state.myCode, state.serverConfigured) { if (state.myCode != null) onRefresh() }
 
     val friends = state.lists.friends
@@ -129,15 +144,7 @@ fun FriendsScreen(
             }
 
             if (state.myCode == null) {
-                item(key = "setup") {
-                    EmptyState(
-                        icon = Icons.Rounded.Group,
-                        title = "Listen with your friends",
-                        message = "See what friends are playing and send each other songs. No phone number or email: just a Moodify code.",
-                        actionLabel = "Get your code",
-                        onAction = onOpenAccount,
-                    )
-                }
+                item(key = "setup") { FriendsIntro(onGetCode = onOpenAccount) }
                 return@LazyColumn
             }
 
@@ -165,11 +172,8 @@ fun FriendsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    IconButton(onClick = {
-                        val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                            .putExtra(Intent.EXTRA_TEXT, "Add me on Moodify: ${state.myCode}\nmoodify://add/${state.myCode}")
-                        context.startActivity(Intent.createChooser(send, "Share your code"))
-                    }) { Icon(Icons.Rounded.Share, contentDescription = "Share your code") }
+                    IconButton(onClick = { showingCode = true }) { Icon(Icons.Rounded.QrCode2, contentDescription = "Show your code as a QR") }
+                    IconButton(onClick = { shareCode(context, state.myCode) }) { Icon(Icons.Rounded.Share, contentDescription = "Share your code") }
                 }
             }
 
@@ -177,6 +181,13 @@ fun FriendsScreen(
                 item(key = "requestsHeader") { SectionHeader(title = "Requests") }
                 items(state.lists.incoming, key = { "in:${it.code}" }) { user ->
                     RequestRow(user, onAccept = { onAccept(user) }, onIgnore = { onIgnore(user) })
+                }
+            }
+
+            if (listening.isNotEmpty()) {
+                item(key = "listeningHeader") { SectionHeader(title = "Listening now") }
+                items(listening, key = { "live:${it.first.code}" }) { (friend, presence) ->
+                    ListeningRow(friend, presence, onPlay = { presence.track?.let { actions.play(it, listOf(it)) } }, onFollow = { onFollow(friend) })
                 }
             }
 
@@ -188,45 +199,18 @@ fun FriendsScreen(
                 }
             }
 
-            if (state.shared.isNotEmpty()) {
-                item(key = "sharedHeader") { SectionHeader(title = "Sent to you") }
-                items(state.shared.take(20), key = { "shared:${it.id}" }) { item ->
-                    SharedRow(
-                        item = item,
-                        onOpen = {
-                            if (item.roomId != null) return@SharedRow onJoinRoom(item.roomId)
-                            item.track?.let { actions.play(it, listOf(it)) }
-                            item.collection?.endpoint?.let { actions.openBrowse(it, item.collection.title) }
-                        },
-                        onDismiss = { onDismissShared(item.id) },
-                    )
-                }
-            }
 
-            if (listening.isNotEmpty()) {
-                item(key = "listeningHeader") { SectionHeader(title = "Listening now") }
-                items(listening, key = { "live:${it.first.code}" }) { (friend, presence) ->
-                    ListeningRow(friend, presence, onPlay = { presence.track?.let { actions.play(it, listOf(it)) } }, onFollow = { onFollow(friend) })
-                }
-            }
 
             item(key = "friendsHeader") { SectionHeader(title = if (friends.isEmpty()) "Your friends" else "Your friends · ${friends.size}") }
             if (friends.isEmpty() && state.lists.outgoing.isEmpty()) {
-                item(key = "noFriends") {
-                    Text(
-                        "Add a friend with their Moodify code, or share yours.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = Spacing.gutter),
-                    )
-                }
+                item(key = "noFriends") { AddFirstFriend(onScan = scan, onShowCode = { showingCode = true }) }
             }
             items(friends, key = { "f:${it.code}" }) { friend ->
-                FriendRow(friend, state.presence[friend.code], onMenu = { menuFor = friend }, onOpen = { onOpenChat(friend.code) })
+                FriendRow(friend, state.presence[friend.code], onChat = { onOpenChat(friend.code) }, onOpen = { profileFor = friend })
             }
             if (state.lists.outgoing.isNotEmpty()) {
                 items(state.lists.outgoing, key = { "out:${it.code}" }) { user ->
-                    FriendRow(user, presence = null, waiting = true, onMenu = { menuFor = user })
+                    FriendRow(user, presence = null, waiting = true, onOpen = { profileFor = user })
                 }
             }
         }
@@ -234,9 +218,28 @@ fun FriendsScreen(
 
     if (adding) {
         AddFriendDialog(
-            initialCode = prefillCode.orEmpty(),
-            onDismiss = { adding = false },
-            onAdd = { code, note -> onAddFriend(code, note); adding = false },
+            initialCode = scanned ?: prefillCode.orEmpty(),
+            onScan = { adding = false; scan() },
+            onDismiss = { adding = false; scanned = null },
+            onAdd = { code, note -> onAddFriend(code, note); adding = false; scanned = null },
+        )
+    }
+    if (showingCode && state.myCode != null) {
+        MyCodeSheet(code = state.myCode, name = state.myName, onDismiss = { showingCode = false })
+    }
+    profileFor?.let { user ->
+        val isFriend = friends.any { it.code == user.code }
+        FriendProfileSheet(
+            user = user,
+            presence = state.presence[user.code],
+            isFriend = isFriend,
+            nowPlayingTitle = nowPlayingTitle,
+            onMessage = { profileFor = null; onOpenChat(user.code) },
+            onFollow = { profileFor = null; onFollow(user) },
+            onListenTogether = { profileFor = null; onListenTogether(user) },
+            onSendNowPlaying = { profileFor = null; onSendNowPlaying(user) },
+            onMore = { profileFor = null; menuFor = user },
+            onDismiss = { profileFor = null },
         )
     }
     menuFor?.let { user ->
@@ -246,7 +249,7 @@ fun FriendsScreen(
             onRemove = { onRemove(user); menuFor = null },
             onBlock = { onBlock(user); menuFor = null },
             onReport = { reason -> onReport(user, reason); menuFor = null },
-            onMessage = if (state.lists.friends.any { it.code == user.code }) ({ menuFor = null; onOpenChat(user.code) }) else null,
+            onMessage = null,
         )
     }
 }
@@ -335,15 +338,8 @@ private fun ListeningRow(friend: SocialUser, presence: FriendPresence, onPlay: (
 }
 
 @Composable
-private fun FriendRow(user: SocialUser, presence: FriendPresence?, waiting: Boolean = false, onMenu: () -> Unit, onOpen: (() -> Unit)? = null) {
-    val status = when {
-        waiting -> "Request sent"
-        presence == null -> user.code
-        presence.online && presence.playing && presence.track != null -> "Listening to ${presence.track.title}"
-        presence.online -> "Online"
-        presence.track != null && presence.lastSeenAtSeconds != null -> "Played ${presence.track.title} · ${timeAgo(presence.lastSeenAtSeconds)}"
-        else -> "Offline"
-    }
+private fun FriendRow(user: SocialUser, presence: FriendPresence?, waiting: Boolean = false, onChat: (() -> Unit)? = null, onOpen: (() -> Unit)? = null) {
+    val status = if (waiting) "Request sent · waiting for them" else friendStatus(presence)
     Row(
         Modifier.fillMaxWidth()
             .then(if (onOpen != null) Modifier.pressable(pressedScale = 0.98f, onClick = onOpen) else Modifier)
@@ -352,24 +348,20 @@ private fun FriendRow(user: SocialUser, presence: FriendPresence?, waiting: Bool
     ) {
         Box {
             Avatar(user)
-            if (presence?.online == true) {
-                Box(
-                    Modifier.align(Alignment.BottomEnd).size(12.dp).clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background).padding(2.dp).clip(CircleShape).background(Color(0xFF3DDC84)),
-                )
-            }
+            if (presence?.online == true) OnlineDot(Modifier.align(Alignment.BottomEnd))
         }
         Spacer(Modifier.width(Spacing.md))
         Column(Modifier.weight(1f)) {
             Text(user.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        IconButton(onClick = onMenu) { Icon(Icons.Rounded.MoreVert, contentDescription = "Options for ${user.displayName}") }
+        if (onChat != null) IconButton(onClick = onChat) { Icon(Icons.AutoMirrored.Rounded.Chat, contentDescription = "Message ${user.displayName}") }
+        else IconButton(onClick = { onOpen?.invoke() }) { Icon(Icons.Rounded.MoreVert, contentDescription = "Options for ${user.displayName}") }
     }
 }
 
 @Composable
-private fun AddFriendDialog(initialCode: String, onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
+private fun AddFriendDialog(initialCode: String, onScan: () -> Unit, onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
     var code by rememberSaveable { mutableStateOf(initialCode) }
     var note by rememberSaveable { mutableStateOf("") }
     val valid = com.moodify.app.data.social.MoodifyIdentity.normalizeCode(code) != null
@@ -378,6 +370,17 @@ private fun AddFriendDialog(initialCode: String, onDismiss: () -> Unit, onAdd: (
         title = { Text("Add a friend") },
         text = {
             Column {
+                androidx.compose.material3.OutlinedButton(onClick = onScan, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Rounded.QrCode2, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text("Scan their QR code")
+                }
+                Text(
+                    "or type it",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = Spacing.sm),
+                )
                 OutlinedTextField(
                     value = code,
                     onValueChange = { code = it.take(20) },
@@ -496,6 +499,7 @@ private fun ConversationRowItem(row: com.moodify.app.data.social.ConversationRow
         "text" -> last.body
         "track" -> "🎵 " + (com.moodify.app.data.social.SharePayload.parse(last.body)?.track?.title ?: "A song")
         "collection" -> "💿 " + (com.moodify.app.data.social.SharePayload.parse(last.body)?.collection?.title ?: "A collection")
+        "playlist" -> "📃 " + (com.moodify.app.data.social.SharePayload.parse(last.body)?.playlist?.name ?: "A playlist")
         "room" -> "🎧 Listen together"
         else -> "Message"
     }

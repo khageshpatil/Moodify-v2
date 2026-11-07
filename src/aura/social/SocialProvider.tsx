@@ -58,6 +58,8 @@ interface SocialContextValue {
   conversations: Conversation[];
   unreadTotal: number;
   sendText(to: SocialUser, text: string): Promise<void>;
+  /** One of your playlists: its name and songs. */
+  sendPlaylist(to: SocialUser, name: string, tracks: Track[]): Promise<void>;
   /** Your reaction on a message; the same emoji again removes it. */
   react(peer: string, mid: string, emoji: string): Promise<void>;
   retry(peer: string, mid: string): Promise<void>;
@@ -527,6 +529,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     threads,
     conversations: listConversations(threads),
     unreadTotal: Object.values(threads).reduce((n, thread) => n + thread.filter((m) => !m.fromMe && !m.read).length, 0),
+    async sendPlaylist(to, name, tracks) { await sendRecorded(to, payloads.playlist(name, tracks)); },
     async sendText(to, text) {
       if (!text.trim()) return;
       await sendRecorded(to, payloads.text(text));

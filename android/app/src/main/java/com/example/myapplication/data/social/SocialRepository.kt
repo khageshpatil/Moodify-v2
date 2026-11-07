@@ -33,6 +33,9 @@ import okhttp3.WebSocketListener
 import org.json.JSONObject
 import java.io.File
 
+/** A message to show as a banner inside the app. */
+data class InAppMessage(val peer: String, val name: String, val preview: String)
+
 /** What a friend is doing right now (or last did). */
 data class FriendPresence(
     val online: Boolean,
@@ -264,6 +267,11 @@ class SocialRepository(
     suspend fun sendTrack(to: SocialUser, track: Track) = sendCard(to, "track") { SharePayload.track(track, it) }
     suspend fun sendCollection(to: SocialUser, item: CatalogItem) = sendCard(to, "collection") { SharePayload.collection(item, it) }
     suspend fun sendRoomInvite(to: SocialUser, roomId: String, track: Track?) = sendCard(to, "room") { SharePayload.room(roomId, track, it) }
+    suspend fun sendPlaylist(to: SocialUser, name: String, tracks: List<Track>) = sendCard(to, "playlist") { SharePayload.playlist(name, tracks, it) }
+
+    private val _inApp = kotlinx.coroutines.flow.MutableSharedFlow<InAppMessage>(extraBufferCapacity = 8)
+    /** A message that arrived while you're in the app, on another screen. */
+    val inAppMessages: kotlinx.coroutines.flow.SharedFlow<InAppMessage> = _inApp
 
     // ── Chat (docs/social-protocol/chat.md) ─────────────────────────────────
 
@@ -453,6 +461,7 @@ class SocialRepository(
                     parsed.roomId != null -> "room"
                     parsed.track != null -> "track"
                     parsed.collection != null -> "collection"
+                    parsed.playlist != null -> "playlist"
                     else -> continue
                 }
                 val entity = ChatMessageEntity(
@@ -468,7 +477,10 @@ class SocialRepository(
                 }
                 if (!isNew) continue
                 if (kind != "text") shared += SharedItem(message.id, friend.code, friend.displayName, message.sentAtSeconds, parsed.track, parsed.collection, parsed.roomId)
-                if (!foreground || activeThread != friend.code) notifier.show(friend.code, friend.displayName, ChatNotifier.preview(kind, parsed))
+                // In the background: a notification. In the app but another screen: a quiet banner.
+                val preview = ChatNotifier.preview(kind, parsed)
+                if (!foreground) notifier.show(friend.code, friend.displayName, preview)
+                else if (activeThread != friend.code) _inApp.tryEmit(InAppMessage(friend.code, friend.displayName, preview))
             }
             if (shared.isNotEmpty()) {
                 _state.update { s -> s.copy(shared = (shared.reversed() + s.shared).distinctBy { it.id }.take(MAX_SHARED)) }
@@ -708,6 +720,8 @@ class SocialRepository(
  */
 object SharePayload {
     const val MAX_TEXT = 2000
+    /** Songs per shared playlist (the rest are left out). */
+    const val MAX_PLAYLIST = 300
 
     fun newMid(): String = java.util.UUID.randomUUID().toString()
 
@@ -735,6 +749,11 @@ object SharePayload {
             .apply { item.endpoint?.params?.let { put("params", it) }; item.endpoint?.pageType?.let { put("pageType", it) } })
         .toString()
 
+    /** One of your own playlists, sent to a friend (chat.md §1): its name and songs. */
+    fun playlist(name: String, tracks: List<Track>, mid: String = newMid()): String = envelope("playlist", mid)
+        .put("playlist", JSONObject().put("name", name.take(100)).put("tracks", org.json.JSONArray(tracks.take(MAX_PLAYLIST).map(::trackJson))))
+        .toString()
+
     /** An invite to listen together; [track] is what's playing, for the preview. */
     fun room(roomId: String, track: Track?, mid: String = newMid()): String = envelope("room", mid)
         .put("room", JSONObject().put("id", roomId).apply { track?.let { put("track", trackJson(it)) } })
@@ -750,7 +769,11 @@ object SharePayload {
         val emoji: String? = null,
         val mid: String? = null,
         val type: String = "",
+        /** A shared playlist: its name and songs. */
+        val playlist: SharedPlaylist? = null,
     )
+
+    data class SharedPlaylist(val name: String, val tracks: List<Track>)
 
     private val MID = Regex("[A-Za-z0-9_-]{8,64}")
     private val EMOJI_MAX = 16
@@ -773,6 +796,11 @@ object SharePayload {
             "room" -> json.optJSONObject("room")?.let { r ->
                 val id = r.optString("id").uppercase().takeIf { it.matches(Regex("[0-9A-HJKMNP-TV-Z]{6}")) } ?: return null
                 Parsed(track = r.optJSONObject("track")?.let(::parseTrack), roomId = id)
+            }
+            "playlist" -> json.optJSONObject("playlist")?.let { p ->
+                val songs = p.optJSONArray("tracks")?.let { a -> (0 until minOf(a.length(), MAX_PLAYLIST)).mapNotNull { a.optJSONObject(it)?.let(::parseTrack) } }.orEmpty()
+                if (songs.isEmpty()) return null
+                Parsed(playlist = SharedPlaylist(p.optString("name").ifBlank { "Playlist" }.take(100), songs))
             }
             "collection" -> json.optJSONObject("collection")?.let { c ->
                 val browseId = c.optString("browseId").takeIf { it.matches(Regex("[A-Za-z0-9_-]{2,80}")) } ?: return null

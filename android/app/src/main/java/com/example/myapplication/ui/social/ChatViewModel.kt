@@ -54,6 +54,14 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     fun retry(mid: String) = run { social.retry(mid) }
     fun react(mid: String, emoji: String) = withFriend { social.react(it, mid, emoji) }
 
+    /** A playlist a friend sent: your own copy, in your library (it syncs to your other devices). */
+    fun savePlaylist(name: String, tracks: List<Track>) = run {
+        val store = AppGraph.playlistStore
+        val copy = store.create(name)
+        tracks.forEach { store.addTrack(copy.id, it) }
+        _messages.send("Saved “$name” to your library")
+    }
+
     private fun withFriend(block: suspend (SocialUser) -> Unit) = run {
         val friend = state.value.friend ?: throw SocialException("not_friends", "You can only message friends.")
         block(friend)
