@@ -1,5 +1,5 @@
 import { normalizeCode } from '@social/identity.mjs';
-import { ArrowLeft, Bell, Copy, Headphones, Music2, Play, Send, SmilePlus } from 'lucide-react';
+import { ArrowLeft, Bell, Copy, Headphones, Music2, Play, Plus, Send, SmilePlus } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { usePlayer } from '../PlayerContext';
@@ -23,6 +23,7 @@ export function ChatScreen() {
   const { toast, say } = useToast();
   const [draft, setDraft] = useState('');
   const [picker, setPicker] = useState<string | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
   const friend = social.lists.friends.find((f) => f.code === peer);
   const thread = social.threads[peer] ?? [];
@@ -69,6 +70,12 @@ export function ChatScreen() {
           <div className="type-title-medium aura-ellipsis">{name}</div>
           <div className="type-body-small aura-muted aura-ellipsis">{status}</div>
         </div>
+        {friend && (
+          <button className="aura-icon-btn" aria-label={`Listen together with ${name}`} title="Listen together"
+            onClick={() => void act(async () => { await rooms.start(); navigate('/room'); })}>
+            <Headphones size={22} color="var(--aura-primary)" />
+          </button>
+        )}
       </header>
 
       {social.notifications === 'default' && (
@@ -81,6 +88,11 @@ export function ChatScreen() {
         {thread.length === 0 && (
           <EmptyState icon={<Music2 />} title={`Say hi to ${name}`} message="Messages are end-to-end encrypted: only you and your friend can read them." />
         )}
+        {thread.length > 0 && (
+          <div className="type-label-medium aura-muted" style={{ textAlign: 'center', margin: '4px 0 8px' }}>
+            🔒 End-to-end encrypted · double-click a message to ❤️ it
+          </div>
+        )}
         {thread.map((m, i) => {
           const prev = thread[i - 1];
           const newDay = !prev || day(prev.sentAt) !== day(m.sentAt);
@@ -92,6 +104,7 @@ export function ChatScreen() {
                 me={social.code ?? ''}
                 pickerOpen={picker === m.mid}
                 onPicker={(open) => setPicker(open ? m.mid : null)}
+                onHeart={() => { if (friend) void act(() => social.react(peer, m.mid, '❤️')); }}
                 onReact={(emoji) => { setPicker(null); if (friend) void act(() => social.react(peer, m.mid, emoji)); }}
                 onRetry={() => void act(() => social.retry(peer, m.mid))}
                 onCopy={() => { void navigator.clipboard?.writeText(m.text ?? ''); setPicker(null); say('Copied'); }}
@@ -107,12 +120,9 @@ export function ChatScreen() {
 
       {friend ? (
         <form className="aura-chat-composer" onSubmit={(e) => { e.preventDefault(); send(); }}>
-          {nowPlaying && (
-            <button type="button" className="aura-icon-btn" aria-label={`Send ${nowPlaying.title}`} title={`Send ${nowPlaying.title}`}
-              onClick={() => void act(() => social.sendTrack(friend, nowPlaying))}>
-              <Music2 size={20} />
-            </button>
-          )}
+          <button type="button" className="aura-icon-btn" aria-label="Send a song or playlist" title="Send a song or playlist" onClick={() => setSendOpen(true)}>
+            <Plus size={22} color="var(--aura-primary)" />
+          </button>
           <textarea className="aura-chat-input" rows={1} value={draft} maxLength={MAX_TEXT} placeholder={`Message ${name}`}
             aria-label={`Message ${name}`} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />
           <button type="submit" className="aura-icon-btn aura-chat-send" aria-label="Send" disabled={!draft.trim()}><Send size={20} /></button>
@@ -120,13 +130,43 @@ export function ChatScreen() {
       ) : (
         <div className="aura-banner" style={{ marginTop: 12 }}>You can read this conversation, but you're no longer friends. <Link to="/friends"><b>Friends</b></Link></div>
       )}
+      {sendOpen && friend && (
+        <div className="aura-dialog-backdrop" onClick={() => setSendOpen(false)}>
+          <div className="aura-dialog" role="dialog" aria-label="Send" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '80dvh', overflowY: 'auto' }}>
+            <div className="type-title-large">Send to {name}</div>
+            {(() => {
+              const send = (work: () => Promise<void>) => { setSendOpen(false); void act(work); };
+              const row = (key: string, art: string | undefined, title: string, sub: string, go: () => void) => (
+                <button key={key} className="aura-track" onClick={go}>
+                  <Artwork src={art} size={44} placeholder={key} />
+                  <span className="aura-track-text"><span className="type-title-small aura-ellipsis" style={{ display: 'block' }}>{title}</span><span className="type-body-small aura-muted aura-ellipsis" style={{ display: 'block' }}>{sub}</span></span>
+                  <Send size={18} color="var(--aura-primary)" />
+                </button>
+              );
+              const lists = player.playlists.filter((p) => p.tracks.length > 0);
+              const liked = player.favorites.slice(0, 50);
+              const recent = player.recentlyPlayed.filter((t) => !liked.some((l) => l.id === t.id)).slice(0, 20);
+              return (
+                <>
+                  {nowPlaying && <><div className="type-label-large" style={{ color: 'var(--aura-primary)' }}>Playing now</div>{row(`now-${nowPlaying.id}`, nowPlaying.albumArt, nowPlaying.title, nowPlaying.artist, () => send(() => social.sendTrack(friend, nowPlaying)))}</>}
+                  {lists.length > 0 && <><div className="type-label-large" style={{ color: 'var(--aura-primary)' }}>Your playlists</div>{lists.map((p) => row(`pl-${p.id}`, p.tracks[0]?.albumArt, p.name, `Playlist · ${p.tracks.length} songs`, () => send(() => social.sendPlaylist(friend, p.name, p.tracks))))}</>}
+                  {liked.length > 0 && <><div className="type-label-large" style={{ color: 'var(--aura-primary)' }}>Liked songs</div>{liked.map((t) => row(`like-${t.id}`, t.albumArt, t.title, t.artist, () => send(() => social.sendTrack(friend, t))))}</>}
+                  {recent.length > 0 && <><div className="type-label-large" style={{ color: 'var(--aura-primary)' }}>Recently played</div>{recent.map((t) => row(`rec-${t.id}`, t.albumArt, t.title, t.artist, () => send(() => social.sendTrack(friend, t))))}</>}
+                  {!nowPlaying && !lists.length && !liked.length && !recent.length && <div className="aura-muted">Play or like some songs first, and they'll show up here to send.</div>}
+                </>
+              );
+            })()}
+            <button className="aura-btn-text" onClick={() => setSendOpen(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
       {toast}
     </div>
   );
 }
 
-function Bubble({ message: m, me, pickerOpen, onPicker, onReact, onRetry, onCopy, onPlay, onJoin, onSavePlaylist }: {
-  message: ChatMessage; me: string; pickerOpen: boolean;
+function Bubble({ message: m, me, pickerOpen, onPicker, onHeart, onReact, onRetry, onCopy, onPlay, onJoin, onSavePlaylist }: {
+  message: ChatMessage; me: string; pickerOpen: boolean; onHeart(): void;
   onPicker(open: boolean): void; onReact(emoji: string): void; onRetry(): void; onCopy(): void;
   onPlay(t: NonNullable<ChatMessage['track']>, queue: NonNullable<ChatMessage['track']>[]): void; onJoin(roomId: string): void;
   onSavePlaylist(p: SharedPlaylist): void;
@@ -139,7 +179,7 @@ function Bubble({ message: m, me, pickerOpen, onPicker, onReact, onRetry, onCopy
       <div className="aura-chat-stack">
         <div className="aura-chat-bubble-wrap">
           <div className="aura-chat-bubble" data-me={m.fromMe} data-kind={m.kind} title={clock(m.sentAt)}
-            onContextMenu={(e) => { e.preventDefault(); onPicker(true); }}>
+            onContextMenu={(e) => { e.preventDefault(); onPicker(true); }} onDoubleClick={onHeart}>
             {m.kind === 'text' && <span className="aura-chat-text">{m.text}</span>}
             {(m.kind === 'track' || m.kind === 'room') && m.track && (
               <div className="aura-row">

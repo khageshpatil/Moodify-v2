@@ -130,7 +130,7 @@ fun FriendsScreen(
         ) {
             item(key = "header") {
                 Row(
-                    Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(start = Spacing.gutter, end = Spacing.sm, top = Spacing.lg),
+                    Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.lg),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("Friends", style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f).semantics { heading() })
@@ -161,7 +161,9 @@ fun FriendsScreen(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text("Your code", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(state.myCode, style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace), color = MaterialTheme.colorScheme.primary)
+                        com.moodify.app.ui.designsystem.FontScaleCap(1.4f) {
+                            Text(state.myCode, style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace), color = MaterialTheme.colorScheme.primary, maxLines = 1, softWrap = false)
+                        }
                         Text(
                             when {
                                 !state.serverConfigured -> "Friends go live soon. Your code is saved."
@@ -178,35 +180,45 @@ fun FriendsScreen(
             }
 
             if (state.lists.incoming.isNotEmpty()) {
-                item(key = "requestsHeader") { SectionHeader(title = "Requests") }
+                item(key = "requestsHeader") { SmallHeader("Requests") }
                 items(state.lists.incoming, key = { "in:${it.code}" }) { user ->
                     RequestRow(user, onAccept = { onAccept(user) }, onIgnore = { onIgnore(user) })
                 }
             }
 
             if (listening.isNotEmpty()) {
-                item(key = "listeningHeader") { SectionHeader(title = "Listening now") }
+                item(key = "listeningHeader") { SmallHeader("Listening now") }
                 items(listening, key = { "live:${it.first.code}" }) { (friend, presence) ->
                     ListeningRow(friend, presence, onPlay = { presence.track?.let { actions.play(it, listOf(it)) } }, onFollow = { onFollow(friend) })
                 }
             }
 
-            if (conversations.isNotEmpty()) {
-                item(key = "chatsHeader") { SectionHeader(title = "Messages") }
-                items(conversations.take(10), key = { "chat:${it.last.peer}" }) { row ->
-                    val friend = state.lists.friends.firstOrNull { it.code == row.last.peer }
-                    ConversationRowItem(row, name = friend?.displayName ?: row.last.peer, onOpen = { onOpenChat(row.last.peer) })
-                }
-            }
+            // One list: friends you've talked to first (newest chat on top), then the rest.
+            val chatsByPeer = conversations.associateBy { it.last.peer }
+            val ordered = friends.sortedWith(
+                compareByDescending<SocialUser> { chatsByPeer[it.code]?.last?.sentAtMs ?: 0L }.thenBy { it.displayName.lowercase() },
+            )
+            val sameNames = friends.groupingBy { it.displayName.trim().lowercase() }.eachCount().filterValues { it > 1 }.keys
+            val formerChats = conversations.filter { c -> friends.none { it.code == c.last.peer } }
 
-
-
-            item(key = "friendsHeader") { SectionHeader(title = if (friends.isEmpty()) "Your friends" else "Your friends · ${friends.size}") }
-            if (friends.isEmpty() && state.lists.outgoing.isEmpty()) {
+            if (friends.isNotEmpty()) item(key = "friendsHeader") { SmallHeader("Your friends · ${friends.size}") }
+            if (friends.isEmpty() && state.lists.outgoing.isEmpty() && state.lists.incoming.isEmpty()) {
                 item(key = "noFriends") { AddFirstFriend(onScan = scan, onShowCode = { showingCode = true }) }
             }
-            items(friends, key = { "f:${it.code}" }) { friend ->
-                FriendRow(friend, state.presence[friend.code], onChat = { onOpenChat(friend.code) }, onOpen = { profileFor = friend })
+            items(ordered, key = { "f:${it.code}" }) { friend ->
+                FriendChatRow(
+                    user = friend,
+                    presence = state.presence[friend.code],
+                    chat = chatsByPeer[friend.code],
+                    tag = if (friend.displayName.trim().lowercase() in sameNames) codeTag(friend.code) else null,
+                    onOpen = { onOpenChat(friend.code) },
+                    onProfile = { profileFor = friend },
+                )
+            }
+            if (formerChats.isNotEmpty()) {
+                items(formerChats, key = { "old:${it.last.peer}" }) { row ->
+                    ConversationRowItem(row, name = "Former friend · ${codeTag(row.last.peer)}", onOpen = { onOpenChat(row.last.peer) })
+                }
             }
             if (state.lists.outgoing.isNotEmpty()) {
                 items(state.lists.outgoing, key = { "out:${it.code}" }) { user ->
@@ -259,7 +271,7 @@ internal fun Avatar(user: SocialUser, size: Dp = 44.dp) {
     // Generated from the code: no photos in Moodify.
     val hue = placeholderHue(user.code)
     Box(
-        Modifier.size(size).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(hue, hue.copy(alpha = 0.55f)))),
+        Modifier.size(size).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(hue, androidx.compose.ui.graphics.lerp(hue, Color.Black, 0.35f)))),
         contentAlignment = Alignment.Center,
     ) {
         Text(user.displayName.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = Color.White)
@@ -273,7 +285,7 @@ private fun RequestRow(user: SocialUser, onAccept: () -> Unit, onIgnore: () -> U
         Spacer(Modifier.width(Spacing.md))
         Column(Modifier.weight(1f)) {
             Text(user.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(user.note ?: user.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+            Text(listOfNotNull(user.note?.takeIf(String::isNotBlank), user.code).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
         }
         TextButton(onClick = onIgnore) { Text("Ignore") }
         Button(onClick = onAccept) { Text("Accept") }
@@ -495,14 +507,7 @@ fun SendToFriendSheet(
 @Composable
 private fun ConversationRowItem(row: com.moodify.app.data.social.ConversationRow, name: String, onOpen: () -> Unit) {
     val last = row.last
-    val preview = when (last.kind) {
-        "text" -> last.body
-        "track" -> "🎵 " + (com.moodify.app.data.social.SharePayload.parse(last.body)?.track?.title ?: "A song")
-        "collection" -> "💿 " + (com.moodify.app.data.social.SharePayload.parse(last.body)?.collection?.title ?: "A collection")
-        "playlist" -> "📃 " + (com.moodify.app.data.social.SharePayload.parse(last.body)?.playlist?.name ?: "A playlist")
-        "room" -> "🎧 Listen together"
-        else -> "Message"
-    }
+    val preview = messagePreview(last)
     Row(
         Modifier.fillMaxWidth().pressable(pressedScale = 0.98f, onClick = onOpen).padding(horizontal = Spacing.gutter, vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
@@ -512,7 +517,7 @@ private fun ConversationRowItem(row: com.moodify.app.data.social.ConversationRow
         Column(Modifier.weight(1f)) {
             Text(name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                (if (last.fromMe) "You: " else "") + preview,
+                preview,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (row.unread > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -540,5 +545,101 @@ internal fun timeAgo(epochSeconds: Long): String {
         minutes < 60 -> "${minutes}m ago"
         minutes < 24 * 60 -> "${minutes / 60}h ago"
         else -> "${minutes / (24 * 60)}d ago"
+    }
+}
+
+/** The last 4 characters of a code, to tell two friends with the same name apart. */
+internal fun codeTag(code: String) = code.takeLast(4)
+
+/** What the last message was, in one line. */
+internal fun messagePreview(last: com.moodify.app.data.social.ChatMessageEntity): String {
+    val parsed = if (last.kind == "text") null else com.moodify.app.data.social.SharePayload.parse(last.body)
+    val text = when (last.kind) {
+        "text" -> last.body
+        "track" -> "🎵 " + (parsed?.track?.title ?: "A song")
+        "collection" -> "💿 " + (parsed?.collection?.title ?: "A collection")
+        "playlist" -> "📃 " + (parsed?.playlist?.name ?: "A playlist")
+        "room" -> "🎧 Listen together"
+        else -> "Message"
+    }
+    return (if (last.fromMe) "You: " else "") + text
+}
+
+@Composable
+private fun SmallHeader(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.sm).semantics { heading() },
+    )
+}
+
+/**
+ * A friend, and your chat with them in one row: tap to chat, tap the
+ * picture for their profile. Unread chats are bold.
+ */
+@Composable
+private fun FriendChatRow(
+    user: SocialUser,
+    presence: FriendPresence?,
+    chat: com.moodify.app.data.social.ConversationRow?,
+    tag: String?,
+    onOpen: () -> Unit,
+    onProfile: () -> Unit,
+) {
+    val unread = chat?.unread ?: 0
+    val listening = presence?.takeIf { it.online && it.playing && it.track != null }
+    val subtitle = when {
+        chat != null && (unread > 0 || listening == null) -> messagePreview(chat.last)
+        else -> friendStatus(presence)
+    }
+    Row(
+        Modifier.fillMaxWidth().pressable(pressedScale = 0.98f, onClick = onOpen).padding(horizontal = Spacing.gutter, vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.clip(CircleShape).pressable(pressedScale = 0.92f, onClick = onProfile)) {
+            Avatar(user)
+            if (presence?.online == true) OnlineDot(Modifier.align(Alignment.BottomEnd))
+        }
+        Spacer(Modifier.width(Spacing.md))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    user.displayName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = if (unread > 0) androidx.compose.ui.text.font.FontWeight.Bold else null),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                tag?.let {
+                    Text(" · ", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(it, style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (listening != null && subtitle.startsWith("Listening")) {
+                    EqualizerBars(playing = true, color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(Spacing.xs))
+                }
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = if (unread > 0) androidx.compose.ui.text.font.FontWeight.SemiBold else null),
+                    color = if (unread > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Spacer(Modifier.width(Spacing.sm))
+        Column(horizontalAlignment = Alignment.End) {
+            chat?.let { Text(timeAgo(it.last.sentAtMs / 1000), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            if (unread > 0) {
+                Text(
+                    if (unread > 99) "99+" else unread.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(top = 2.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(horizontal = 6.dp, vertical = 1.dp),
+                )
+            }
+        }
     }
 }

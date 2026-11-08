@@ -33,6 +33,8 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -86,8 +88,16 @@ fun ChatScreen(
     onReact: (mid: String, emoji: String) -> Unit,
     onJoinRoom: (String) -> Unit,
     onSavePlaylist: (String, List<Track>) -> Unit = { _, _ -> },
+    onOpenProfile: () -> Unit = {},
+    onListenTogether: () -> Unit = {},
+    /** What "+" offers to send: your playlists, liked songs and recent plays. */
+    pickPlaylists: List<com.moodify.app.data.LocalPlaylist> = emptyList(),
+    pickLiked: List<Track> = emptyList(),
+    pickRecent: List<Track> = emptyList(),
+    onSendPlaylist: (String, List<Track>) -> Unit = { _, _ -> },
 ) {
     val actions = LocalMoodifyActions.current
+    var picking by remember { mutableStateOf(false) }
     var draft by rememberSaveable { mutableStateOf("") }
     var menuFor by remember { mutableStateOf<ChatMessageEntity?>(null) }
     val list = rememberLazyListState()
@@ -101,6 +111,10 @@ fun ChatScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
+            Row(
+                Modifier.weight(1f).clip(RoundedCornerShape(Radii.md)).combinedClickable(onClick = onOpenProfile).padding(vertical = Spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
             state.friend?.let { Avatar(it, size = 40.dp) }
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
@@ -114,6 +128,12 @@ fun ChatScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (p?.online == true && p.playing) { EqualizerBars(playing = true, color = MaterialTheme.colorScheme.primary); Spacer(Modifier.width(4.dp)) }
                     Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            }
+            if (state.friend != null) {
+                IconButton(onClick = onListenTogether) {
+                    Icon(Icons.Rounded.Headphones, contentDescription = "Listen together with $name", tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -137,7 +157,7 @@ fun ChatScreen(
             if (state.messages.isNotEmpty()) {
                 item("e2e") {
                     Text(
-                        "🔒 Messages and songs here are end-to-end encrypted. Only you and $name can read them.",
+                        "🔒 Only you and $name can read this\nDouble-tap to ❤️ · long-press for more",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -157,6 +177,10 @@ fun ChatScreen(
                 Bubble(
                     message = message,
                     showTime = showTime,
+                    onDoubleTap = {
+                        val mine = state.myCode?.let { Reactions.parse(message.reactions)[it] }
+                        if (state.friend != null) onReact(message.mid, if (mine == "❤️") "" else "❤️")
+                    },
                     onSavePlaylist = onSavePlaylist,
                     onLongPress = { menuFor = message },
                     onRetry = { onRetry(message.mid) },
@@ -173,9 +197,9 @@ fun ChatScreen(
             Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.sm, vertical = Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (nowPlaying != null && state.friend != null) {
-                IconButton(onClick = { onShareTrack(nowPlaying) }) {
-                    Icon(Icons.Rounded.MusicNote, contentDescription = "Send what you're playing: ${nowPlaying.title}", tint = MaterialTheme.colorScheme.primary)
+            if (state.friend != null) {
+                IconButton(onClick = { picking = true }) {
+                    Icon(Icons.Rounded.Add, contentDescription = "Send a song or playlist", tint = MaterialTheme.colorScheme.primary)
                 }
             }
             OutlinedTextField(
@@ -193,6 +217,18 @@ fun ChatScreen(
                 Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send", tint = if (draft.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+    }
+
+    if (picking) {
+        SendPicker(
+            nowPlaying = nowPlaying,
+            playlists = pickPlaylists,
+            liked = pickLiked,
+            recent = pickRecent,
+            onTrack = { picking = false; onShareTrack(it) },
+            onPlaylist = { picking = false; onSendPlaylist(it.name, it.tracks) },
+            onDismiss = { picking = false },
+        )
     }
 
     menuFor?.let { message ->
@@ -228,6 +264,7 @@ fun ChatScreen(
 private fun Bubble(
     message: ChatMessageEntity,
     showTime: Boolean,
+    onDoubleTap: () -> Unit,
     onSavePlaylist: (String, List<Track>) -> Unit,
     onLongPress: () -> Unit,
     onRetry: () -> Unit,
@@ -243,7 +280,7 @@ private fun Bubble(
                 .widthIn(max = 300.dp)
                 .clip(RoundedCornerShape(Radii.lg))
                 .background(if (mine) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh)
-                .combinedClickable(onClick = { if (message.status == SocialRepository.STATUS_FAILED) onRetry() }, onLongClick = onLongPress)
+                .combinedClickable(onClick = { if (message.status == SocialRepository.STATUS_FAILED) onRetry() }, onLongClick = onLongPress, onDoubleClick = onDoubleTap)
                 .padding(if (message.kind == "text") Spacing.md else Spacing.sm),
         ) {
             val onColor = if (mine) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
@@ -387,7 +424,92 @@ private fun PlaylistCard(
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("Play")
             }
-            if (!mine) FilledTonalButton(onClick = onSave, contentPadding = PaddingValues(horizontal = Spacing.md)) { Text("Save to library") }
+            if (!mine) {
+                var saved by androidx.compose.runtime.saveable.rememberSaveable(playlist.name) { mutableStateOf(false) }
+                FilledTonalButton(onClick = { onSave(); saved = true }, enabled = !saved, contentPadding = PaddingValues(horizontal = Spacing.md)) {
+                    Text(if (saved) "Saved ✓" else "Save", maxLines = 1)
+                }
+            }
         }
+    }
+}
+
+/** "+": pick something to send. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SendPicker(
+    nowPlaying: Track?,
+    playlists: List<com.moodify.app.data.LocalPlaylist>,
+    liked: List<Track>,
+    recent: List<Track>,
+    onTrack: (Track) -> Unit,
+    onPlaylist: (com.moodify.app.data.LocalPlaylist) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = Spacing.lg)) {
+            item("title") {
+                Text("Send", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = Spacing.gutter, vertical = Spacing.sm))
+            }
+            if (nowPlaying != null) {
+                item("nowHeader") { PickerHeader("Playing now") }
+                item("now") { PickerRow(nowPlaying.albumArtUrl, nowPlaying.id, nowPlaying.title, nowPlaying.artist) { onTrack(nowPlaying) } }
+            }
+            val withSongs = playlists.filter { it.tracks.isNotEmpty() }
+            if (withSongs.isNotEmpty()) {
+                item("plHeader") { PickerHeader("Your playlists") }
+                items(withSongs.size, key = { "pl:${withSongs[it].id}" }) { i ->
+                    val p = withSongs[i]
+                    PickerRow(p.tracks.first().albumArtUrl, p.id, p.name, "Playlist · ${p.tracks.size} songs") { onPlaylist(p) }
+                }
+            }
+            if (liked.isNotEmpty()) {
+                item("likedHeader") { PickerHeader("Liked songs") }
+                val l = liked.take(50)
+                items(l.size, key = { "like:${l[it].id}" }) { i -> PickerRow(l[i].albumArtUrl, l[i].id, l[i].title, l[i].artist) { onTrack(l[i]) } }
+            }
+            val r = recent.distinctBy { it.id }.filter { t -> liked.none { it.id == t.id } }.take(20)
+            if (r.isNotEmpty()) {
+                item("recentHeader") { PickerHeader("Recently played") }
+                items(r.size, key = { "recent:${r[it].id}" }) { i -> PickerRow(r[i].albumArtUrl, r[i].id, r[i].title, r[i].artist) { onTrack(r[i]) } }
+            }
+            if (nowPlaying == null && withSongs.isEmpty() && liked.isEmpty() && r.isEmpty()) {
+                item("empty") {
+                    Text(
+                        "Play or like some songs first, and they'll show up here to send.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(Spacing.gutter),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PickerHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.md, bottom = Spacing.xs),
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PickerRow(art: String, key: String, title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().combinedClickable(onClick = onClick).padding(horizontal = Spacing.gutter, vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ArtworkImage(url = art, contentDescription = null, placeholderKey = key, shape = RoundedCornerShape(Radii.sm), modifier = Modifier.size(44.dp))
+        Spacer(Modifier.width(Spacing.md))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
     }
 }

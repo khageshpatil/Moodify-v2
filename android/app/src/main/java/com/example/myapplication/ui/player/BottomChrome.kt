@@ -325,6 +325,8 @@ fun MoodifyNavBar(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    // The bar has a fixed height: labels grow with the font size, up to a point.
+                    com.moodify.app.ui.designsystem.FontScaleCap(1.3f) {
                     Box {
                         Icon(
                             if (isSelected) tab.selectedIcon else tab.icon,
@@ -355,6 +357,7 @@ fun MoodifyNavBar(
                         maxLines = 1,
                         softWrap = false,
                     )
+                    }
                 }
             }
         }

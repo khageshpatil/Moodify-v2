@@ -1,5 +1,6 @@
 package com.moodify.app
 
+import kotlinx.coroutines.flow.collectLatest
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -362,7 +363,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val pendingChat by viewModel.pendingChat.collectAsStateWithLifecycle()
     // A message while you're in the app (not in that chat): a banner, not a notification.
     LaunchedEffect(Unit) {
-        com.moodify.app.AppGraph.social.inAppMessages.collect { m ->
+        com.moodify.app.AppGraph.social.inAppMessages.collectLatest { m -> // a newer message replaces the banner
             val result = snackbar.showSnackbar(
                 message = "${m.name}: ${m.preview}",
                 actionLabel = "Open",
@@ -749,6 +750,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                 }
                 screen<com.moodify.app.ui.navigation.ChatRoute> {
                     val chatViewModel: com.moodify.app.ui.social.ChatViewModel = viewModel()
+                    var chatProfileOpen by remember { mutableStateOf(false) }
                     val chat by chatViewModel.state.collectAsStateWithLifecycle()
                     LaunchedEffect(chatViewModel) { chatViewModel.messages.collect { snackbar.showSnackbar(it) } }
                     // Read while on screen; notifications for it resume when you leave or the app goes away.
@@ -774,7 +776,28 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onReact = chatViewModel::react,
                         onJoinRoom = { roomId -> friendsViewModel.joinRoom(roomId); viewModel.setRoomSheetOpen(true) },
                         onSavePlaylist = chatViewModel::savePlaylist,
+                        onOpenProfile = { if (chat.friend != null) chatProfileOpen = true },
+                        onListenTogether = { chat.friend?.let { friendsViewModel.listenWith(it); viewModel.setRoomSheetOpen(true) } },
+                        pickPlaylists = playlists,
+                        pickLiked = favorites,
+                        pickRecent = history,
+                        onSendPlaylist = chatViewModel::sendPlaylist,
                     )
+                    val friend = chat.friend
+                    if (chatProfileOpen && friend != null) {
+                        com.moodify.app.ui.social.FriendProfileSheet(
+                            user = friend,
+                            presence = chat.presence,
+                            isFriend = true,
+                            nowPlayingTitle = playback.currentTrack?.title,
+                            onMessage = { chatProfileOpen = false },
+                            onFollow = { chatProfileOpen = false; friendsViewModel.followFriend(friend); viewModel.setRoomSheetOpen(true) },
+                            onListenTogether = { chatProfileOpen = false; friendsViewModel.listenWith(friend); viewModel.setRoomSheetOpen(true) },
+                            onSendNowPlaying = { chatProfileOpen = false; playback.currentTrack?.let(chatViewModel::shareTrack) },
+                            onMore = null,
+                            onDismiss = { chatProfileOpen = false },
+                        )
+                    }
                 }
                 screen<com.moodify.app.ui.navigation.AccountRoute> {
                     val accountViewModel: com.moodify.app.ui.social.AccountViewModel = viewModel()
