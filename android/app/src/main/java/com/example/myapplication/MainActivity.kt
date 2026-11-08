@@ -374,6 +374,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
         }
     }
     val unreadMessages by remember { com.moodify.app.AppGraph.social.unreadTotal() }.collectAsStateWithLifecycle(0)
+    // A newer version on GitHub? Asked at most daily; Settings › About checks on demand.
+    LaunchedEffect(Unit) { com.moodify.app.AppGraph.updates.check() }
     LaunchedEffect(pendingChat) {
         val code = pendingChat ?: return@LaunchedEffect
         viewModel.consumeChat()
@@ -1159,6 +1161,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                 onDismiss = { sendTrack = null; sendCollection = null; sendPlaylist = null },
             )
         }
+        com.moodify.app.ui.UpdatePrompt(com.moodify.app.AppGraph.updates)
         pickerTrack?.let { track ->
             PlaylistPickerSheet(
                 track = track,
