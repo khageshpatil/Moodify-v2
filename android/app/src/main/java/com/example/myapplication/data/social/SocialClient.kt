@@ -11,13 +11,43 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /** A signed-in session with the moodify-social server. */
-data class SocialSession(val token: String, val expiresAtSeconds: Long, val code: String, val displayName: String)
+data class SocialSession(val token: String, val expiresAtSeconds: Long, val code: String, val displayName: String, val avatar: ProfileAvatar? = null)
+
+/** A profile picture without a photo: an emoji on a colour, or a "profile song" whose cover is the picture. */
+sealed interface ProfileAvatar {
+    data class Emoji(val emoji: String, val color: Int) : ProfileAvatar
+    data class Song(val id: String, val title: String, val artist: String, val artworkUrl: String) : ProfileAvatar
+
+    fun toJson(): JSONObject = when (this) {
+        is Emoji -> JSONObject().put("kind", "emoji").put("emoji", emoji).put("color", color)
+        is Song -> JSONObject().put("kind", "song").put("id", id).put("title", title).put("artist", artist).put("artworkUrl", artworkUrl)
+    }
+
+    companion object {
+        fun fromJson(json: JSONObject?): ProfileAvatar? = when (json?.optString("kind")) {
+            "emoji" -> json.optString("emoji").takeIf(String::isNotEmpty)?.let { Emoji(it, json.optInt("color", 0)) }
+            "song" -> json.optString("artworkUrl").takeIf { it.startsWith("https://") }?.let {
+                Song(json.optString("id"), json.optString("title"), json.optString("artist"), it)
+            }
+            else -> null
+        }
+
+        fun parse(text: String?): ProfileAvatar? = text?.let { runCatching { fromJson(JSONObject(it)) }.getOrNull() }
+    }
+}
 
 class SocialException(val errorCode: String, message: String, val status: Int = 0) : Exception(message)
 
 /** Someone on Moodify, as the server describes them. */
-data class SocialUser(val code: String, val displayName: String, val boxPub: ByteArray, val since: Long = 0, val note: String? = null) {
-    override fun equals(other: Any?) = other is SocialUser && other.code == code && other.displayName == displayName && other.since == since && other.note == note
+data class SocialUser(
+    val code: String,
+    val displayName: String,
+    val boxPub: ByteArray,
+    val since: Long = 0,
+    val note: String? = null,
+    val avatar: ProfileAvatar? = null,
+) {
+    override fun equals(other: Any?) = other is SocialUser && other.code == code && other.displayName == displayName && other.since == since && other.note == note && other.avatar == avatar
     override fun hashCode() = code.hashCode()
 }
 
@@ -73,6 +103,11 @@ class SocialClient(
     suspend fun rename(token: String, displayName: String): String =
         call("PATCH", "/v1/me", JSONObject().put("displayName", displayName), token)
             .getJSONObject("account").getString("displayName")
+
+    /** Sets (or, with null, removes) your picture; returns what the server kept. */
+    suspend fun setAvatar(token: String, avatar: ProfileAvatar?): ProfileAvatar? =
+        call("PATCH", "/v1/me", JSONObject().put("avatar", avatar?.toJson() ?: JSONObject.NULL), token)
+            .getJSONObject("account").let { ProfileAvatar.fromJson(it.optJSONObject("avatar")) }
 
     suspend fun deleteAccount(token: String) {
         call("DELETE", "/v1/me", null, token)
@@ -220,6 +255,7 @@ class SocialClient(
         boxPub = fromBase64Url(json.getString("boxPub")),
         since = json.optLong("since", 0),
         note = json.optString("note").takeIf { json.has("note") && !json.isNull("note") },
+        avatar = ProfileAvatar.fromJson(json.optJSONObject("avatar")),
     )
 
     private fun fromBase64Url(value: String): ByteArray =
@@ -234,6 +270,7 @@ class SocialClient(
             expiresAtSeconds = json.getLong("expiresAt"),
             code = account.getString("code"),
             displayName = account.getString("displayName"),
+            avatar = ProfileAvatar.fromJson(account.optJSONObject("avatar")),
         )
     }
 

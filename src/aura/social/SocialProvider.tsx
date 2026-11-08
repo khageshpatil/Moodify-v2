@@ -18,7 +18,11 @@ import type { WireFriendPresence, WireInboxMessage } from './wire';
 /** moodify-social server; local dev server by default. */
 export const SOCIAL_URL = (import.meta.env.VITE_SOCIAL_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8790' : '')).replace(/\/$/, '');
 
-export interface SocialUser { code: string; displayName: string; boxPub: string; since?: number; note?: string | null }
+/** A profile picture without a photo: an emoji on a colour, or a song whose cover is the picture. */
+export type ProfileAvatar =
+  | { kind: 'emoji'; emoji: string; color: number }
+  | { kind: 'song'; id: string; title: string; artist: string; artworkUrl: string };
+export interface SocialUser { code: string; displayName: string; boxPub: string; since?: number; note?: string | null; avatar?: ProfileAvatar | null }
 /** [positionMs] was the position at server time [at] (ms; 0 from older servers). */
 export interface Presence { online: boolean; track?: Track; playing: boolean; lastSeenAt?: number | null; positionMs: number; at: number }
 export interface SharedItem { id: number; fromCode: string; fromName: string; sentAt: number; track?: Track; collection?: SharedCollection; roomId?: string }
@@ -29,6 +33,8 @@ interface SocialContextValue {
   serverConfigured: boolean;
   code: string | null;
   displayName: string;
+  /** Your picture, as the server last confirmed it. */
+  avatar: ProfileAvatar | null;
   registered: boolean;
   backedUp: boolean;
   connected: boolean;
@@ -40,6 +46,8 @@ interface SocialContextValue {
   recoveryWords(): Promise<string[]>;
   confirmBackedUp(): Promise<void>;
   rename(name: string): Promise<void>;
+  /** Sets your picture; null removes it. */
+  setAvatar(avatar: ProfileAvatar | null): Promise<void>;
   deleteAccount(): Promise<void>;
   addFriend(code: string, note?: string): Promise<string>;
   answer(code: string, accept: boolean): Promise<void>;
@@ -173,7 +181,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [seed, setSeed] = useState<Uint8Array | null>(null);
   const [identity, setIdentity] = useState<Identity | null>(null);
-  const [meta, setMeta] = useState({ displayName: '', registered: false, backedUp: false });
+  const [meta, setMeta] = useState({ displayName: '', registered: false, backedUp: false, avatar: null as ProfileAvatar | null });
   const [lists, setLists] = useState<Lists>({ friends: [], incoming: [], outgoing: [] });
   const [presence, setPresence] = useState<Record<string, Presence>>({});
   const [shared, setShared] = useState<SharedItem[]>(loadInbox);
@@ -218,7 +226,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       if (stored) {
         setSeed(stored.seed);
         setIdentity(await identityFromSeed(stored.seed));
-        setMeta({ displayName: stored.displayName, registered: stored.registered, backedUp: stored.backedUp });
+        setMeta({ displayName: stored.displayName, registered: stored.registered, backedUp: stored.backedUp, avatar: null });
       }
       setReady(true);
     });
@@ -230,7 +238,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     const signPub = bytesToBase64Url(id.signPub);
     const boxPub = bytesToBase64Url(id.boxPub);
     const challenge = async () => (await api<{ challenge: string }>('POST', '/v1/auth/challenge', {})).data.challenge;
-    type SignedIn = { token: string; expiresAt: number; account: { displayName: string } };
+    type SignedIn = { token: string; expiresAt: number; account: { displayName: string; avatar?: ProfileAvatar | null } };
     let result: SignedIn;
     try {
       const c = await challenge();
@@ -243,7 +251,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     }
     session.current = { token: result.token, expiresAt: result.expiresAt };
     await updateIdentity({ registered: true, displayName: result.account.displayName });
-    setMeta((m) => ({ ...m, registered: true, displayName: result.account.displayName }));
+    setMeta((m) => ({ ...m, registered: true, displayName: result.account.displayName, avatar: result.account.avatar ?? null }));
     return result.token;
   }, []);
 
@@ -458,7 +466,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     await saveIdentity({ seed: newSeed, displayName, registered: false, backedUp });
     session.current = null;
     setSeed(newSeed);
-    setMeta({ displayName, registered: false, backedUp });
+    setMeta({ displayName, registered: false, backedUp, avatar: null });
     setIdentity(id);
     if (SOCIAL_URL) {
       try { await signIn(id, displayName); } catch { /* stays local until reachable */ }
@@ -471,6 +479,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     serverConfigured: !!SOCIAL_URL,
     code: identity?.code ?? null,
     displayName: meta.displayName,
+    avatar: meta.avatar,
     registered: meta.registered,
     backedUp: meta.backedUp,
     connected,
@@ -493,6 +502,10 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       await updateIdentity({ displayName: name });
       setMeta((m) => ({ ...m, displayName: name }));
     },
+    async setAvatar(avatar) {
+      const { data } = await api<{ account: { avatar: ProfileAvatar | null } }>('PATCH', '/v1/me', { avatar }, await token());
+      setMeta((m) => ({ ...m, avatar: data.account.avatar ?? null }));
+    },
     async deleteAccount() {
       if (meta.registered) await api('DELETE', '/v1/me', undefined, await token());
       if (identity) { try { localStorage.removeItem(chatKey(identity.code)); localStorage.removeItem(cursorKey(identity.code)); localStorage.removeItem(pushKey(identity.code)); } catch { /* blocked */ } }
@@ -500,7 +513,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       await clearIdentity();
       session.current = null;
       setIdentity(null); setSeed(null); setLists({ friends: [], incoming: [], outgoing: [] }); setPresence({}); setShared([]);
-      setMeta({ displayName: '', registered: false, backedUp: false });
+      setMeta({ displayName: '', registered: false, backedUp: false, avatar: null });
     },
     async addFriend(raw, note) {
       const code = normalizeCode(raw);

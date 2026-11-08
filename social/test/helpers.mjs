@@ -31,6 +31,7 @@ export function memoryStore() {
     async getAccount(code) { return accounts.get(code) ?? null; },
     async insertAccount(a) { accounts.set(a.code, { ...a }); },
     async updateDisplayName(code, name) { accounts.get(code).display_name = name; },
+    async updateAvatar(code, avatar) { accounts.get(code).avatar = avatar; },
     async deleteAccount(code) {
       accounts.delete(code);
       for (const [k, f] of friendships) if (f.a === code || f.b === code) friendships.delete(k);

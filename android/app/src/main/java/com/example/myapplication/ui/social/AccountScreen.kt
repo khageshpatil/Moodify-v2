@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -82,8 +83,21 @@ fun AccountScreen(
     onPrepareLink: (String) -> Unit = {},
     onConfirmLink: () -> Unit = {},
     onCancelLink: () -> Unit = {},
+    profileSongs: List<com.moodify.app.data.Track> = emptyList(),
+    onSetAvatar: (com.moodify.app.data.social.ProfileAvatar?) -> Unit = {},
 ) {
     var linking by rememberSaveable { mutableStateOf(false) }
+    var picking by rememberSaveable { mutableStateOf(false) }
+    if (picking && state.code != null) {
+        AvatarPickerSheet(
+            code = state.code,
+            name = state.displayName,
+            current = state.avatar,
+            songs = profileSongs,
+            onSave = { onSetAvatar(it); picking = false },
+            onDismiss = { picking = false },
+        )
+    }
     if (state.pendingLink != null || linking) {
         LinkBrowserDialog(
             state = state,
@@ -117,7 +131,7 @@ fun AccountScreen(
                 }
                 state.code == null -> item(key = "setup") { SetupCard(state.busy, onCreate, onRestore) }
                 else -> {
-                    item(key = "code") { CodeCard(state, context, onRetry) }
+                    item(key = "code") { CodeCard(state, context, onRetry, onPickAvatar = { picking = true }) }
                     val words = state.recoveryWords
                     if (words != null) {
                         item(key = "words") {
@@ -194,10 +208,26 @@ private fun SetupCard(busy: Boolean, onCreate: (String) -> Unit, onRestore: (Str
 }
 
 @Composable
-private fun CodeCard(state: AccountUiState, context: Context, onRetry: () -> Unit) {
+private fun CodeCard(state: AccountUiState, context: Context, onRetry: () -> Unit, onPickAvatar: () -> Unit) {
     val code = state.code ?: return
     Section {
-        Text(state.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.foundation.layout.Box(
+                Modifier.clip(androidx.compose.foundation.shape.CircleShape)
+                    .then(if (state.serverConfigured && !state.busy) Modifier.clickable(onClickLabel = "Change your picture", onClick = onPickAvatar) else Modifier),
+            ) {
+                AvatarBubble(code, state.displayName, state.avatar, 64.dp)
+            }
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f)) {
+                Text(state.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (state.serverConfigured) {
+                    TextButton(onClick = onPickAvatar, enabled = !state.busy, contentPadding = PaddingValues(0.dp)) {
+                        Text(if (state.avatar == null) "Add a picture" else "Change picture")
+                    }
+                }
+            }
+        }
         Text(
             code,
             style = MaterialTheme.typography.displaySmall.copy(fontFamily = FontFamily.Monospace),

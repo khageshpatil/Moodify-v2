@@ -35,6 +35,32 @@ export const LIMITS = {
 };
 const SYNC_ITEM = /^[A-Za-z0-9_-]{22}$/;
 const PUSH_TOKEN = /^[A-Za-z0-9:_-]{20,4096}$/;
+/** Colours an emoji avatar can sit on (the same 12 in both apps). */
+export const AVATAR_COLORS = 12;
+
+/**
+ * A profile picture without a photo: {kind: "emoji", emoji, color} or
+ * {kind: "song", id, title, artist, artworkUrl}. Returns the cleaned JSON
+ * text, or undefined when it isn't valid.
+ */
+export function cleanAvatar(input) {
+  if (!input || typeof input !== 'object') return undefined;
+  const text = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  if (input.kind === 'emoji') {
+    const emoji = text(input.emoji, 16);
+    if (!emoji || /[A-Za-z0-9<>]/.test(emoji)) return undefined;
+    if (!Number.isInteger(input.color) || input.color < 0 || input.color >= AVATAR_COLORS) return undefined;
+    return JSON.stringify({ kind: 'emoji', emoji, color: input.color });
+  }
+  if (input.kind === 'song') {
+    if (typeof input.id !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(input.id)) return undefined;
+    const artworkUrl = text(input.artworkUrl, 400);
+    if (!artworkUrl.startsWith('https://')) return undefined;
+    return JSON.stringify({ kind: 'song', id: input.id, title: text(input.title, 100), artist: text(input.artist, 100), artworkUrl });
+  }
+  return undefined;
+}
+const avatarOf = (account) => { try { return account.avatar ? JSON.parse(account.avatar) : null; } catch { return null; } };
 const B64URL = /^[A-Za-z0-9_-]+$/;
 
 /** A browser's push subscription, cleaned; stored as JSON in the token column. */
@@ -114,8 +140,9 @@ export function createApi({
     displayName: account.display_name,
     boxPub: account.box_pub,
     createdAt: account.created_at,
+    avatar: avatarOf(account),
   });
-  const publicUser = (account) => ({ code: account.code, displayName: account.display_name, boxPub: account.box_pub });
+  const publicUser = (account) => ({ code: account.code, displayName: account.display_name, boxPub: account.box_pub, avatar: avatarOf(account) });
 
   async function takeChallenge(nonce) {
     if (typeof nonce !== 'string' || nonce.length < 16 || nonce.length > 64) return false;
@@ -415,10 +442,20 @@ export function createApi({
     if (pathname === '/v1/me') {
       if (method === 'GET') return json(200, { account: profile(me) });
       if (method === 'PATCH') {
+        // Change your name, your picture, or both.
         const body = await readJson(request);
-        const displayName = cleanDisplayName(body?.displayName);
-        if (!displayName) return error(400, 'bad_name', 'Display names are 2–24 characters.');
-        await store.updateDisplayName(me.code, displayName);
+        const hasName = body && 'displayName' in body;
+        const hasAvatar = body && 'avatar' in body;
+        if (!hasName && !hasAvatar) return error(400, 'bad_profile', 'Send a displayName or an avatar.');
+        const displayName = hasName ? cleanDisplayName(body.displayName) : null;
+        if (hasName && !displayName) return error(400, 'bad_name', 'Display names are 2–24 characters.');
+        const avatar = hasAvatar ? (body.avatar === null ? null : cleanAvatar(body.avatar)) : undefined;
+        if (hasAvatar && avatar === undefined) return error(400, 'bad_avatar', 'An avatar is an emoji on a colour, or a song.');
+        if (displayName) await store.updateDisplayName(me.code, displayName);
+        if (hasAvatar) await store.updateAvatar(me.code, avatar);
+        // Friends' apps refresh their list to show the new name or picture.
+        const friends = await store.friendCodes(me.code);
+        await Promise.all(friends.map((code) => notify(code, { type: 'friend.updated', body: { code: me.code } })));
         return json(200, { account: profile(await store.getAccount(me.code)) });
       }
       if (method === 'DELETE') {
@@ -530,6 +567,7 @@ export function d1Store(db) {
         a.code, a.sign_pub, a.box_pub, a.display_name, a.created_at);
     },
     async updateDisplayName(code, name) { await run('UPDATE accounts SET display_name = ? WHERE code = ?', name, code); },
+    async updateAvatar(code, avatar) { await run('UPDATE accounts SET avatar = ? WHERE code = ?', avatar, code); },
     async deleteAccount(code) {
       await db.batch([
         db.prepare('DELETE FROM accounts WHERE code = ?').bind(code),

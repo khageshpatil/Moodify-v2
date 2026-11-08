@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Headphones
@@ -180,6 +181,26 @@ fun FriendProfileSheet(
                 }
             }
             val live = presence?.takeIf { it.online && it.playing && it.track != null }
+            (user.avatar as? com.moodify.app.data.social.ProfileAvatar.Song)?.let { song ->
+                // Their profile song: tap to hear it.
+                val actions = com.moodify.app.ui.designsystem.LocalMoodifyActions.current
+                val track = com.moodify.app.data.Track(id = song.id, title = song.title, artist = song.artist, albumArtUrl = song.artworkUrl)
+                Spacer(Modifier.height(Spacing.md))
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.lg)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .pressable(pressedScale = 0.98f) { actions.play(track, listOf(track)) }.padding(Spacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ArtworkImage(url = song.artworkUrl, contentDescription = null, placeholderKey = song.id, shape = RoundedCornerShape(Radii.sm), modifier = Modifier.size(48.dp))
+                    Spacer(Modifier.width(Spacing.md))
+                    Column(Modifier.weight(1f)) {
+                        Text("Profile song", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(song.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(song.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = "Play ${song.title}", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             live?.track?.let { track ->
                 Spacer(Modifier.height(Spacing.md))
                 Row(

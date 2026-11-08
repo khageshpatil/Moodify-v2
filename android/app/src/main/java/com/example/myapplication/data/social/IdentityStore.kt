@@ -18,6 +18,8 @@ data class StoredIdentity(
     val registered: Boolean,
     /** The listener confirmed they wrote the recovery key down. */
     val backedUp: Boolean,
+    /** Their picture, as the server last confirmed it. */
+    val avatar: ProfileAvatar? = null,
 )
 
 /**
@@ -41,6 +43,7 @@ class IdentityStore(context: Context) {
             displayName = prefs.getString(KEY_NAME, "").orEmpty(),
             registered = prefs.getBoolean(KEY_REGISTERED, false),
             backedUp = prefs.getBoolean(KEY_BACKED_UP, false),
+            avatar = ProfileAvatar.parse(prefs.getString(KEY_AVATAR, null)),
         )
     }
 
@@ -60,6 +63,7 @@ class IdentityStore(context: Context) {
     fun setRegistered(registered: Boolean) = prefs.edit().putBoolean(KEY_REGISTERED, registered).apply()
     fun setBackedUp(backedUp: Boolean) = prefs.edit().putBoolean(KEY_BACKED_UP, backedUp).apply()
     fun setDisplayName(name: String) = prefs.edit().putString(KEY_NAME, name).apply()
+    fun setAvatar(avatar: ProfileAvatar?) = prefs.edit().putString(KEY_AVATAR, avatar?.toJson()?.toString()).apply()
 
     /** Forgets the identity on this phone (the account itself is only removed by the server). */
     fun clear() {
@@ -93,5 +97,6 @@ class IdentityStore(context: Context) {
         const val KEY_NAME = "display_name"
         const val KEY_REGISTERED = "registered"
         const val KEY_BACKED_UP = "backed_up"
+        const val KEY_AVATAR = "avatar"
     }
 }

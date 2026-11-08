@@ -11,12 +11,13 @@ This document builds on [identity.md](identity.md).
 
 | Method & path | Body → response | Notes |
 |---|---|---|
-| `GET /v1/friends` | → `{friends, incoming, outgoing}` | Each entry is a user `{code, displayName, boxPub, since, note?}` |
+| `GET /v1/friends` | → `{friends, incoming, outgoing}` | Each entry is a user `{code, displayName, boxPub, avatar, since, note?}` |
 | `POST /v1/friends/requests` | `{code, note?}` → `{status, user}` | See the status list below. |
 | `POST /v1/friends/requests/{code}/accept` | → `{status:"friends"}` | Both people's hubs get `friend.accepted`. |
 | `POST /v1/friends/requests/{code}/ignore` | → `{status:"ignored"}` | The sender isn't told. Repeat requests are dropped silently for 7 days. |
 | `DELETE /v1/friends/{code}` | → `204` | Removes the friend, or cancels a request. |
 | `PUT /v1/blocks/{code}` / `DELETE` / `GET /v1/blocks` | → `204` / `{blocked}` | A block is silent: it ends the friendship, drops their queued messages, and makes their future requests and messages look sent without delivering them. |
+| `PATCH /v1/me` | `{displayName?, avatar?}` → `{account}` | Changes your name, picture or both. Friends' hubs get `friend.updated` `{code}` and refresh their list. |
 | `POST /v1/reports` | `{code, reason, evidence?}` → `201` | Evidence is plain text the reporter chooses to include. |
 
 The possible statuses for a friend request:
@@ -29,6 +30,12 @@ The possible statuses for a friend request:
 | `400` | The code is your own, or malformed. |
 | `404` | No one has that code. |
 | `429` | A limit was reached. |
+
+**Profile pictures (`avatar`).** Moodify has no photo uploads. A picture is one of:
+- `{kind:"emoji", emoji, color}`: an emoji (up to 16 characters, no letters or digits) on one of 12 colours (`color` 0–11, the same palette in both apps).
+- `{kind:"song", id, title, artist, artworkUrl}`: a "profile song". Its cover (an `https://` URL) is the picture, and friends can tap it to play the song.
+
+`avatar` is `null` when none is set; sending `null` removes it. The server keeps only these fields and trims titles to 100 characters.
 
 **Limits:**
 - 500 friends
