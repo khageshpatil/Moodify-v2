@@ -64,6 +64,7 @@ data class SocialState(
     val serverConfigured: Boolean = false,
     val myCode: String? = null,
     val myName: String = "",
+    val myAvatar: ProfileAvatar? = null,
     val registered: Boolean = false,
     val connected: Boolean = false,
     val lists: FriendLists = FriendLists(),
@@ -182,6 +183,11 @@ class SocialRepository(
         }
     }
 
+    /** Your name or picture changed (Account screen). */
+    fun profileChanged() {
+        scope.launch { reloadIdentity() }
+    }
+
     /** After the identity was created, restored or deleted (Account screen). */
     fun identityChanged() {
         scope.launch {
@@ -220,7 +226,7 @@ class SocialRepository(
     private suspend fun reloadIdentity() {
         identity = runCatching { store.load() }.getOrNull()
         _state.update {
-            it.copy(myCode = identity?.identity?.code, myName = identity?.displayName.orEmpty(), registered = identity?.registered == true)
+            it.copy(myCode = identity?.identity?.code, myName = identity?.displayName.orEmpty(), myAvatar = identity?.avatar, registered = identity?.registered == true)
         }
     }
 
@@ -575,7 +581,7 @@ class SocialRepository(
                 val code = body.optString("code").takeIf(String::isNotBlank) ?: return
                 _state.update { it.copy(presence = it.presence + (code to parsePresence(body))) }
             }
-            "friend.request", "friend.accepted", "friend.removed" -> refresh()
+            "friend.request", "friend.accepted", "friend.removed", "friend.updated" -> refresh()
             "msg.new" -> fetchInbox()
             "sync.changed" -> requestLibrarySync()
         }
@@ -666,6 +672,13 @@ class SocialRepository(
             store.setRegistered(true)
             identity = stored.copy(registered = true)
             _state.update { it.copy(registered = true) }
+        }
+        // Your name and picture may have changed on another device.
+        if (signedIn.displayName != stored.displayName || signedIn.avatar != stored.avatar) {
+            store.setDisplayName(signedIn.displayName)
+            store.setAvatar(signedIn.avatar)
+            identity = identity?.copy(displayName = signedIn.displayName, avatar = signedIn.avatar)
+            _state.update { it.copy(myName = signedIn.displayName, myAvatar = signedIn.avatar) }
         }
         session = signedIn
         signedIn.token

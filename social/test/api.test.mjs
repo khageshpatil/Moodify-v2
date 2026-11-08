@@ -76,7 +76,7 @@ test('friends can be looked up by code, only when signed in', async () => {
   const typed = ravi.code.toLowerCase().replace(/-/g, ' ');
   const found = await h.call('GET', `/v1/users/${encodeURIComponent(typed)}`, undefined, token);
   assert.equal(found.status, 200);
-  assert.deepEqual(found.body.user, { code: ravi.code, displayName: 'Ravi', boxPub: bytesToBase64Url(ravi.boxPub) });
+  assert.deepEqual(found.body.user, { code: ravi.code, displayName: 'Ravi', boxPub: bytesToBase64Url(ravi.boxPub), avatar: null });
   assert.equal((await h.call('GET', `/v1/users/${ravi.code}`)).status, 401);
   assert.equal((await h.call('GET', '/v1/users/MOOD-0000-0000', undefined, token)).status, 404);
 });

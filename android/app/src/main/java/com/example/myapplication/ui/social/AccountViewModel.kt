@@ -25,6 +25,7 @@ data class AccountUiState(
     val loading: Boolean = true,
     val code: String? = null,
     val displayName: String = "",
+    val avatar: com.moodify.app.data.social.ProfileAvatar? = null,
     val registered: Boolean = false,
     val backedUp: Boolean = false,
     val serverConfigured: Boolean = false,
@@ -120,6 +121,18 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
         }
         store.setDisplayName(name)
         publish(store.load())
+        com.moodify.app.AppGraph.social.profileChanged()
+    }
+
+    /** Your picture: an emoji on a colour, a profile song, or null to remove it. */
+    fun setAvatar(avatar: com.moodify.app.data.social.ProfileAvatar?) = work {
+        val stored = store.load() ?: return@work
+        if (!stored.registered && !connect(stored, quiet = false)) return@work
+        val token = ensureSession(store.load() ?: return@work) ?: return@work
+        store.setAvatar(client.setAvatar(token, avatar))
+        publish(store.load())
+        com.moodify.app.AppGraph.social.profileChanged()
+        _state.update { it.copy(notice = if (avatar == null) "Picture removed." else "Picture saved. Friends see it now.") }
     }
 
     fun retryConnect() = work {
@@ -181,6 +194,7 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
             store.setRegistered(true)
             // The server's name wins: a restored phone only had a placeholder.
             if (signedIn.displayName != stored.displayName) store.setDisplayName(signedIn.displayName)
+            if (signedIn.avatar != stored.avatar) store.setAvatar(signedIn.avatar)
             publish(store.load())
             true
         } catch (e: CancellationException) {
@@ -207,6 +221,7 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
                 loading = false,
                 code = stored?.identity?.code,
                 displayName = stored?.displayName.orEmpty(),
+                avatar = stored?.avatar,
                 registered = stored?.registered == true,
                 backedUp = stored?.backedUp == true,
             )

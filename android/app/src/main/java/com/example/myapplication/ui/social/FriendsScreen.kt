@@ -159,6 +159,8 @@ fun FriendsScreen(
                         .padding(Spacing.md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    AvatarBubble(state.myCode, state.myName, state.myAvatar, 48.dp)
+                    Spacer(Modifier.width(Spacing.md))
                     Column(Modifier.weight(1f)) {
                         Text("Your code", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         com.moodify.app.ui.designsystem.FontScaleCap(1.4f) {
@@ -267,16 +269,7 @@ fun FriendsScreen(
 }
 
 @Composable
-internal fun Avatar(user: SocialUser, size: Dp = 44.dp) {
-    // Generated from the code: no photos in Moodify.
-    val hue = placeholderHue(user.code)
-    Box(
-        Modifier.size(size).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(hue, androidx.compose.ui.graphics.lerp(hue, Color.Black, 0.35f)))),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(user.displayName.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = Color.White)
-    }
-}
+internal fun Avatar(user: SocialUser, size: Dp = 44.dp) = AvatarBubble(user.code, user.displayName, user.avatar, size)
 
 @Composable
 private fun RequestRow(user: SocialUser, onAccept: () -> Unit, onIgnore: () -> Unit) {

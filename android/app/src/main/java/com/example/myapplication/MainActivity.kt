@@ -829,6 +829,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
                         onPrepareLink = { accountViewModel.prepareLink(it) },
                         onConfirmLink = accountViewModel::confirmLink,
                         onCancelLink = accountViewModel::cancelLink,
+                        profileSongs = remember(playback.currentTrack, favorites, history) { listOfNotNull(playback.currentTrack) + favorites + history },
+                        onSetAvatar = accountViewModel::setAvatar,
                     )
                 }
                 screen<com.moodify.app.ui.navigation.StatsRoute> {

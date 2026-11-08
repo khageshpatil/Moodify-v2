@@ -7,7 +7,7 @@ import { usePlayer } from '../PlayerContext';
 import { Artwork, EmptyState, SectionHeader, hueFor } from '../ui';
 import { preview } from './chatModel';
 import { useRoom } from './RoomProvider';
-import { useSocial, type LinkSession, type SocialUser } from './SocialProvider';
+import { useSocial, type LinkSession, type ProfileAvatar, type SocialUser } from './SocialProvider';
 
 export const timeAgo = (seconds: number) => {
   const minutes = Math.max(0, Math.floor((Date.now() / 1000 - seconds) / 60));
@@ -17,13 +17,98 @@ export const timeAgo = (seconds: number) => {
   return `${Math.floor(minutes / 1440)}d ago`;
 };
 
-export function Avatar({ user, size = 44, online = false }: { user: { code: string; displayName: string }; size?: number; online?: boolean }) {
+/** The colours an emoji picture can sit on: the same 12, in the same order, as the Android app. */
+export const AVATAR_COLORS = ['#7C5CFF', '#FF5C8A', '#FF8A3D', '#F5C542', '#3DDC84', '#2EC4B6', '#3D9BFF', '#9B5CFF', '#E0457B', '#00B894', '#6C5CE7', '#FD79A8'];
+export const AVATAR_EMOJI = ['🎧', '🎵', '🎸', '🥁', '🎹', '🎤', '🎷', '🎺', '🎻', '🪩', '✨', '🔥', '🌙', '☀️', '🌊', '🌸', '🍀', '🦋', '🐱', '🐶', '🦊', '🐼', '👾', '🚀'];
+const SONG_ID = /^[A-Za-z0-9_-]{11}$/;
+/** Songs that can be a profile song: catalogue songs with https cover art. */
+const profileSongs = (tracks: Track[]) => tracks.filter((t, i) => SONG_ID.test(t.id) && t.albumArt?.startsWith('https://') && tracks.findIndex((o) => o.id === t.id) === i);
+const songAvatar = (t: Track): ProfileAvatar => ({ kind: 'song', id: t.id, title: t.title.slice(0, 100), artist: t.artist.slice(0, 100), artworkUrl: t.albumArt! });
+
+/** Someone's picture: their emoji, their profile song's cover, or their initial. */
+export function Avatar({ user, size = 44, online = false }: { user: { code: string; displayName: string; avatar?: ProfileAvatar | null }; size?: number; online?: boolean }) {
+  const avatar = user.avatar;
   const hue = hueFor(user.code);
+  const color = avatar?.kind === 'emoji' ? AVATAR_COLORS[avatar.color] ?? AVATAR_COLORS[0] : hue;
+  const background = avatar?.kind === 'song' ? 'var(--aura-surface-highest)' : `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} ${avatar ? 70 : 55}%, black))`;
   return (
-    <span className="aura-avatar" style={{ width: size, height: size, background: `linear-gradient(135deg, ${hue}, color-mix(in srgb, ${hue} 55%, black))` }} aria-hidden>
-      {user.displayName.slice(0, 1).toUpperCase()}
+    <span className="aura-avatar" style={{ width: size, height: size, background, fontSize: avatar?.kind === 'emoji' ? size * 0.5 : undefined }} aria-hidden>
+      {avatar?.kind === 'song' ? <img src={avatar.artworkUrl} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+        : avatar?.kind === 'emoji' ? avatar.emoji
+          : user.displayName.slice(0, 1).toUpperCase()}
       {online && <span className="aura-online" />}
     </span>
+  );
+}
+
+/** "Your picture": an emoji on a colour, or a song whose cover becomes your picture. */
+function AvatarPicker({ onClose, onSaved }: { onClose: () => void; onSaved: (message: string) => void }) {
+  const social = useSocial();
+  const player = usePlayer();
+  const [draft, setDraft] = useState<ProfileAvatar>(social.avatar ?? { kind: 'emoji', emoji: AVATAR_EMOJI[0], color: 0 });
+  const [tab, setTab] = useState<'emoji' | 'song'>(social.avatar?.kind === 'song' ? 'song' : 'emoji');
+  const [busy, setBusy] = useState(false);
+  const songs = profileSongs([...(player.currentTrack ? [player.currentTrack] : []), ...player.favorites, ...player.recentlyPlayed]).slice(0, 40);
+  const save = async (avatar: ProfileAvatar | null) => {
+    setBusy(true);
+    try { await social.setAvatar(avatar); onSaved(avatar ? 'Picture saved. Friends see it now.' : 'Picture removed.'); onClose(); } catch (e) { onSaved(errorText(e)); } finally { setBusy(false); }
+  };
+  const emoji = draft.kind === 'emoji' ? draft : null;
+  return (
+    <div className="aura-dialog-backdrop" onClick={onClose}>
+      <div className="aura-dialog" role="dialog" aria-label="Your picture" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
+        <div className="type-title-large">Your picture</div>
+        <div style={{ display: 'grid', justifyItems: 'center', gap: 6 }}>
+          <Avatar user={{ code: social.code ?? '', displayName: social.displayName, avatar: draft }} size={96} />
+          <div className="type-body-small aura-muted aura-ellipsis" style={{ maxWidth: '100%' }}>{draft.kind === 'song' ? `${draft.title} · ${draft.artist}` : 'Friends see this next to your name'}</div>
+        </div>
+        <div className="aura-chips">
+          <button className="aura-chip" aria-pressed={tab === 'emoji'} onClick={() => setTab('emoji')}>Emoji</button>
+          <button className="aura-chip" aria-pressed={tab === 'song'} onClick={() => setTab('song')}>Profile song</button>
+        </div>
+        {tab === 'emoji' ? (
+          <>
+            <div role="radiogroup" aria-label="Emoji" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
+              {AVATAR_EMOJI.map((e) => (
+                <button key={e} role="radio" aria-checked={emoji?.emoji === e} className="aura-chip" onClick={() => setDraft({ kind: 'emoji', emoji: e, color: emoji?.color ?? 0 })}
+                  style={{ aspectRatio: '1', fontSize: 24, justifyContent: 'center', padding: 0, background: emoji?.emoji === e ? 'var(--aura-primary-container)' : undefined }}>{e}</button>
+              ))}
+            </div>
+            <div className="type-label-large" style={{ color: 'var(--aura-primary)' }}>Colour</div>
+            <div role="radiogroup" aria-label="Colour" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+              {AVATAR_COLORS.map((c, i) => (
+                <button key={c} role="radio" aria-checked={emoji?.color === i} aria-label={`Colour ${i + 1}`} onClick={() => setDraft({ kind: 'emoji', emoji: emoji?.emoji ?? AVATAR_EMOJI[0], color: i })}
+                  style={{ aspectRatio: '1', borderRadius: '50%', background: c, border: emoji?.color === i ? '3px solid var(--aura-on-background)' : '3px solid transparent', cursor: 'pointer', color: 'white', display: 'grid', placeItems: 'center' }}>
+                  {emoji?.color === i && <Check size={18} />}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : songs.length === 0 ? (
+          <div className="aura-muted">Play or like a song first, then pick it here. Its cover becomes your picture.</div>
+        ) : (
+          <div role="radiogroup" aria-label="Profile song">
+            {songs.map((t) => {
+              const selected = draft.kind === 'song' && draft.id === t.id;
+              return (
+                <button key={t.id} role="radio" aria-checked={selected} className="aura-track" onClick={() => setDraft(songAvatar(t))}
+                  style={{ width: '100%', background: selected ? 'var(--aura-primary-container)' : undefined }}>
+                  <img src={t.albumArt} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flex: 'none' }} />
+                  <span className="aura-track-text"><span className="type-title-small aura-ellipsis" style={{ display: 'block' }}>{t.title}</span><span className="type-body-small aura-muted aura-ellipsis" style={{ display: 'block' }}>{t.artist}</span></span>
+                  {selected && <Check size={18} color="var(--aura-primary)" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="aura-row">
+          {social.avatar && <button className="aura-btn-text" disabled={busy} onClick={() => void save(null)}>Remove</button>}
+          <span style={{ flex: 1 }} />
+          <button className="aura-btn-text" onClick={onClose}>Cancel</button>
+          <button className="aura-btn aura-btn-primary" disabled={busy || JSON.stringify(draft) === JSON.stringify(social.avatar)} onClick={() => void save(draft)}>Save</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -44,6 +129,7 @@ export function AccountScreen() {
   const [words, setWords] = useState('');
   const [newWords, setNewWords] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [picking, setPicking] = useState(false);
   const { toast, say } = useToast();
 
   if (!social.ready) return <div className="aura-page">Loading…</div>;
@@ -92,7 +178,15 @@ export function AccountScreen() {
       {social.code && (
         <div style={{ display: 'grid', gap: 16 }}>
           <div className="aura-card">
-            <div className="type-title-medium aura-muted">{social.displayName}</div>
+            <div className="aura-row" style={{ marginBottom: 8 }}>
+              <button onClick={() => setPicking(true)} disabled={!social.serverConfigured} aria-label="Change your picture" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', borderRadius: '50%' }}>
+                <Avatar user={{ code: social.code, displayName: social.displayName, avatar: social.avatar }} size={64} />
+              </button>
+              <div style={{ minWidth: 0 }}>
+                <div className="type-title-medium aura-muted">{social.displayName}</div>
+                {social.serverConfigured && <button className="aura-btn-text" style={{ padding: 0 }} onClick={() => setPicking(true)}>{social.avatar ? 'Change picture' : 'Add a picture'}</button>}
+              </div>
+            </div>
             <div className="type-display-small aura-mono" style={{ color: 'var(--aura-primary)' }}>{social.code}</div>
             <div className="aura-row" style={{ marginTop: 12, flexWrap: 'wrap' }}>
               <button className="aura-btn aura-btn-tonal" onClick={() => { void navigator.clipboard?.writeText(social.code!); say('Code copied'); }}><Copy size={16} />Copy</button>
@@ -107,6 +201,7 @@ export function AccountScreen() {
             : <ManageCard onSay={say} />}
         </div>
       )}
+      {picking && <AvatarPicker onClose={() => setPicking(false)} onSaved={say} />}
       {toast}
     </div>
   );
@@ -342,6 +437,17 @@ export function FriendsScreen() {
         <div className="aura-dialog-backdrop" onClick={() => setMenuFor(null)}>
           <div className="aura-dialog" role="dialog" aria-label={`Options for ${menuFor.displayName}`} onClick={(e) => e.stopPropagation()}>
             <div className="aura-row"><Avatar user={menuFor} size={52} /><div><div className="type-title-large">{menuFor.displayName}</div><div className="aura-mono aura-muted">{menuFor.code}</div></div></div>
+            {menuFor.avatar?.kind === 'song' && (() => {
+              const song = menuFor.avatar;
+              const track = { id: song.id, title: song.title, artist: song.artist, albumArt: song.artworkUrl } as Track;
+              return (
+                <button className="aura-track" onClick={() => { player.playTrack(track, [track]); setMenuFor(null); }}>
+                  <img src={song.artworkUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flex: 'none' }} />
+                  <span className="aura-track-text"><span className="type-label-medium" style={{ display: 'block', color: 'var(--aura-primary)' }}>Profile song</span><span className="type-title-small aura-ellipsis" style={{ display: 'block' }}>{song.title}</span><span className="type-body-small aura-muted aura-ellipsis" style={{ display: 'block' }}>{song.artist}</span></span>
+                  <Play size={18} fill="currentColor" color="var(--aura-primary)" />
+                </button>
+              );
+            })()}
             <button className="aura-btn aura-btn-tonal" onClick={() => { if (confirm(`Remove ${menuFor.displayName}?`)) void act(() => social.remove(menuFor.code), `Removed ${menuFor.displayName}.`); setMenuFor(null); }}>Remove friend</button>
             <button className="aura-btn aura-btn-tonal" style={{ color: 'var(--aura-error)' }} onClick={() => { if (confirm(`Block ${menuFor.displayName}? They won't be told.`)) void act(() => social.block(menuFor.code), `Blocked ${menuFor.displayName}.`); setMenuFor(null); }}>Block</button>
           </div>
