@@ -48,6 +48,9 @@ object AppGraph {
     /** Friends, presence and shares (social M2). Created on first use. */
     val social by lazy { com.moodify.app.data.social.SocialRepository(app, playbackManager.state, playbackManager::currentPositionMs) }
 
+    /** New versions from GitHub Releases (Moodify isn't in a store). */
+    val updates by lazy { com.moodify.app.data.AppUpdates(app) }
+
     /** Listen together (social M4): one room at a time. */
     val rooms by lazy {
         com.moodify.app.data.social.RoomController(

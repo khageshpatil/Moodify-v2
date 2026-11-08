@@ -12,6 +12,8 @@
 
     <!-- POST_NOTIFICATIONS required on Android 13+ to show the playback notification -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Installing a downloaded Moodify update (Android asks you first). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".MoodifyApplication"
@@ -71,6 +73,17 @@
             playback and provides the system media notification automatically.
             foregroundServiceType="mediaPlayback" is required on Android 10+.
         -->
+        <!-- Hands a downloaded update to Android's installer (data/AppUpdates.kt). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
+
         <!-- Wake-up pings (chat.md §3): no content, the app fetches and decrypts itself. -->
         <service
             android:name=".data.social.MoodifyMessagingService"

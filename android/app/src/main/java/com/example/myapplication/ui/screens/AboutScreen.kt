@@ -51,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -335,7 +336,34 @@ fun SettingsScreen(
         item(key = "about") {
             SettingsGroup("About") {
                 InfoRow("Version", BuildConfig.VERSION_NAME)
-                LinkRow("Get the latest Android build") {
+                val updates = com.moodify.app.AppGraph.updates
+                val updateState by updates.state.collectAsStateWithLifecycle()
+                ActionRow(
+                    "Updates",
+                    value = when (val u = updateState) {
+                        com.moodify.app.data.UpdateState.Checking -> "Checking…"
+                        com.moodify.app.data.UpdateState.UpToDate -> "You have the latest version"
+                        is com.moodify.app.data.UpdateState.Available -> "${u.release.versionName} is available"
+                        is com.moodify.app.data.UpdateState.Downloading -> "Downloading ${u.release.versionName}…"
+                        is com.moodify.app.data.UpdateState.ReadyToInstall -> "${u.release.versionName} is ready to install"
+                        is com.moodify.app.data.UpdateState.Failed -> u.message
+                        com.moodify.app.data.UpdateState.Idle -> "Checked automatically once a day"
+                    },
+                    actionLabel = when (updateState) {
+                        is com.moodify.app.data.UpdateState.Available -> "Update"
+                        is com.moodify.app.data.UpdateState.ReadyToInstall -> "Install"
+                        else -> "Check"
+                    },
+                    enabled = updateState !is com.moodify.app.data.UpdateState.Checking && updateState !is com.moodify.app.data.UpdateState.Downloading,
+                    onClick = {
+                        when (val u = updateState) {
+                            is com.moodify.app.data.UpdateState.Available -> updates.download(u.release)
+                            is com.moodify.app.data.UpdateState.ReadyToInstall -> updates.install()
+                            else -> updates.check(force = true)
+                        }
+                    },
+                )
+                LinkRow("All versions on GitHub") {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(APK_DOWNLOAD_URL)))
                 }
                 LinkRow("Open-source notices") { showNotices = true }
