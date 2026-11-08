@@ -158,7 +158,7 @@ fun FriendProfileSheet(
     onFollow: () -> Unit,
     onListenTogether: () -> Unit,
     onSendNowPlaying: () -> Unit,
-    onMore: () -> Unit,
+    onMore: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -204,8 +204,8 @@ fun FriendProfileSheet(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     ProfileAction(Icons.AutoMirrored.Rounded.Chat, "Message", enabled = true, onMessage)
                     ProfileAction(Icons.Rounded.Sensors, "Follow", enabled = live != null, onFollow)
-                    ProfileAction(Icons.Rounded.Headphones, "Listen\ntogether", enabled = true, onListenTogether)
-                    ProfileAction(Icons.Rounded.MusicNote, "Send what\nI'm playing", enabled = nowPlayingTitle != null, onSendNowPlaying)
+                    ProfileAction(Icons.Rounded.Headphones, "Listen", enabled = true, onListenTogether)
+                    ProfileAction(Icons.Rounded.MusicNote, "Send song", enabled = nowPlayingTitle != null, onSendNowPlaying)
                 }
                 if (live == null) {
                     Text(
@@ -216,9 +216,11 @@ fun FriendProfileSheet(
                     )
                 }
             }
-            Spacer(Modifier.height(Spacing.md))
-            TextButton(onClick = onMore, modifier = Modifier.fillMaxWidth()) {
-                Text(if (isFriend) "Remove, block or report" else "Block or report", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (onMore != null) {
+                Spacer(Modifier.height(Spacing.md))
+                TextButton(onClick = onMore, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (isFriend) "Remove, block or report" else "Block or report", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }

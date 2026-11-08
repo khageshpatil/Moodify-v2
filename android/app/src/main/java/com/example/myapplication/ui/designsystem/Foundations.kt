@@ -236,3 +236,16 @@ fun ScrollToTopEffect(key: Int, state: androidx.compose.foundation.lazy.LazyList
         state.animateScrollToItem(0)
     }
 }
+
+/**
+ * Lets text grow with the system font size, but only up to [max]. For the
+ * few fixed-height places (the nav bar) and codes that must stay on one line.
+ */
+@androidx.compose.runtime.Composable
+fun FontScaleCap(max: Float = 1.3f, content: @androidx.compose.runtime.Composable () -> Unit) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, density.fontScale.coerceAtMost(max)),
+        content = content,
+    )
+}

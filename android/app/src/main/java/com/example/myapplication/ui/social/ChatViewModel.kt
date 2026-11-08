@@ -51,6 +51,7 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     fun send(text: String) = withFriend { social.sendText(it, text) }
     fun shareTrack(track: Track) = withFriend { social.sendTrack(it, track) }
+    fun sendPlaylist(name: String, tracks: List<Track>) = withFriend { social.sendPlaylist(it, name, tracks) }
     fun retry(mid: String) = run { social.retry(mid) }
     fun react(mid: String, emoji: String) = withFriend { social.react(it, mid, emoji) }
 

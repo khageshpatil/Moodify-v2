@@ -1,4 +1,4 @@
-import { Check, Copy, Link2, MessageCircle, MoreVertical, Play, QrCode, Share2, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
+import { Check, Copy, Link2, MoreVertical, Play, QrCode, Share2, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
 import type { Track } from '@/data/mockMusic';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
@@ -253,34 +253,11 @@ export function FriendsScreen() {
           {social.lists.incoming.map((u) => (
             <div key={u.code} className="aura-track">
               <Avatar user={u} />
-              <div className="aura-track-text"><div className="type-title-medium">{u.displayName}</div><div className="type-body-small aura-muted">{u.note || u.code}</div></div>
+              <div className="aura-track-text"><div className="type-title-medium">{u.displayName}</div><div className="type-body-small aura-muted">{u.note ? `${u.note} · ${u.code}` : u.code}</div></div>
               <button className="aura-btn-text" onClick={() => act(() => social.answer(u.code, false))}>Ignore</button>
               <button className="aura-btn aura-btn-primary" style={{ height: 40 }} onClick={() => act(() => social.answer(u.code, true), `You and ${u.displayName} are now friends.`)}>Accept</button>
             </div>
           ))}
-        </section>
-      )}
-
-      {social.conversations.length > 0 && (
-        <section className="aura-section">
-          <SectionHeader title="Messages" />
-          {social.conversations.slice(0, 20).map(({ peer, last, unread }) => {
-            const friend = social.lists.friends.find((f) => f.code === peer);
-            const who = { code: peer, displayName: friend?.displayName ?? peer };
-            return (
-              <Link key={peer} to={`/chat/${peer}`} className="aura-track">
-                <Avatar user={who} online={!!social.presence[peer]?.online} />
-                <span className="aura-track-text">
-                  <span className="type-title-medium aura-ellipsis" style={{ display: 'block', fontWeight: unread ? 700 : undefined }}>{who.displayName}</span>
-                  <span className="type-body-small aura-ellipsis" style={{ display: 'block', color: unread ? 'var(--aura-on-background)' : 'var(--aura-muted)' }}>{last.fromMe ? 'You: ' : ''}{preview(last)}</span>
-                </span>
-                <span style={{ display: 'grid', justifyItems: 'end', gap: 4 }}>
-                  <span className="type-label-small aura-muted">{timeAgo(last.sentAt)}</span>
-                  {unread > 0 && <span className="aura-badge">{unread}</span>}
-                </span>
-              </Link>
-            );
-          })}
         </section>
       )}
 
@@ -308,17 +285,55 @@ export function FriendsScreen() {
       )}
 
       <section className="aura-section">
-        <SectionHeader title={social.lists.friends.length ? `Your friends · ${social.lists.friends.length}` : 'Your friends'} />
+        <SectionHeader title={social.lists.friends.length ? `Friends · ${social.lists.friends.length}` : 'Friends'} />
         {social.lists.friends.length === 0 && social.lists.outgoing.length === 0 && <div className="aura-muted">Add a friend with their Moodify code, or share yours.</div>}
-        {[...social.lists.friends.map((f) => ({ f, waiting: false })), ...social.lists.outgoing.map((f) => ({ f, waiting: true }))].map(({ f, waiting }) => (
+        {(() => {
+          // One list: friends you've talked to first (newest chat on top), then the rest.
+          const chats = new Map(social.conversations.map((c) => [c.peer, c]));
+          const sameNames = new Set(Object.entries(social.lists.friends.reduce<Record<string, number>>((n, f) => {
+            const k = f.displayName.trim().toLowerCase(); n[k] = (n[k] ?? 0) + 1; return n;
+          }, {})).filter(([, n]) => n > 1).map(([k]) => k));
+          const ordered = [...social.lists.friends].sort((a, b) => (chats.get(b.code)?.last.sentAt ?? 0) - (chats.get(a.code)?.last.sentAt ?? 0) || a.displayName.localeCompare(b.displayName));
+          return ordered.map((f) => {
+            const chat = chats.get(f.code);
+            const unread = chat?.unread ?? 0;
+            const p = social.presence[f.code];
+            const listeningNow = !!(p?.online && p.playing && p.track);
+            const subtitle = chat && (unread > 0 || !listeningNow) ? `${chat.last.fromMe ? 'You: ' : ''}${preview(chat.last)}` : status(f);
+            return (
+              <div key={f.code} className="aura-track">
+                <button className="aura-row" style={{ flex: 1, minWidth: 0, textAlign: 'left' }} onClick={() => navigate(`/chat/${f.code}`)}>
+                  <Avatar user={f} online={!!p?.online} />
+                  <span className="aura-track-text">
+                    <span className="type-title-medium aura-ellipsis" style={{ display: 'block', fontWeight: unread ? 700 : undefined }}>
+                      {f.displayName}{sameNames.has(f.displayName.trim().toLowerCase()) && <span className="type-label-medium aura-mono aura-muted"> · {f.code.slice(-4)}</span>}
+                    </span>
+                    <span className="type-body-small aura-ellipsis" style={{ display: 'block', color: unread ? 'var(--aura-on-background)' : 'var(--aura-muted)', fontWeight: unread ? 600 : undefined }}>{subtitle}</span>
+                  </span>
+                  {chat && (
+                    <span style={{ display: 'grid', justifyItems: 'end', gap: 4 }}>
+                      <span className="type-label-small aura-muted">{timeAgo(chat.last.sentAt)}</span>
+                      {unread > 0 && <span className="aura-badge">{unread}</span>}
+                    </span>
+                  )}
+                </button>
+                <button className="aura-icon-btn" aria-label={`Options for ${f.displayName}`} onClick={() => setMenuFor(f)}><MoreVertical size={20} /></button>
+              </div>
+            );
+          });
+        })()}
+        {social.lists.outgoing.map((f) => (
           <div key={f.code} className="aura-track">
-            <button className="aura-row" style={{ flex: 1, minWidth: 0, textAlign: 'left' }} disabled={waiting} onClick={() => navigate(`/chat/${f.code}`)}>
-              <Avatar user={f} online={!!social.presence[f.code]?.online} />
-              <span className="aura-track-text"><span className="type-title-medium" style={{ display: 'block' }}>{f.displayName}</span><span className="type-body-small aura-muted aura-ellipsis" style={{ display: 'block' }}>{waiting ? 'Request sent' : status(f)}</span></span>
-            </button>
-            {!waiting && <button className="aura-icon-btn" aria-label={`Message ${f.displayName}`} onClick={() => navigate(`/chat/${f.code}`)}><MessageCircle size={20} /></button>}
+            <Avatar user={f} />
+            <span className="aura-track-text"><span className="type-title-medium" style={{ display: 'block' }}>{f.displayName}</span><span className="type-body-small aura-muted" style={{ display: 'block' }}>Request sent · waiting for them</span></span>
             <button className="aura-icon-btn" aria-label={`Options for ${f.displayName}`} onClick={() => setMenuFor(f)}><MoreVertical size={20} /></button>
           </div>
+        ))}
+        {social.conversations.filter((c) => !social.lists.friends.some((f) => f.code === c.peer)).map((c) => (
+          <Link key={c.peer} to={`/chat/${c.peer}`} className="aura-track">
+            <Avatar user={{ code: c.peer, displayName: '?' }} />
+            <span className="aura-track-text"><span className="type-title-medium" style={{ display: 'block' }}>Former friend · {c.peer.slice(-4)}</span><span className="type-body-small aura-muted aura-ellipsis" style={{ display: 'block' }}>{preview(c.last)}</span></span>
+          </Link>
         ))}
       </section>
 
