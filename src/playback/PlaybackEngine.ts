@@ -5,6 +5,7 @@ import type {
   PlaybackStatus,
   PlaybackTrack,
 } from './playbackTypes';
+import { HybridPlaybackEngine } from './HybridPlaybackEngine';
 
 const initialSnapshot: PlaybackSnapshot = {
   status: 'idle',
@@ -36,7 +37,7 @@ export class PlaybackEngine {
     this.audio = document.createElement('audio');
     this.audio.preload = 'auto';
     this.audio.crossOrigin = 'anonymous';
-    if (import.meta.env?.DEV) (window as Window & { __moodifyPlaybackEngine?: PlaybackEngine }).__moodifyPlaybackEngine = this;
+    if (import.meta.env?.DEV) (window as Window & { __moodifyRelayEngine?: PlaybackEngine }).__moodifyRelayEngine = this;
     this.audio.addEventListener('loadedmetadata', this.handleLoadedMetadata);
     this.audio.addEventListener('canplay', this.handleCanPlay);
     this.audio.addEventListener('playing', this.handlePlaying);
@@ -196,14 +197,12 @@ export class PlaybackEngine {
   };
 }
 
-// YouTubePlaybackEngine is kept for reference but the canonical engine now uses
-// HTMLAudioElement + the backend relay for full Range/seek support.
-// import { YouTubePlaybackEngine } from './YouTubePlaybackEngine';
-
-let canonicalEngine: PlaybackEngine | null = null;
+// The app plays through the hybrid engine: YouTube's embedded player first, this
+// relay engine for songs that can't be embedded (see HybridPlaybackEngine.ts).
+let canonicalEngine: HybridPlaybackEngine | null = null;
 export const getCanonicalPlaybackEngine = (resolveSource?: PlaybackSourceResolver) => {
   if (!canonicalEngine) {
-    canonicalEngine = new PlaybackEngine(resolveSource);
+    canonicalEngine = new HybridPlaybackEngine(resolveSource);
   } else if (resolveSource) {
     canonicalEngine.setSourceResolver(resolveSource);
   }
@@ -211,4 +210,3 @@ export const getCanonicalPlaybackEngine = (resolveSource?: PlaybackSourceResolve
 };
 
 export const resetCanonicalPlaybackEngine = () => { canonicalEngine?.destroy(); canonicalEngine = null; };
-

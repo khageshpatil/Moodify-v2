@@ -445,7 +445,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     const p = playerRef.current;
     const t = p.currentTrack;
     const id = t?.providerId || t?.id;
-    const audio = getCanonicalPlaybackEngine().getAudioElement();
+    const audio = getCanonicalPlaybackEngine().getMedia();
     const body = t && id ? {
       trackId: id, title: t.title, artist: t.artist, artworkUrl: t.albumArt, durationMs: Math.round((t.duration || p.duration || 0) * 1000),
       positionMs: Math.round(audio.currentTime * 1000), playing: p.isPlaying, ...(seek ? { seek: true } : {}),
@@ -454,7 +454,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => { publishPresence(); }, [track?.id, player.isPlaying, connected, publishPresence]);
   useEffect(() => {
-    const audio = getCanonicalPlaybackEngine().getAudioElement();
+    const audio = getCanonicalPlaybackEngine().getMedia();
     const onSeeked = () => publishPresence(true);
     audio.addEventListener('seeked', onSeeked);
     const tick = setInterval(() => { if (playerRef.current.isPlaying) publishPresence(); }, 15_000);

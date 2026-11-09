@@ -1,4 +1,4 @@
-import { Clock, Heart, Library as LibraryIcon, ListMusic, Play, SearchX, Settings, Shuffle, X } from 'lucide-react';
+import { ArrowLeft, Clock, Heart, Library as LibraryIcon, ListMusic, Pencil, Play, RotateCw, Search as SearchIcon, SearchX, Send, Settings, Shuffle, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { Track } from '@/data/mockMusic';
@@ -10,6 +10,7 @@ import { MOODS, greeting, moodById } from './moods';
 import { usePlayer } from './PlayerContext';
 import { Artwork, EmptyState, MediaCard, SectionHeader, SkeletonRows, TrackRow, browsePath } from './ui';
 import { SendPlaylistDialog } from './social/SocialScreens';
+import { TextDialog, type TrackMenuExtra } from './TrackMenu';
 
 const NON_MUSIC = new Set(['video', 'podcast']);
 const musicOnly = (section: DiscoveryCatalogSection): DiscoveryCatalogSection => ({
@@ -19,18 +20,39 @@ const musicOnly = (section: DiscoveryCatalogSection): DiscoveryCatalogSection =>
 
 /** Loads a collection; cancels when the inputs change or the screen unmounts. */
 function useCollection(load: ((signal: AbortSignal) => Promise<DiscoveryCollectionResult>) | null, deps: unknown[]) {
-  const [state, setState] = useState<{ data: DiscoveryCollectionResult | null; error: string | null; loading: boolean }>({ data: null, error: null, loading: !!load });
+  const [state, setState] = useState<{ data: DiscoveryCollectionResult | null; error: string | null; loading: boolean; slow: boolean }>({ data: null, error: null, loading: !!load, slow: false });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (!load) { setState({ data: null, error: null, loading: false }); return; }
+    if (!load) { setState({ data: null, error: null, loading: false, slow: false }); return; }
     const controller = new AbortController();
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState((s) => ({ ...s, loading: true, error: null, slow: false }));
+    // The free music server sleeps when idle; say so instead of looking stuck.
+    const slowTimer = setTimeout(() => setState((s) => (s.loading ? { ...s, slow: true } : s)), 5000);
     load(controller.signal)
-      .then((data) => setState({ data, error: null, loading: false }))
-      .catch((err: unknown) => { if (!controller.signal.aborted) setState({ data: null, error: err instanceof Error ? err.message : 'Something went wrong', loading: false }); });
-    return () => controller.abort();
+      .then((data) => setState({ data, error: null, loading: false, slow: false }))
+      .catch((err: unknown) => { if (!controller.signal.aborted) setState({ data: null, error: err instanceof Error ? err.message : 'Something went wrong', loading: false, slow: false }); })
+      .finally(() => clearTimeout(slowTimer));
+    return () => { controller.abort(); clearTimeout(slowTimer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  return state;
+  }, [...deps, attempt]);
+  return { ...state, retry: () => setAttempt((n) => n + 1) };
+}
+
+/** Skeletons, a "waking up" note when it's slow, or an error with Retry. */
+function LoadState({ state, rows = 6, what }: { state: { loading: boolean; slow: boolean; error: string | null; retry: () => void }; rows?: number; what: string }) {
+  if (state.loading) {
+    return (
+      <div className="aura-section">
+        {state.slow && <div className="aura-banner" style={{ marginBottom: 16 }}>Waking up the music server… the first load after a quiet spell can take up to a minute.</div>}
+        <SkeletonRows count={rows} />
+      </div>
+    );
+  }
+  if (!state.error) return null;
+  return (
+    <EmptyState icon={<SearchX />} title={`Couldn't load ${what}`} message="The music server didn't answer. Check your connection and try again."
+      action={<button className="aura-btn aura-btn-primary" onClick={state.retry}><RotateCw size={18} />Try again</button>} />
+  );
 }
 
 function Sections({ sections, featureFirst = false }: { sections: DiscoveryCatalogSection[]; featureFirst?: boolean }) {
@@ -44,7 +66,7 @@ function Sections({ sections, featureFirst = false }: { sections: DiscoveryCatal
           <section key={`${section.id}:${section.title}`} className="aura-section">
             <SectionHeader title={section.title} />
             {isList ? (
-              <div className="aura-picks">{tracks.slice(0, 12).map((track) => <TrackRow key={track.id} track={track} queue={tracks} />)}</div>
+              <div className="aura-picks">{tracks.slice(0, 12).map((track) => <TrackRow key={track.id} track={track} queue={tracks} compact />)}</div>
             ) : (
               <div className={`aura-shelf ${section.id === featuredId ? 'aura-shelf-wide' : ''}`}>
                 {section.items.map((item) => <MediaCard key={`${item.type}:${item.id}`} item={item} queue={tracks} wide={section.id === featuredId} />)}
@@ -86,13 +108,10 @@ export function HomeScreen() {
       {keepListening.length > 0 && (
         <section className="aura-section">
           <SectionHeader title="Keep listening" />
-          <div className="aura-picks">{keepListening.map((track) => <TrackRow key={track.id} track={track} queue={keepListening} />)}</div>
+          <div className="aura-picks">{keepListening.map((track) => <TrackRow key={track.id} track={track} queue={keepListening} compact />)}</div>
         </section>
       )}
-      {home.loading && <div className="aura-section"><SkeletonRows /></div>}
-      {home.error && !home.loading && (
-        <EmptyState icon={<SearchX />} title="Couldn't load Home" message="Check that the Moodify music server is running, then try again." />
-      )}
+      <LoadState state={home} what="Home" />
       <Sections sections={sections} featureFirst />
     </div>
   );
@@ -140,14 +159,17 @@ export function SearchScreen() {
     <div className="aura-page">
       <div className="aura-glow" />
       <h1 className="type-display-small" style={{ margin: '0 0 var(--space-md)' }}>Search</h1>
-      <form role="search" onSubmit={(e) => { e.preventDefault(); submit(text, filter); }} style={{ position: 'relative' }}>
-        <input ref={inputRef} className="aura-input" type="search" value={text} placeholder="Songs, artists, or a feeling…" aria-label="Search"
+      <form role="search" onSubmit={(e) => { e.preventDefault(); submit(text, filter); }} style={{ position: 'relative', zIndex: 20 }}>
+        <SearchIcon size={20} className="aura-input-icon" aria-hidden />
+        <input ref={inputRef} className="aura-input aura-input-search" type="search" value={text} placeholder="Songs, artists, or a feeling…" aria-label="Search"
           onChange={(e) => setText(e.target.value)} onFocus={(e) => { setFocused(true); e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length); }}
           onBlur={() => setTimeout(() => setFocused(false), 150)} />
         {focused && suggestions.length > 0 && (
-          <div className="aura-card" style={{ position: 'absolute', zIndex: 5, top: 62, left: 0, right: 0, padding: 6 }} role="listbox">
+          <div className="aura-suggest" role="listbox" aria-label="Suggestions">
             {suggestions.slice(0, 8).map((s) => (
-              <button key={s} role="option" aria-selected={false} className="aura-track" style={{ minHeight: 44 }} onMouseDown={(e) => e.preventDefault()} onClick={() => submit(s)}>{s}</button>
+              <button key={s} type="button" role="option" aria-selected={false} className="aura-suggest-item" onMouseDown={(e) => e.preventDefault()} onClick={() => submit(s)}>
+                <SearchIcon size={16} aria-hidden /><span className="aura-ellipsis">{s}</span>
+              </button>
             ))}
           </div>
         )}
@@ -159,7 +181,7 @@ export function SearchScreen() {
             <section className="aura-section">
               <SectionHeader title="Recent" action={<button className="aura-btn-text" onClick={() => { setRecent([]); localStorage.removeItem('aura.recent'); }}>Clear</button>} />
               <div className="aura-chips" style={{ flexWrap: 'wrap' }}>
-                {recent.map((r) => <button key={r} className="aura-chip" onClick={() => submit(r)}><Clock size={14} style={{ marginRight: 6, verticalAlign: -2 }} />{r}</button>)}
+                {recent.map((r) => <button key={r} className="aura-chip" onClick={() => submit(r)}><Clock size={14} />{r}</button>)}
               </div>
             </section>
           )}
@@ -184,33 +206,29 @@ export function SearchScreen() {
             ))}
           </div>
           <div style={{ marginTop: 'var(--space-lg)' }}>
-            {results.loading && <SkeletonRows count={8} />}
-            {!results.loading && results.error && <EmptyState icon={<SearchX />} title="Search failed" message={results.error} />}
+            <LoadState state={results} rows={8} what="results" />
             {!results.loading && !results.error && tracks.length === 0 && browseItems.length === 0 && (
               <EmptyState icon={<SearchX />} title={filter === 'all' ? 'No matches' : `No ${FILTERS.find(([id]) => id === filter)?.[1].toLowerCase()} for “${submitted}”`} message="Try another spelling, or All." />
             )}
             {!results.loading && (filter === 'all' || filter === 'song') && tracks.length > 0 && (
               <section>
-                {filter === 'all' && <SectionHeader title="Songs" />}
-                {tracks.map((track) => <TrackRow key={track.id} track={track} queue={tracks} />)}
+                {filter === 'all' && <SectionHeader title="Songs" action={tracks.length > 6 ? <button className="aura-btn-text" onClick={() => setParams({ q: submitted, type: 'song' })}>See all</button> : undefined} />}
+                {(filter === 'all' ? tracks.slice(0, 6) : tracks).map((track) => <TrackRow key={track.id} track={track} queue={tracks} />)}
               </section>
             )}
-            {!results.loading && browseItems.length > 0 && filter !== 'song' && (
-              <section className={filter === 'all' ? 'aura-section' : ''}>
-                {browseItems.map((item) => {
-                  const path = browsePath(item);
-                  return path && (
-                    <Link key={`${item.type}:${item.id}`} to={path} className="aura-track">
-                      <Artwork src={item.artworkUrl} size={52} round={item.type === 'artist'} placeholder={item.id} />
-                      <span className="aura-track-text">
-                        <span className="type-title-small aura-ellipsis" style={{ display: 'block' }}>{item.title}</span>
-                        <span className="type-body-small aura-muted" style={{ display: 'block', textTransform: 'capitalize' }}>{item.type}</span>
-                      </span>
-                    </Link>
-                  );
-                })}
-              </section>
-            )}
+            {!results.loading && filter !== 'song' && (['artist', 'album', 'playlist'] as const).map((type) => {
+              const items = browseItems.filter((item) => item.type === type && browsePath(item));
+              if (!items.length) return null;
+              const title = { artist: 'Artists', album: 'Albums', playlist: 'Playlists' }[type];
+              return (
+                <section key={type} className="aura-section">
+                  {filter === 'all' && <SectionHeader title={title} />}
+                  <div className={filter === 'all' ? 'aura-shelf' : 'aura-grid'}>
+                    {items.map((item) => <MediaCard key={`${item.type}:${item.id}`} item={item} queue={[]} />)}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </>
       )}
@@ -239,7 +257,7 @@ export function BrowseScreen() {
   return (
     <div className="aura-page">
       <div className="aura-glow" />
-      <button className="aura-icon-btn" aria-label="Back" onClick={() => navigate(-1)}>←</button>
+      <button className="aura-icon-btn" aria-label="Back" onClick={() => navigate(-1)}><ArrowLeft size={22} /></button>
       <div style={{ display: 'grid', justifyItems: 'center', gap: 12, textAlign: 'center', marginTop: 8 }}>
         <Artwork src={hero} size={232} radius="var(--radius-lg)" round={kind === 'artist'} placeholder={id} />
         <div className="type-label-small" style={{ color: 'var(--aura-primary)', textTransform: 'uppercase' }}>{kind}</div>
@@ -251,8 +269,7 @@ export function BrowseScreen() {
           </div>
         )}
       </div>
-      {page.loading && <div className="aura-section"><SkeletonRows /></div>}
-      {page.error && <EmptyState icon={<SearchX />} title="Couldn't open this page" message={page.error} />}
+      <LoadState state={page} what="this page" />
       {listSection && (
         <section className="aura-section">
           {sections.length > 1 && <SectionHeader title={listSection.title || 'Songs'} />}
@@ -274,7 +291,12 @@ export function MoodScreen() {
   useEffect(() => {
     const controller = new AbortController();
     setState({ tracks: [], loading: true });
-    searchMoodifyTracks(mood.query, 30, controller.signal)
+    fetchDiscoverySearch(mood.query, undefined, controller.signal, 'song')
+      .then((result) => {
+        const all = (result.catalog?.sections ?? []).flatMap((section) => section.items.flatMap((item) => (item.track ? [item.track] : [])));
+        const songs = [...new Map(all.map((t) => [t.id, t])).values()].filter((t) => !t.duration || t.duration < 12 * 60);
+        return songs.length ? songs : searchMoodifyTracks(mood.query, 30, controller.signal);
+      })
       .then((tracks) => setState({ tracks, loading: false }))
       .catch(() => { if (!controller.signal.aborted) setState({ tracks: [], loading: false }); });
     return () => controller.abort();
@@ -303,24 +325,29 @@ export function MoodScreen() {
 export function LibraryScreen() {
   const player = usePlayer();
   const [view, setView] = useState<'liked' | 'recent' | string>('liked');
-  const [sending, setSending] = useState(false);
+  const [dialog, setDialog] = useState<'new' | 'rename' | 'send' | null>(null);
   const playlist = player.playlists.find((p) => p.id === view);
   const tracks = view === 'liked' ? player.favorites : view === 'recent' ? player.recentlyPlayed : playlist?.tracks ?? [];
+  const title = view === 'liked' ? 'Liked songs' : view === 'recent' ? 'Recently played' : playlist?.name ?? '';
   const tiles = [
     { id: 'liked', title: 'Liked songs', count: player.favorites.length, icon: <Heart size={22} />, hue: 'var(--mood-violet)' },
     { id: 'recent', title: 'Recently played', count: player.recentlyPlayed.length, icon: <Clock size={22} />, hue: 'var(--mood-amber)' },
   ];
+  const extrasFor = (track: Track): TrackMenuExtra[] => (playlist
+    ? [{ label: 'Remove from this playlist', danger: true, run: () => player.removeFromPlaylist(playlist.id, track.id) }]
+    : []);
+  const shuffled = () => { const s = [...tracks].sort(() => Math.random() - 0.5); player.playTrack(s[0], s); };
   return (
     <div className="aura-page">
       <div className="aura-glow" />
-      <div className="aura-row">
+      <div className="aura-row" style={{ flexWrap: 'wrap' }}>
         <h1 className="type-display-small" style={{ margin: 0, flex: 1 }}>Your library</h1>
-        <button className="aura-btn aura-btn-tonal" onClick={() => { const name = prompt('Playlist name'); if (name?.trim()) player.createPlaylist(name.trim()); }}>New playlist</button>
+        <button className="aura-btn aura-btn-tonal" onClick={() => setDialog('new')}><ListMusic size={18} />New playlist</button>
       </div>
-      <div className="aura-tiles" style={{ marginTop: 'var(--space-lg)', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+      <div className="aura-tiles" style={{ marginTop: 'var(--space-lg)', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
         {tiles.map((tile) => (
-          <button key={tile.id} className="aura-card" aria-pressed={view === tile.id}
-            style={{ textAlign: 'left', background: `linear-gradient(135deg, color-mix(in srgb, ${tile.hue} 30%, var(--aura-surface-high)), color-mix(in srgb, ${tile.hue} 10%, var(--aura-surface-high)))`, outline: view === tile.id ? '2px solid var(--aura-primary)' : 'none' }}
+          <button key={tile.id} className="aura-card aura-lib-tile" aria-pressed={view === tile.id}
+            style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${tile.hue} 30%, var(--aura-surface-high)), color-mix(in srgb, ${tile.hue} 10%, var(--aura-surface-high)))` }}
             onClick={() => setView(tile.id)}>
             <span style={{ color: tile.hue }}>{tile.icon}</span>
             <div className="type-title-medium" style={{ marginTop: 8 }}>{tile.title}</div>
@@ -328,27 +355,35 @@ export function LibraryScreen() {
           </button>
         ))}
         {player.playlists.map((p) => (
-          <button key={p.id} className="aura-card" style={{ textAlign: 'left', outline: view === p.id ? '2px solid var(--aura-primary)' : 'none' }} onClick={() => setView(p.id)}>
-            <ListMusic size={22} color="var(--aura-primary)" />
+          <button key={p.id} className="aura-card aura-lib-tile" aria-pressed={view === p.id} onClick={() => setView(p.id)}>
+            {p.tracks[0]?.albumArt ? <Artwork src={p.tracks[0].albumArt} size={40} placeholder={p.id} /> : <ListMusic size={22} color="var(--aura-primary)" />}
             <div className="type-title-medium aura-ellipsis" style={{ marginTop: 8 }}>{p.name}</div>
             <div className="type-body-small aura-muted">{p.tracks.length === 1 ? '1 song' : `${p.tracks.length} songs`}</div>
           </button>
         ))}
       </div>
       <section className="aura-section">
+        <div className="aura-row" style={{ flexWrap: 'wrap', marginBottom: 'var(--space-md)' }}>
+          <h2 className="type-title-large" style={{ margin: 0, flex: 1, minWidth: 160 }}>{title}</h2>
+          {tracks.length > 0 && <button className="aura-btn aura-btn-primary" onClick={() => player.playTrack(tracks[0], tracks)}><Play size={18} fill="currentColor" />Play</button>}
+          {tracks.length > 1 && <button className="aura-btn aura-btn-tonal" onClick={shuffled}><Shuffle size={18} />Shuffle</button>}
+          {playlist && (
+            <>
+              {playlist.tracks.length > 0 && <button className="aura-icon-btn" aria-label="Send to a friend" title="Send to a friend" onClick={() => setDialog('send')}><Send size={20} /></button>}
+              <button className="aura-icon-btn" aria-label="Rename playlist" title="Rename" onClick={() => setDialog('rename')}><Pencil size={20} /></button>
+              <button className="aura-icon-btn" aria-label="Delete playlist" title="Delete" style={{ color: 'var(--aura-error)' }}
+                onClick={() => { if (confirm(`Delete "${playlist.name}"?`)) { player.deletePlaylist(playlist.id); setView('liked'); } }}><Trash2 size={20} /></button>
+            </>
+          )}
+        </div>
         {tracks.length === 0 ? (
-          <EmptyState icon={<LibraryIcon />} title="Nothing here yet" message="Like songs with the heart, and they'll collect here." />
-        ) : tracks.map((track) => <TrackRow key={track.id} track={track} queue={tracks} />)}
-        {playlist && (
-          <div className="aura-row" style={{ marginTop: 12, gap: 16 }}>
-            {playlist.tracks.length > 0 && <button className="aura-btn aura-btn-tonal" onClick={() => setSending(true)}>Send to a friend</button>}
-            <button className="aura-btn-text" style={{ color: 'var(--aura-error)' }} onClick={() => { player.deletePlaylist(playlist.id); setView('liked'); }}>
-              <X size={14} /> Delete playlist
-            </button>
-          </div>
-        )}
-        {playlist && sending && <SendPlaylistDialog name={playlist.name} tracks={playlist.tracks} onClose={() => setSending(false)} />}
+          <EmptyState icon={<LibraryIcon />} title="Nothing here yet"
+            message={playlist ? 'Add songs with ⋮ › Add to playlist on any song.' : view === 'liked' ? "Like songs with the heart, and they'll collect here." : 'Songs you play show up here.'} />
+        ) : tracks.map((track) => <TrackRow key={track.id} track={track} queue={tracks} menuExtras={extrasFor(track)} />)}
       </section>
+      {dialog === 'new' && <TextDialog title="New playlist" label="Playlist name" confirm="Create" onClose={() => setDialog(null)} onSubmit={(name) => { player.createPlaylist(name); setDialog(null); }} />}
+      {dialog === 'rename' && playlist && <TextDialog title="Rename playlist" label="Playlist name" initial={playlist.name} confirm="Save" onClose={() => setDialog(null)} onSubmit={(name) => { player.renamePlaylist(playlist.id, name); setDialog(null); }} />}
+      {dialog === 'send' && playlist && <SendPlaylistDialog name={playlist.name} tracks={playlist.tracks} onClose={() => setDialog(null)} />}
     </div>
   );
 }
