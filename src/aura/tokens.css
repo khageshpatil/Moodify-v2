@@ -1,30 +1,8 @@
 /* Generated from design-tokens/moodify.tokens.json by scripts/build-tokens.mjs. Do not edit. */
 
 :root,
-:root[data-theme="dark"] {
-  --aura-background: #0B0B0F;
-  --aura-surface: #111116;
-  --aura-surface-low: #15151B;
-  --aura-surface-container: #1A1A21;
-  --aura-surface-high: #22222A;
-  --aura-surface-highest: #2B2B35;
-  --aura-outline: #3A3A46;
-  --aura-outline-variant: #26262F;
-  --aura-on-background: #F4F3F8;
-  --aura-on-surface-variant: #A9A8B6;
-  --aura-muted: #6E6D7B;
-  --aura-primary: #B79CFF;
-  --aura-on-primary: #1C0B4A;
-  --aura-primary-container: #3A2A73;
-  --aura-on-primary-container: #E6DCFF;
-  --aura-secondary: #FFB38A;
-  --aura-on-secondary: #3B1A06;
-  --aura-secondary-container: #2E2650;
-  --aura-on-secondary-container: #E6DCFF;
-  --aura-tertiary: #7FE0C8;
-  --aura-on-tertiary: #00382D;
-  --aura-error: #FF8A8A;
-  --aura-on-error: #4A0707;
+:root[data-theme],
+.aura {
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 16px;
@@ -53,6 +31,33 @@
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root,
+:root[data-theme="dark"] {
+  --aura-background: #0B0B0F;
+  --aura-surface: #111116;
+  --aura-surface-low: #15151B;
+  --aura-surface-container: #1A1A21;
+  --aura-surface-high: #22222A;
+  --aura-surface-highest: #2B2B35;
+  --aura-outline: #3A3A46;
+  --aura-outline-variant: #26262F;
+  --aura-on-background: #F4F3F8;
+  --aura-on-surface-variant: #A9A8B6;
+  --aura-muted: #6E6D7B;
+  --aura-primary: #B79CFF;
+  --aura-on-primary: #1C0B4A;
+  --aura-primary-container: #3A2A73;
+  --aura-on-primary-container: #E6DCFF;
+  --aura-secondary: #FFB38A;
+  --aura-on-secondary: #3B1A06;
+  --aura-secondary-container: #2E2650;
+  --aura-on-secondary-container: #E6DCFF;
+  --aura-tertiary: #7FE0C8;
+  --aura-on-tertiary: #00382D;
+  --aura-error: #FF8A8A;
+  --aura-on-error: #4A0707;
   color-scheme: dark;
 }
 

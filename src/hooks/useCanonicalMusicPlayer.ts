@@ -67,6 +67,7 @@ export const useCanonicalMusicPlayer = () => {
   const recommendationResultRef = useRef<RecommendationResult | null>(null);
   const recentRecommendedRef = useRef<string[]>([]);
   const skippingFailedRef = useRef(false);
+  const failedInARowRef = useRef(0);
   const mixOwnedRef = useRef(false);
   const [openThread, setOpenThread] = useState<OpenListeningThread | null>(() => localUserStateStore.loadEnvelope().openThread);
   const resolveSource = useCallback(async (track: PlaybackTrack, signal: AbortSignal) => { const base = (import.meta.env.VITE_MOODIFY_SERVER_URL || 'http://127.0.0.1:8787').replace(/\/$/, ''); let id = track.provider === 'youtube-music' ? track.providerId || track.id : undefined; if (!id) { const response = await fetch(`${base}/api/search?q=${encodeURIComponent(`${track.title} ${track.artist}`)}`, { signal }); if (!response.ok) throw new Error(`Playback search failed (${response.status})`); const data = await response.json() as { tracks?: Array<{ id?: string }> }; id = data.tracks?.[0]?.id; } if (!id) throw new Error('No YouTube Music source matched this track'); return { url: `${base}/api/media/${encodeURIComponent(id)}` }; }, []);
@@ -186,6 +187,15 @@ export const useCanonicalMusicPlayer = () => {
   const togglePlayPause = useCallback(() => { void engine.togglePlay(); }, [engine]);
   const seekTo = useCallback((time: number) => { const snapshot = engine.getSnapshot(); collector.recordSeek(snapshot.currentTrack, snapshot.currentTime, time, snapshot.duration, 'user'); engine.seek(time); }, [collector, engine]);
   const addToQueue = useCallback((track: Track) => { collector.recordQueueAdded(toPlaybackTrack(track)); setState((current) => ({ ...current, queue: [...current.queue, track] })); }, [collector]);
+  /** Plays [track] right after the current song. */
+  const queueNext = useCallback((track: Track) => {
+    collector.recordQueueAdded(toPlaybackTrack(track));
+    setState((current) => {
+      const at = current.currentTrackIndex + 1;
+      const rest = current.queue.filter((item, index) => index < at || item.id !== track.id);
+      return { ...current, queue: [...rest.slice(0, at), track, ...rest.slice(at)] };
+    });
+  }, [collector]);
   const removeFromQueue = useCallback((index: number) => { const track = stateRef.current.queue[index]; if (track) collector.recordQueueRemoved(toPlaybackTrack(track)); setState((current) => ({ ...current, queue: current.queue.filter((_, itemIndex) => itemIndex !== index) })); }, [collector]);
   const listeningSession = collector.getSession();
   const listeningSignals = useMemo(() => deriveListeningSignals(listeningEvents, [listeningSession]), [listeningEvents, listeningSession]);
@@ -312,12 +322,24 @@ export const useCanonicalMusicPlayer = () => {
     if (state.playbackStatus !== 'failed' || !state.currentTrack || skippingFailedRef.current) return;
     const key = trackKeyFromTrack(state.currentTrack);
     const batch = recommendationBatchRef.current;
-    if (!batch || (!batch.injectedKeys.includes(key) && !batch.candidates.some((candidate) => candidate.trackKey === key))) return;
+    if (batch && (batch.injectedKeys.includes(key) || batch.candidates.some((candidate) => candidate.trackKey === key))) {
+      skippingFailedRef.current = true;
+      markBatchFailed(batch, key);
+      setAutoplayDiagnostics((value) => ({ ...value, reason: 'recommendation_source_failed', failedKeys: [...batch.failedKeys] }));
+      next();
+      skippingFailedRef.current = false;
+      return;
+    }
+    // A song that can't play: say so, then move on (but stop after a few in a row).
+    const hasNext = state.currentTrackIndex < state.queue.length - 1 || state.repeat === 'all';
+    if (!hasNext || failedInARowRef.current >= 3) return;
+    failedInARowRef.current += 1;
+    toast({ title: `Couldn't play "${state.currentTrack.title}"`, description: 'Skipping to the next song.' });
     skippingFailedRef.current = true;
-    markBatchFailed(batch, key);
-    setAutoplayDiagnostics((value) => ({ ...value, reason: 'recommendation_source_failed', failedKeys: [...batch.failedKeys] }));
     next();
     skippingFailedRef.current = false;
-  }, [next, state.currentTrack, state.playbackStatus]);
-  return { ...state, playTrack, playPlaylist, playFromPlaylist: playPlaylist, loadMoodPlaylist, togglePlayPause, playNext: next, playPrevious: previous, seekTo, setVolume: (volume: number) => engine.setVolume(volume), toggleShuffle: () => setState((current) => { const value = !current.shuffle; const queue = value && current.currentTrack ? [current.currentTrack, ...shuffle(current.originalQueue.filter((item) => item.id !== current.currentTrack?.id))] : current.originalQueue; recommendationBatchRef.current = null; return { ...current, shuffle: value, queue, currentTrackIndex: current.currentTrack ? queue.findIndex((item) => item.id === current.currentTrack?.id) : -1 }; }), toggleRepeat: () => setState((current) => ({ ...current, repeat: ({ off: 'all', all: 'one', one: 'off' } as const)[current.repeat] })), updateLibrary: (change: (library: SyncedLibrary) => Partial<SyncedLibrary>) => setState((current) => ({ ...current, ...change(current) })), toggleFavorite, isFavorite: (id: string) => state.favorites.some((item) => item.id === id), createPlaylist, deletePlaylist: (id: string) => setState((current) => ({ ...current, playlists: current.playlists.filter((item) => item.id !== id) })), renamePlaylist: (id: string, name: string) => setState((current) => ({ ...current, playlists: current.playlists.map((item) => item.id === id ? { ...item, name } : item) })), addToPlaylist: (id: string, track: Track) => setState((current) => ({ ...current, playlists: current.playlists.map((item) => item.id === id && !item.tracks.some((entry) => entry.id === track.id) ? { ...item, tracks: [...item.tracks, track] } : item) })), removeFromPlaylist: (id: string, trackId: string) => setState((current) => ({ ...current, playlists: current.playlists.map((item) => item.id === id ? { ...item, tracks: item.tracks.filter((track) => track.id !== trackId) } : item) })), exportPlaylist: (id: string) => { const playlist = state.playlists.find((item) => item.id === id); if (playlist) { const url = URL.createObjectURL(new Blob([JSON.stringify(playlist)], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = `${playlist.name}.json`; link.click(); URL.revokeObjectURL(url); } }, importPlaylist, clearHistory: () => setState((current) => ({ ...current, history: [] })), addToQueue, removeFromQueue, clearQueue: () => { recommendationBatchRef.current = null; setState((current) => ({ ...current, queue: current.currentTrack ? [current.currentTrack] : [], currentTrackIndex: current.currentTrack ? 0 : -1 })); }, listeningEvents, listeningSession, listeningSignals, tasteSnapshot, recommendationResult, autoplayDiagnostics, recommendationBatch: recommendationBatchRef.current, userState, homeModel, listeningCollector: collector };
+  }, [next, state.currentTrack, state.playbackStatus, state.currentTrackIndex, state.queue.length, state.repeat]);
+  useEffect(() => { if (state.playbackStatus === 'playing') failedInARowRef.current = 0; }, [state.playbackStatus]);
+  useEffect(() => { engine.warmUp(); }, [engine]);
+  return { ...state, playTrack, playPlaylist, playFromPlaylist: playPlaylist, loadMoodPlaylist, togglePlayPause, playNext: next, playPrevious: previous, seekTo, setVolume: (volume: number) => { engine.setVolume(volume); write(keys.volume, volume); setState((current) => ({ ...current, volume })); }, queueNext, toggleShuffle: () => setState((current) => { const value = !current.shuffle; const queue = value && current.currentTrack ? [current.currentTrack, ...shuffle(current.originalQueue.filter((item) => item.id !== current.currentTrack?.id))] : current.originalQueue; recommendationBatchRef.current = null; return { ...current, shuffle: value, queue, currentTrackIndex: current.currentTrack ? queue.findIndex((item) => item.id === current.currentTrack?.id) : -1 }; }), toggleRepeat: () => setState((current) => ({ ...current, repeat: ({ off: 'all', all: 'one', one: 'off' } as const)[current.repeat] })), updateLibrary: (change: (library: SyncedLibrary) => Partial<SyncedLibrary>) => setState((current) => ({ ...current, ...change(current) })), toggleFavorite, isFavorite: (id: string) => state.favorites.some((item) => item.id === id), createPlaylist, deletePlaylist: (id: string) => setState((current) => ({ ...current, playlists: current.playlists.filter((item) => item.id !== id) })), renamePlaylist: (id: string, name: string) => setState((current) => ({ ...current, playlists: current.playlists.map((item) => item.id === id ? { ...item, name } : item) })), addToPlaylist: (id: string, track: Track) => setState((current) => ({ ...current, playlists: current.playlists.map((item) => item.id === id && !item.tracks.some((entry) => entry.id === track.id) ? { ...item, tracks: [...item.tracks, track] } : item) })), removeFromPlaylist: (id: string, trackId: string) => setState((current) => ({ ...current, playlists: current.playlists.map((item) => item.id === id ? { ...item, tracks: item.tracks.filter((track) => track.id !== trackId) } : item) })), exportPlaylist: (id: string) => { const playlist = state.playlists.find((item) => item.id === id); if (playlist) { const url = URL.createObjectURL(new Blob([JSON.stringify(playlist)], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = `${playlist.name}.json`; link.click(); URL.revokeObjectURL(url); } }, importPlaylist, clearHistory: () => setState((current) => ({ ...current, history: [] })), addToQueue, removeFromQueue, clearQueue: () => { recommendationBatchRef.current = null; setState((current) => ({ ...current, queue: current.currentTrack ? [current.currentTrack] : [], currentTrackIndex: current.currentTrack ? 0 : -1 })); }, listeningEvents, listeningSession, listeningSignals, tasteSnapshot, recommendationResult, autoplayDiagnostics, recommendationBatch: recommendationBatchRef.current, userState, homeModel, listeningCollector: collector };
 };

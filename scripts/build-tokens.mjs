@@ -21,9 +21,11 @@ function css() {
   const lines = [
     `/* ${HEADER} */`,
     '',
+    // Shared tokens also sit on [data-theme] and .aura so they outrank the classic
+    // app's same-named variables (index.css) in every theme, not only dark.
     ':root,',
-    ':root[data-theme="dark"] {',
-    vars(tokens.color.dark),
+    ':root[data-theme],',
+    '.aura {',
     ...Object.entries(tokens.radius).map(([k, v]) => `  --radius-${k}: ${v}px;`),
     ...Object.entries(tokens.spacing).map(([k, v]) => `  --space-${k}: ${v}px;`),
     ...Object.entries(tokens.moodHues).map(([k, v]) => `  --mood-${k}: ${v};`),
@@ -33,6 +35,11 @@ function css() {
     `  --ease-emphasized: cubic-bezier(${tokens.motion.emphasized.join(', ')});`,
     `  --ease-emphasized-decelerate: cubic-bezier(${tokens.motion.emphasizedDecelerate.join(', ')});`,
     `  --font-sans: "${tokens.font.family}", ui-sans-serif, system-ui, sans-serif;`,
+    '}',
+    '',
+    ':root,',
+    ':root[data-theme="dark"] {',
+    vars(tokens.color.dark),
     '  color-scheme: dark;',
     '}',
     '',

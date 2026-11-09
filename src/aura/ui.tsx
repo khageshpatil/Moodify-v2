@@ -1,9 +1,10 @@
-import { Heart, MoreVertical, Music2 } from 'lucide-react';
+import { Heart, MoreVertical, Music2, Play } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Track } from '@/data/mockMusic';
 import type { DiscoveryCatalogItem } from '@/services/moodifyMusicApi';
 import { usePlayer } from './PlayerContext';
+import { useTrackMenu, type TrackMenuExtra } from './TrackMenu';
 
 /** Stable placeholder hue from a key (same idea as Android's placeholderHue). */
 export function hueFor(key: string) {
@@ -36,34 +37,46 @@ export function SectionHeader({ title, action }: { title: string; action?: React
   );
 }
 
-export function TrackRow({ track, queue, number, onMenu, subtitle }: {
-  track: Track; queue: Track[]; number?: number; onMenu?: (track: Track) => void; subtitle?: string;
+export function TrackRow({ track, queue, number, subtitle, menuExtras, compact = false }: {
+  track: Track; queue: Track[]; number?: number; subtitle?: string; menuExtras?: TrackMenuExtra[]; compact?: boolean;
 }) {
   const player = usePlayer();
+  const menu = useTrackMenu();
   const current = player.currentTrack?.id === track.id;
   const liked = player.isFavorite(track.id);
+  const duration = track.duration > 0 ? formatTime(track.duration) : '';
   return (
-    <div className="aura-track" data-current={current}>
-      <button className="aura-row" style={{ flex: 1, minWidth: 0, textAlign: 'left' }} onClick={() => player.playTrack(track, queue)}>
-        {number !== undefined && <span className="type-title-small aura-muted" style={{ width: 24, textAlign: 'right' }}>{number}</span>}
-        <Artwork src={track.albumArt} alt="" size={52} placeholder={track.id} />
+    <div className="aura-track" data-current={current} onContextMenu={(e) => { e.preventDefault(); menu.open(track, menuExtras); }}>
+      <button className="aura-row" style={{ flex: 1, minWidth: 0, textAlign: 'left' }} onClick={() => (current ? player.togglePlayPause() : player.playTrack(track, queue))}
+        aria-label={current ? `${player.isPlaying ? 'Pause' : 'Play'} ${track.title}` : `Play ${track.title} by ${track.artist}`}>
+        {number !== undefined && <span className="type-title-small aura-muted" style={{ width: 24, textAlign: 'right', flex: 'none' }}>{number}</span>}
+        <span style={{ position: 'relative', flex: 'none' }}>
+          <Artwork src={track.albumArt} alt="" size={compact ? 48 : 52} placeholder={track.id} />
+          {current && <span className="aura-art-overlay" aria-hidden>{player.isPlaying ? <Bars /> : <Play size={18} fill="currentColor" />}</span>}
+        </span>
         <span className="aura-track-text">
           <span className="type-title-small aura-ellipsis aura-track-title" style={{ display: 'block' }}>{track.title}</span>
           <span className="type-body-small aura-muted aura-ellipsis" style={{ display: 'block' }}>
-            {subtitle ?? [track.artist, track.album].filter(Boolean).join(' • ')}
+            {subtitle ?? [track.artist, compact ? '' : track.album].filter(Boolean).join(' • ')}
           </span>
         </span>
       </button>
-      <button className="aura-icon-btn" aria-label={liked ? 'Remove from liked songs' : 'Like'} onClick={() => player.toggleFavorite(track)}>
-        <Heart size={20} fill={liked ? 'currentColor' : 'none'} color={liked ? 'var(--aura-primary)' : 'currentColor'} />
-      </button>
-      {onMenu && (
-        <button className="aura-icon-btn" aria-label="More options" onClick={() => onMenu(track)}>
-          <MoreVertical size={20} />
+      {!compact && duration && <span className="type-body-small aura-muted aura-hide-phone" style={{ minWidth: 40, textAlign: 'right' }}>{duration}</span>}
+      {!compact && (
+        <button className="aura-icon-btn aura-hide-phone" aria-label={liked ? 'Remove from liked songs' : 'Like'} onClick={() => player.toggleFavorite(track)}>
+          <Heart size={20} fill={liked ? 'currentColor' : 'none'} color={liked ? 'var(--aura-primary)' : 'currentColor'} />
         </button>
       )}
+      <button className="aura-icon-btn" aria-label={`More options for ${track.title}`} onClick={() => menu.open(track, menuExtras)}>
+        <MoreVertical size={20} />
+      </button>
     </div>
   );
+}
+
+/** Three bouncing bars: this song is playing. */
+export function Bars() {
+  return <span className="aura-bars"><i /><i /><i /></span>;
 }
 
 /** Where a catalog card leads: albums/playlists/artists open a page, songs play. */

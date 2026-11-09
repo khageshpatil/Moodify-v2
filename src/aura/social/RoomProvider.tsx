@@ -117,7 +117,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ v: 1, type, body }));
   }, []);
   const control = useCallback((action: string, body: object = {}) => send('room.control', { action, ...body }), [send]);
-  const positionMs = () => Math.round(engine.getAudioElement().currentTime * 1000);
+  const positionMs = () => Math.round(engine.getMedia().currentTime * 1000);
   const busy = () => engine.getSnapshot().status === 'loading';
   const quiet = (ms = 800) => { quietUntil.current = Date.now() + ms; };
   const localAction = () => { localActionUntil.current = Date.now() + LOCAL_ACTION_MS; };
@@ -128,13 +128,13 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     if (!track || !canControl(roomRef.current) || !roomRef.current?.connected) return;
     localAction();
     control('setTrack', { track: toWire(track), ...(busy() ? {} : { positionMs: positionMs() }) });
-    if (!busy() && engine.getAudioElement().paused) control('pause', { positionMs: positionMs() });
+    if (!busy() && engine.getMedia().paused) control('pause', { positionMs: positionMs() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [control]);
 
   const follow = useCallback((s: RoomState) => {
     if (!s.track || Date.now() < localActionUntil.current) return;
-    const audio = engine.getAudioElement();
+    const audio = engine.getMedia();
     const step = followStep({
       roomTrackId: trackKey(s.track)!,
       localTrackId: trackKey(playerRef.current.currentTrack),
@@ -263,7 +263,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     const loop = setInterval(() => { const s = roomRef.current; if (s) follow(s); }, 1000);
 
     // The person's own play / pause / seek (not ours, not a song loading) drives the room.
-    const audio = engine.getAudioElement();
+    const audio = engine.getMedia();
     const ownAction = () => Date.now() > quietUntil.current && !busy() && canControl(roomRef.current)
       && trackKey(roomRef.current?.track) === trackKey(playerRef.current.currentTrack);
     const onPlay = () => { if (ownAction() && !roomRef.current!.playing) { localAction(); control('play', { positionMs: positionMs() }); } };
@@ -330,7 +330,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!followingCode) return;
     const loop = setInterval(() => { const s = roomRef.current; if (s?.following) follow(s); }, 1000);
-    const audio = engine.getAudioElement();
+    const audio = engine.getMedia();
     const mine = () => Date.now() > quietUntil.current && !busy();
     const stop = () => { if (mine() && !audio.ended) { setRoom(null); blocked.current = false; setNeedsTap(false); } };
     audio.addEventListener('play', stop);

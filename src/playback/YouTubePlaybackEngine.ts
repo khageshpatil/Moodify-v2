@@ -113,7 +113,9 @@ export class YouTubePlaybackEngine {
   private keepAliveAudio: HTMLAudioElement | null = null;
   private isUserIntendedPause = false;
 
-  constructor(private readonly resolveSource?: PlaybackSourceResolver) {
+  private loadingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(private resolveSource?: PlaybackSourceResolver) {
     if (import.meta.env?.DEV) {
       window.__moodifyYouTubeEngine = this;
     }
@@ -254,6 +256,19 @@ export class YouTubePlaybackEngine {
     });
   }
 
+  setSourceResolver(resolve: PlaybackSourceResolver) { this.resolveSource = resolve; }
+
+  /** Starts the YouTube player before the first song, so the first tap plays at once. */
+  warmUp() { void this.getOrInitPlayer().catch(() => { /* retried on the first load */ }); }
+
+  /** The player's own position (the snapshot is polled 4× a second). */
+  currentTimeNow() {
+    try {
+      const t = this.player && this.isPlayerReady ? this.player.getCurrentTime() : NaN;
+      return Number.isFinite(t) ? t : this.snapshot.currentTime;
+    } catch { return this.snapshot.currentTime; }
+  }
+
   subscribe(listener: (snapshot: PlaybackSnapshot) => void) {
     this.listeners.add(listener);
     listener(this.snapshot);
@@ -339,6 +354,13 @@ export class YouTubePlaybackEngine {
 
       if (autoplay) {
         ytPlayer.loadVideoById({ videoId });
+        // A browser that blocks autoplay leaves the video unstarted: show Play instead of a spinner.
+        if (this.loadingTimer) clearTimeout(this.loadingTimer);
+        this.loadingTimer = setTimeout(() => {
+          if (requestId !== this.requestId || this.snapshot.status !== 'loading' || !window.YT) return;
+          const state = (() => { try { return ytPlayer.getPlayerState(); } catch { return -1; } })();
+          if (state === window.YT.PlayerState.UNSTARTED || state === window.YT.PlayerState.CUED) this.update({ status: 'ready' });
+        }, 8000);
       } else {
         ytPlayer.cueVideoById({ videoId });
         this.update({ status: 'ready' });
@@ -479,7 +501,7 @@ export class YouTubePlaybackEngine {
         try {
           this.player?.playVideo();
           return;
-        } catch {}
+        } catch { /* fall through to paused */ }
       }
       
       this.isUserIntendedPause = false;

@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePlayer } from '../PlayerContext';
+import { setTheme, useTheme } from '../theme';
 import { Artwork, EmptyState, SectionHeader, hueFor } from '../ui';
 import { preview } from './chatModel';
 import { useRoom } from './RoomProvider';
@@ -142,7 +143,7 @@ export function AccountScreen() {
   return (
     <div className="aura-page" style={{ maxWidth: 640 }}>
       <div className="aura-glow" />
-      <h1 className="type-headline-medium">Your Moodify code</h1>
+      <h1 className="type-headline-medium">Settings</h1>
       {!social.code && (
         <div className="aura-card" style={{ display: 'grid', gap: 12 }}>
           <ShieldCheck color="var(--aura-primary)" />
@@ -201,8 +202,27 @@ export function AccountScreen() {
             : <ManageCard onSay={say} />}
         </div>
       )}
+      <AppearanceCard />
       {picking && <AvatarPicker onClose={() => setPicking(false)} onSaved={say} />}
       {toast}
+    </div>
+  );
+}
+
+/** Settings › Appearance: follow the device, or always light / dark (as on Android). */
+function AppearanceCard() {
+  const theme = useTheme();
+  return (
+    <div className="aura-card" style={{ display: 'grid', gap: 12, marginTop: 16 }}>
+      <div className="type-title-medium">Appearance</div>
+      <div className="aura-chips" role="radiogroup" aria-label="Theme">
+        {(['system', 'light', 'dark'] as const).map((choice) => (
+          <button key={choice} className="aura-chip" role="radio" aria-checked={theme === choice} aria-pressed={theme === choice} onClick={() => setTheme(choice)}>
+            {{ system: 'Match device', light: 'Light', dark: 'Dark' }[choice]}
+          </button>
+        ))}
+      </div>
+      <div className="type-body-small aura-muted">Shortcuts: Space plays or pauses · J / L skip back or ahead 10 seconds · Shift+N / Shift+P next or previous song.</div>
     </div>
   );
 }
