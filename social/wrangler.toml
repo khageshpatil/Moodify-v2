@@ -11,6 +11,11 @@ compatibility_date = "2025-06-01"
 # Secrets (dashboard > Settings > Variables and Secrets): SESSION_SECRET, FCM_SERVICE_ACCOUNT
 # (Android pings), VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY (browser pings; scripts/vapid-keys.mjs).
 # Locally, FCM_SERVICE_ACCOUNT goes in .dev.vars (base64 of the JSON). Both files are git-ignored.
+# Workers Logs: errors and console output are kept and searchable in the dashboard.
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 [[d1_databases]]
 binding = "DB"
 database_name = "moodify-social"

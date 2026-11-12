@@ -171,6 +171,11 @@ export function AccountScreen() {
                 })}>
                 {busy ? 'Working…' : mode === 'restore' ? 'Restore' : 'Create my code'}
               </button>
+              {mode === 'create' && (
+                <div className="type-body-small aura-muted">
+                  Friends features are for people 13 and older. See how Moodify handles your data in <Link className="aura-link" style={{ color: 'var(--aura-primary)' }} to="/privacy">Privacy</Link>.
+                </div>
+              )}
             </>
           )}
         </div>
@@ -223,6 +228,7 @@ function AppearanceCard() {
         ))}
       </div>
       <div className="type-body-small aura-muted">Shortcuts: Space plays or pauses · J / L skip back or ahead 10 seconds · Shift+N / Shift+P next or previous song.</div>
+      <Link to="/privacy" className="aura-btn-text" style={{ justifySelf: 'start', padding: 0, display: 'inline-flex', alignItems: 'center' }}>Privacy</Link>
     </div>
   );
 }

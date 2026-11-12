@@ -204,6 +204,20 @@ private fun SetupCard(busy: Boolean, onCreate: (String) -> Unit, onRestore: (Str
         TextButton(onClick = { restoring = !restoring }, modifier = Modifier.fillMaxWidth()) {
             Text(if (restoring) "I'm new here: create a code" else "I already have a code")
         }
+        if (!restoring) {
+            val context = LocalContext.current
+            Text(
+                "Friends features are for people 13 and older.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            TextButton(
+                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(com.moodify.app.ui.screens.PRIVACY_URL))) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("How Moodify handles your data") }
+        }
     }
 }
 

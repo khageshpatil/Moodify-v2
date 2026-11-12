@@ -6,7 +6,8 @@
 import {
   base64UrlToBytes, bytesToBase64Url, cleanDisplayName, codeForSigningKey, normalizeCode, signedMessages, verifySignature,
 } from './identity.mjs';
-import { issueToken, readToken } from './tokens.mjs';
+import { createBurstLimiter } from './limits.mjs';
+import { ipTag, issueChallenge, issueToken, readChallenge, readToken } from './tokens.mjs';
 
 const CHALLENGE_SECONDS = 5 * 60;
 const DAY = 24 * 60 * 60;
@@ -32,6 +33,13 @@ export const LIMITS = {
   syncRecords: 20_000,
   syncBytes: 32 * 1024 * 1024,
   syncRecordChars: 512 * 1024,
+  /** Abuse limits (limits.md). Per IP: sign-in calls a minute, new accounts a day, browser links an hour. */
+  authPerMinute: 30,
+  signupsPerDay: 20,
+  linksPerHour: 20,
+  /** Per account: code lookups a minute, reports a day. */
+  lookupsPerMinute: 60,
+  reportsPerDay: 20,
 };
 const SYNC_ITEM = /^[A-Za-z0-9_-]{22}$/;
 const PUSH_TOKEN = /^[A-Za-z0-9:_-]{20,4096}$/;
@@ -114,8 +122,11 @@ export const pair = (x, y) => (x < y ? [x, y] : [y, x]);
  */
 export function createApi({
   store, secret, notify = async () => {}, push = null, defer = (work) => work, now = () => Math.floor(Date.now() / 1000),
-  vapidPublicKey = null,
+  vapidPublicKey = null, burst = createBurstLimiter(),
 }) {
+  /** The caller's IP (Cloudflare sets it); null in tests and local tools, which skips IP limits. */
+  const clientIp = (request) => request.headers.get('CF-Connecting-IP');
+  const slowDown = (message = 'Too many requests. Wait a minute and try again.') => error(429, 'slow_down', message);
   /** Wakes [code]'s devices that aren't connected live, so they fetch the inbox (chat.md §3). */
   async function wake(code, liveDevices) {
     if (!push) return;
@@ -144,9 +155,11 @@ export function createApi({
   });
   const publicUser = (account) => ({ code: account.code, displayName: account.display_name, boxPub: account.box_pub, avatar: avatarOf(account) });
 
-  async function takeChallenge(nonce) {
-    if (typeof nonce !== 'string' || nonce.length < 16 || nonce.length > 64) return false;
-    return store.takeChallenge(nonce, now());
+  /** A challenge we issued, unexpired, and not used before (recorded now, so it can't be used twice). */
+  async function takeChallenge(challenge) {
+    const expiresAt = await readChallenge(secret, challenge, now());
+    if (!expiresAt) return false;
+    return store.useChallenge(challenge, expiresAt, now());
   }
 
   // ── Identity (M1) ──────────────────────────────────────────────────────────
@@ -171,7 +184,12 @@ export function createApi({
       return error(409, 'code_taken', 'This code belongs to another key. Generate a new identity.');
     }
     if (!existing) {
-      await store.insertAccount({ code, sign_pub: body.signPub, box_pub: body.boxPub, display_name: displayName, created_at: now() });
+      const ip = clientIp(request);
+      const tag = ip ? await ipTag(secret, ip) : null;
+      if (tag && (await store.countSignupsSince(tag, now() - DAY)) >= LIMITS.signupsPerDay) {
+        return slowDown('Too many new codes from this network today. Try again tomorrow.');
+      }
+      await store.insertAccount({ code, sign_pub: body.signPub, box_pub: body.boxPub, display_name: displayName, created_at: now(), signup_ip: tag }, now() - DAY);
     }
     const session = await issueToken(secret, code, now());
     return json(existing ? 200 : 201, { account: profile(await store.getAccount(code)), ...session });
@@ -295,6 +313,7 @@ export function createApi({
     const reason = typeof body?.reason === 'string' ? body.reason.trim().slice(0, 500) : '';
     if (!code || !reason) return error(400, 'bad_report', 'A report needs a code and a reason.');
     const evidence = typeof body?.evidence === 'string' ? body.evidence.slice(0, 8000) : null;
+    if ((await store.countReportsSince(me.code, now() - DAY)) >= LIMITS.reportsPerDay) return slowDown('Too many reports today. Try again tomorrow.');
     await store.addReport({ reporter: me.code, reported: code, reason, evidence, created_at: now() });
     return json(201, { status: 'received' });
   }
@@ -310,23 +329,29 @@ export function createApi({
     if (!nonce || !ciphertext) return error(400, 'bad_message', 'Messages must be encrypted (nonce + ciphertext, base64url).');
     if (ciphertext.length > LIMITS.messageBytes) return error(413, 'too_big', 'That message is too large.');
     const [a, b] = pair(me.code, to);
-    const friendship = await store.getFriendship(a, b);
-    if (friendship?.status !== 'accepted') return error(403, 'not_friends', 'You can only send to friends.');
     const sentAt = now();
-    // A block hides delivery: the sender sees success, nothing is stored.
-    if ((await store.countSentSince(me.code, sentAt - 3600)) >= LIMITS.messagesPerHour) {
+    // The checks don't depend on each other: ask together (one round trip, not three).
+    const [friendship, sentLastHour, blocked] = await Promise.all([
+      store.getFriendship(a, b), store.countSentSince(me.code, sentAt - 3600), store.isBlocked(to, me.code),
+    ]);
+    if (friendship?.status !== 'accepted') return error(403, 'not_friends', 'You can only send to friends.');
+    if (sentLastHour >= LIMITS.messagesPerHour) {
       return error(429, 'slow_down', "You're sending a lot. Try again in a little while.");
     }
-    await store.pruneMessages(sentAt - LIMITS.messageRetentionSeconds);
-    // A copy for your own other devices (same ciphertext: the pair key works both ways).
-    const copyId = await store.insertMessage({ sender: me.code, recipient: me.code, peer: to, nonce, ciphertext, created_at: sentAt });
-    await notify(me.code, { type: 'msg.new', body: { from: me.code, id: copyId, own: true } });
-    // A block hides delivery: the sender sees success, nothing reaches the other person.
-    if (await store.isBlocked(to, me.code)) return json(201, { id: null, copyId, sentAt });
-    const id = await store.insertMessage({ sender: me.code, recipient: to, peer: null, nonce, ciphertext, created_at: sentAt });
-    const live = await notify(to, { type: 'msg.new', body: { from: me.code, id } });
-    await wake(to, live);
-    return json(201, { id, copyId, sentAt });
+    // Old messages are swept after the reply (an index range: cheap, and free when there's nothing to delete).
+    defer(store.pruneMessages(sentAt - LIMITS.messageRetentionSeconds).catch(() => {}));
+    // A copy for your own other devices (same ciphertext: the pair key works both ways), and the
+    // message itself, written together. A block hides delivery: the sender sees success, nothing reaches them.
+    const [copyId, id] = await store.insertMessages(
+      { sender: me.code, recipient: me.code, peer: to, nonce, ciphertext, created_at: sentAt },
+      blocked ? null : { sender: me.code, recipient: to, peer: null, nonce, ciphertext, created_at: sentAt },
+    );
+    // Telling devices (and waking phones) happens after the reply: the sender needn't wait for it.
+    defer(Promise.all([
+      notify(me.code, { type: 'msg.new', body: { from: me.code, id: copyId, own: true } }),
+      blocked ? null : notify(to, { type: 'msg.new', body: { from: me.code, id } }).then((live) => wake(to, live)),
+    ]).catch(() => {}));
+    return json(201, { id: blocked ? null : id, copyId, sentAt });
   }
 
   async function listMessages(me, url) {
@@ -404,10 +429,12 @@ export function createApi({
 
     if (method === 'GET' && pathname === '/') return json(200, { service: 'moodify-social', version: 2 });
 
+    const ip = clientIp(request);
+    const authPath = method === 'POST' && (pathname === '/v1/auth/challenge' || pathname === '/v1/accounts' || pathname === '/v1/auth/verify');
+    if (authPath && ip && !burst.allow(`auth:${ip}`, LIMITS.authPerMinute, 60_000, now() * 1000)) return slowDown();
+
     if (method === 'POST' && pathname === '/v1/auth/challenge') {
-      const nonce = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(24)));
-      await store.putChallenge(nonce, now() + CHALLENGE_SECONDS, now());
-      return json(200, { challenge: nonce, expiresIn: CHALLENGE_SECONDS });
+      return json(200, { challenge: await issueChallenge(secret, now() + CHALLENGE_SECONDS), expiresIn: CHALLENGE_SECONDS });
     }
     if (method === 'GET' && pathname === '/v1/push/vapid') {
       return vapidPublicKey ? json(200, { publicKey: vapidPublicKey }) : error(404, 'no_web_push', 'Browser notifications are not set up on this server.');
@@ -419,8 +446,10 @@ export function createApi({
     if (method === 'POST' && pathname === '/v1/link') {
       const body = await readJson(request);
       if (!keyBytes(body?.devicePub)) return error(400, 'bad_keys', 'devicePub must be a 32-byte base64url key.');
+      const tag = ip ? await ipTag(secret, ip) : null;
+      if (tag && (await store.countLinksSince(tag, now() - 3600)) >= LIMITS.linksPerHour) return slowDown('Too many link codes from this network. Try again in an hour.');
       const id = linkCode();
-      await store.putLink({ id, device_pub: body.devicePub, created_at: now(), expires_at: now() + LIMITS.linkSeconds }, now());
+      await store.putLink({ id, device_pub: body.devicePub, created_at: now(), expires_at: now() + LIMITS.linkSeconds, ip: tag }, now());
       return json(201, { linkId: id, expiresIn: LIMITS.linkSeconds });
     }
     const linkMatch = pathname.match(/^\/v1\/link\/([^/]+)(\/result)?$/);
@@ -468,6 +497,7 @@ export function createApi({
 
     const userMatch = pathname.match(/^\/v1\/users\/([^/]+)$/);
     if (method === 'GET' && userMatch) {
+      if (!burst.allow(`lookup:${me.code}`, LIMITS.lookupsPerMinute, 60_000, now() * 1000)) return slowDown();
       const code = normalizeCode(decodeURIComponent(userMatch[1]));
       const account = code ? await store.getAccount(code) : null;
       if (!account) return error(404, 'not_found', 'No one has that code.');
@@ -551,20 +581,34 @@ export function d1Store(db) {
   const all = async (sql, ...args) => (await db.prepare(sql).bind(...args).all()).results ?? [];
   const run = (sql, ...args) => db.prepare(sql).bind(...args).run();
   return {
-    async putChallenge(nonce, expiresAt, now) {
-      await db.batch([
+    /** Records a used challenge; false when it was used before. Expired ones are swept. */
+    async useChallenge(nonce, expiresAt, now) {
+      const [, inserted] = await db.batch([
         db.prepare('DELETE FROM challenges WHERE expires_at < ?').bind(now),
-        db.prepare('INSERT INTO challenges (nonce, expires_at) VALUES (?, ?)').bind(nonce, expiresAt),
+        db.prepare('INSERT OR IGNORE INTO challenges (nonce, expires_at) VALUES (?, ?)').bind(nonce, expiresAt),
       ]);
+      return (inserted.meta?.changes ?? 0) === 1;
     },
-    async takeChallenge(nonce, now) {
-      const result = await run('DELETE FROM challenges WHERE nonce = ? AND expires_at >= ?', nonce, now);
-      return (result.meta?.changes ?? 0) === 1;
+    async countSignupsSince(tag, since) {
+      const row = await db.prepare('SELECT COUNT(*) AS n FROM accounts WHERE signup_ip = ? AND created_at >= ?').bind(tag, since).first();
+      return row?.n ?? 0;
+    },
+    async countLinksSince(tag, since) {
+      const row = await db.prepare('SELECT COUNT(*) AS n FROM link_sessions WHERE ip = ? AND created_at >= ?').bind(tag, since).first();
+      return row?.n ?? 0;
+    },
+    async countReportsSince(code, since) {
+      const row = await db.prepare('SELECT COUNT(*) AS n FROM reports WHERE reporter = ? AND created_at >= ?').bind(code, since).first();
+      return row?.n ?? 0;
     },
     getAccount: (code) => db.prepare('SELECT * FROM accounts WHERE code = ?').bind(code).first(),
-    async insertAccount(a) {
-      await run('INSERT INTO accounts (code, sign_pub, box_pub, display_name, created_at) VALUES (?, ?, ?, ?, ?)',
-        a.code, a.sign_pub, a.box_pub, a.display_name, a.created_at);
+    /** Adds an account; IP tags older than [forgetBefore] are cleared (kept for a day only). */
+    async insertAccount(a, forgetBefore = 0) {
+      await db.batch([
+        db.prepare('INSERT INTO accounts (code, sign_pub, box_pub, display_name, created_at, signup_ip) VALUES (?, ?, ?, ?, ?, ?)')
+          .bind(a.code, a.sign_pub, a.box_pub, a.display_name, a.created_at, a.signup_ip ?? null),
+        db.prepare('UPDATE accounts SET signup_ip = NULL WHERE signup_ip IS NOT NULL AND created_at < ?').bind(forgetBefore),
+      ]);
     },
     async updateDisplayName(code, name) { await run('UPDATE accounts SET display_name = ? WHERE code = ?', name, code); },
     async updateAvatar(code, avatar) { await run('UPDATE accounts SET avatar = ? WHERE code = ?', avatar, code); },
@@ -670,6 +714,13 @@ export function d1Store(db) {
         m.sender, m.recipient, m.peer ?? null, m.nonce, m.ciphertext, m.created_at);
       return result.meta?.last_row_id ?? null;
     },
+    /** Inserts one or two messages in one batch; returns their ids (null for a missing second). */
+    async insertMessages(first, second) {
+      const insert = (m) => db.prepare('INSERT INTO messages (sender, recipient, peer, nonce, ciphertext, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(m.sender, m.recipient, m.peer ?? null, m.nonce, m.ciphertext, m.created_at);
+      const results = await db.batch(second ? [insert(first), insert(second)] : [insert(first)]);
+      return [results[0].meta?.last_row_id ?? null, second ? results[1].meta?.last_row_id ?? null : null];
+    },
     listMessages: (recipient, after, limit) =>
       all('SELECT * FROM messages WHERE recipient = ? AND id > ? ORDER BY id LIMIT ?', recipient, after, limit),
     async deleteMessagesUpTo(recipient, id) { await run('DELETE FROM messages WHERE recipient = ? AND id <= ?', recipient, id); },
@@ -679,7 +730,7 @@ export function d1Store(db) {
     async putLink(l, now) {
       await db.batch([
         db.prepare('DELETE FROM link_sessions WHERE expires_at < ?').bind(now),
-        db.prepare('INSERT INTO link_sessions (id, device_pub, created_at, expires_at) VALUES (?, ?, ?, ?)').bind(l.id, l.device_pub, l.created_at, l.expires_at),
+        db.prepare('INSERT INTO link_sessions (id, device_pub, created_at, expires_at, ip) VALUES (?, ?, ?, ?, ?)').bind(l.id, l.device_pub, l.created_at, l.expires_at, l.ip ?? null),
       ]);
     },
     getLink: (id, now) => db.prepare('SELECT * FROM link_sessions WHERE id = ? AND expires_at >= ?').bind(id, now).first(),

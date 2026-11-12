@@ -143,3 +143,31 @@ test('presence is sanitised before friends see it', () => {
   assert.equal(clean.positionMs, 0);
   assert.equal('extra' in clean, false);
 });
+
+test('position ticks go only to friends who are online; song changes reach everyone', async () => {
+  let clock = 1_000_000;
+  const delivered = [];
+  const socket = { inbox: [], state: {}, send(d) { this.inbox.push(JSON.parse(d)); } };
+  const online = { 'MOOD-BBBB-BBBB': 1, 'MOOD-CCCC-CCCC': 0 };
+  const hub = createHub({
+    code: 'MOOD-AAAA-AAAA', sockets: () => [socket], now: () => clock,
+    friendCodes: async () => Object.keys(online),
+    sendToHub: async (friend, event) => { delivered.push([friend, event.body.presence?.positionMs]); return online[friend]; },
+    askHub: async (friend) => ({ online: online[friend] > 0, presence: null }),
+  });
+  await hub.onConnect(socket);
+  const update = (positionMs, trackId = 'JGwWNGJdvx8') => hub.onMessage(socket, JSON.stringify({ v: 1, type: 'presence.update', body: { trackId, title: 'T', artist: 'A', durationMs: 200_000, positionMs, playing: true } }));
+  delivered.length = 0;
+  await update(1000); // a new song: everyone
+  assert.deepEqual(delivered.map(([f]) => f).sort(), ['MOOD-BBBB-BBBB', 'MOOD-CCCC-CCCC']);
+  delivered.length = 0;
+  clock += 15_000;
+  await update(16_000); // a tick: only the online friend
+  assert.deepEqual(delivered.map(([f]) => f), ['MOOD-BBBB-BBBB']);
+  // C comes online (their hub tells us), and gets the next tick too.
+  await hub.onEvent({ type: 'presence.friend', body: { code: 'MOOD-CCCC-CCCC', online: true } });
+  delivered.length = 0;
+  clock += 15_000;
+  await update(31_000);
+  assert.deepEqual(delivered.map(([f]) => f).sort(), ['MOOD-BBBB-BBBB', 'MOOD-CCCC-CCCC']);
+});

@@ -22,12 +22,15 @@ export function memoryStore() {
   return {
     accounts, friendships, blocks, reports,
     get messages() { return messages; },
-    async putChallenge(nonce, expiresAt) { challenges.set(nonce, expiresAt); },
-    async takeChallenge(nonce, now) {
-      const expiresAt = challenges.get(nonce);
-      challenges.delete(nonce);
-      return expiresAt !== undefined && expiresAt >= now;
+    async useChallenge(nonce, expiresAt, now) {
+      for (const [k, exp] of challenges) if (exp < now) challenges.delete(k);
+      if (challenges.has(nonce)) return false;
+      challenges.set(nonce, expiresAt);
+      return true;
     },
+    async countSignupsSince(tag, since) { return [...accounts.values()].filter((a) => a.signup_ip === tag && a.created_at >= since).length; },
+    async countLinksSince(tag, since) { return [...links.values()].filter((l) => l.ip === tag && l.created_at >= since).length; },
+    async countReportsSince(code, since) { return reports.filter((r) => r.reporter === code && r.created_at >= since).length; },
     async getAccount(code) { return accounts.get(code) ?? null; },
     async insertAccount(a) { accounts.set(a.code, { ...a }); },
     async updateDisplayName(code, name) { accounts.get(code).display_name = name; },
@@ -100,6 +103,7 @@ export function memoryStore() {
       const left = [...inboxDevices.entries()].filter(([key]) => key.startsWith(`${code}|`)).map(([, d]) => d.acked);
       return left.length ? Math.min(...left) : 0;
     },
+    async insertMessages(first, second) { return [await this.insertMessage(first), second ? await this.insertMessage(second) : null]; },
     async listMessages(recipient, after, limit) { return messages.filter((m) => m.recipient === recipient && m.id > after).slice(0, limit); },
     async deleteMessagesUpTo(recipient, id) { messages = messages.filter((m) => !(m.recipient === recipient && m.id <= id)); },
     async deleteMessagesBetween(sender, recipient) { messages = messages.filter((m) => !(m.sender === sender && m.recipient === recipient)); },
@@ -117,14 +121,20 @@ export function harness({ push = null, live = {}, vapidPublicKey = null } = {}) 
   const store = memoryStore();
   const events = [];
   // `live`: code -> device ids connected right now (they get events, not pings).
-  const handle = createApi({ store, secret: SECRET, now: () => clock, push, vapidPublicKey, notify: async (code, event) => { events.push({ code, ...event }); return live[code] ?? []; } });
-  const call = async (method, path, body, token) => {
+  const pending = [];
+  const handle = createApi({
+    store, secret: SECRET, now: () => clock, push, vapidPublicKey, defer: (work) => { pending.push(work); },
+    notify: async (code, event) => { events.push({ code, ...event }); return live[code] ?? []; },
+  });
+  const settle = async () => { while (pending.length) await Promise.all(pending.splice(0)); };
+  const call = async (method, path, body, token, headers = {}) => {
     const response = await handle(new Request(`https://social.test${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
       body: body === undefined ? undefined : JSON.stringify(body),
     }));
     const text = await response.text();
+    await settle();
     return { status: response.status, body: text ? JSON.parse(text) : null };
   };
   return { store, events, call, advance: (s) => { clock += s; } };

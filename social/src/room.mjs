@@ -5,6 +5,7 @@
  * Protocol: docs/social-protocol/rooms.md
  */
 import { cleanPresence, envelope } from './hub.mjs';
+import { createMessageGate } from './limits.mjs';
 
 export const ROOM_LIMITS = { members: 20, queue: 200, chatLength: 300, startDelayMs: 1500, emptyTtlMs: 2 * 60_000 };
 const ROLES = ['host', 'dj', 'listener'];
@@ -31,6 +32,8 @@ export function cleanTrack(input) {
  * @param {(state: object) => void} [deps.onChange] persist state / schedule the next tick
  */
 export function createRoom({ roomId, sockets, now = () => Date.now(), initial = null, onChange = () => {} }) {
+  const gate = createMessageGate({ ratePerSecond: 10, burst: 30, maxBytes: 16 * 1024 });
+  const chatGate = createMessageGate({ ratePerSecond: 1, burst: 5, maxBytes: 4 * 1024 });
   let state = initial ?? {
     roomId,
     hostCode: null,
@@ -136,6 +139,8 @@ export function createRoom({ roomId, sockets, now = () => Date.now(), initial = 
     },
 
     message(socket, raw) {
+      const verdict = gate.check(socket, raw, now());
+      if (verdict !== 'ok') return reply(socket, 'error', { code: verdict });
       let message;
       try {
         message = JSON.parse(typeof raw === 'string' ? raw : new TextDecoder().decode(raw));
@@ -149,6 +154,7 @@ export function createRoom({ roomId, sockets, now = () => Date.now(), initial = 
           // Clock sync: the client times the round trip and reads our clock.
           return reply(socket, 'pong', { t0: body.t0 ?? null, serverTime: now() });
         case 'room.chat': {
+          if (chatGate.check(socket, '', now()) !== 'ok') return reply(socket, 'error', { code: 'slow_down' });
           const text = typeof body.text === 'string' ? body.text.replace(/\s+/g, ' ').trim().slice(0, ROOM_LIMITS.chatLength) : '';
           if (text) broadcast('room.chat', { from: socket.state.code, displayName: nameOf(socket.state.code), text });
           return;

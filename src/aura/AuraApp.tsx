@@ -6,6 +6,7 @@ import { FullPlayer, MiniPlayer, type View } from './Player';
 import { PlayerProvider, usePlayer } from './PlayerContext';
 import { useTheme } from './theme';
 import { TrackMenuProvider } from './TrackMenu';
+import { PrivacyScreen } from './PrivacyScreen';
 import { BrowseScreen, HomeScreen, LibraryScreen, MoodScreen, SearchScreen } from './screens';
 import { RoomProvider } from './social/RoomProvider';
 import { RoomScreen } from './social/RoomScreen';
@@ -71,6 +72,7 @@ function Shell() {
           <Route path="/friends" element={<FriendsScreen />} />
           <Route path="/chat/:code" element={<ChatScreen />} />
           <Route path="/account" element={<AccountScreen />} />
+          <Route path="/privacy" element={<PrivacyScreen />} />
           <Route path="/room" element={<RoomScreen />} />
           <Route path="/room/:id" element={<RoomScreen />} />
           <Route path="/mood/:id" element={<MoodScreen />} />
