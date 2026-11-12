@@ -112,6 +112,9 @@ export class YouTubePlaybackEngine {
   private playerElementId = 'moodify-yt-player-container';
   private keepAliveAudio: HTMLAudioElement | null = null;
   private isUserIntendedPause = false;
+  /** Paused by the phone (tab hidden, screen locked), not by the listener: resumed when the page is back. */
+  private pausedBySystem = false;
+  private systemPauseListener: (() => void) | null = null;
 
   private loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -121,6 +124,7 @@ export class YouTubePlaybackEngine {
     }
     this.ensureContainer();
     this.ensureKeepAliveAudio();
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisible);
   }
 
   private audioCtx: AudioContext | null = null;
@@ -257,6 +261,15 @@ export class YouTubePlaybackEngine {
   }
 
   setSourceResolver(resolve: PlaybackSourceResolver) { this.resolveSource = resolve; }
+
+  /** Called when the browser paused the song because the page went to the background. */
+  setSystemPauseListener(listener: (() => void) | null) { this.systemPauseListener = listener; }
+
+  private onVisible = () => {
+    if (document.visibilityState !== 'visible' || !this.pausedBySystem) return;
+    this.pausedBySystem = false;
+    if (this.snapshot.status === 'paused') void this.play();
+  };
 
   /** Starts the YouTube player before the first song, so the first tap plays at once. */
   warmUp() { void this.getOrInitPlayer().catch(() => { /* retried on the first load */ }); }
@@ -489,6 +502,7 @@ export class YouTubePlaybackEngine {
     const { PlayerState } = window.YT;
 
     if (state === PlayerState.PLAYING) {
+      if (document.visibilityState === 'visible') this.pausedBySystem = false;
       const duration = this.player?.getDuration() || this.snapshot.duration;
       this.update({ status: 'playing', duration: Number.isFinite(duration) ? duration : 0, error: null });
       this.startProgressTimer();
@@ -496,12 +510,17 @@ export class YouTubePlaybackEngine {
     } else if (state === PlayerState.PAUSED) {
       this.stopProgressTimer();
       
-      // Defeat Android Chrome's auto-pause when backgrounded
+      // Phones pause embedded players when the page goes to the background (YouTube keeps
+      // background play for Premium). Try once to carry on; if it stays paused, say so
+      // honestly and pick up again when the listener comes back.
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && !this.isUserIntendedPause) {
-        try {
-          this.player?.playVideo();
-          return;
-        } catch { /* fall through to paused */ }
+        if (!this.pausedBySystem) {
+          this.pausedBySystem = true;
+          try { this.player?.playVideo(); } catch { /* stays paused */ }
+          this.systemPauseListener?.();
+        }
+      } else {
+        this.pausedBySystem = false;
       }
       
       this.isUserIntendedPause = false;

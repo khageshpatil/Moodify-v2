@@ -70,6 +70,25 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     return withCors(await route(request, env, ctx));
   },
+
+  /**
+   * Every 10 minutes (wrangler.toml [triggers]): keep the music server on Render awake, since
+   * its free plan sleeps after 15 idle minutes and then takes up to a minute to answer, and
+   * keep its Home answer cached so the web app's Home opens at once.
+   */
+  async scheduled(_event, env, ctx) {
+    const base = (env.MUSIC_SERVER_URL || '').replace(/\/$/, '');
+    if (!base) return;
+    ctx.waitUntil(Promise.all(['/api/health', '/api/discovery/home'].map(async (path) => {
+      try {
+        const response = await fetch(base + path, { headers: { 'User-Agent': 'moodify-social keep-warm' }, signal: AbortSignal.timeout(90_000) });
+        if (!response.ok) console.warn(JSON.stringify({ event: 'keep_warm', path, status: response.status }));
+        await response.arrayBuffer();
+      } catch (err) {
+        console.warn(JSON.stringify({ event: 'keep_warm', path, error: err?.message }));
+      }
+    })));
+  },
 };
 
 async function route(request, env, ctx) {
