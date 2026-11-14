@@ -5,10 +5,14 @@
  * so it can be tested in Node. Protocol: docs/social-protocol/friends.md §4
  */
 
+import { createMessageGate } from './limits.mjs';
+
 const PRESENCE_MIN_INTERVAL_MS = 1000;
 /** A seek goes out at once (followers jump with you), but never more than 4 a second. */
 const SEEK_MIN_INTERVAL_MS = 250;
 const FRIEND_CACHE_MS = 30_000;
+/** How often position ticks are sent to every friend again (re-learning who is online). */
+const ONLINE_REFRESH_MS = 5 * 60_000;
 
 const text = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
 const num = (v) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
@@ -34,7 +38,8 @@ export const envelope = (type, body = {}, ts = Date.now()) => JSON.stringify({ v
  * @param {string} deps.code this hub's user
  * @param {() => Array<{send(data: string): void, state: object}>} deps.sockets open connections
  * @param {() => Promise<string[]>} deps.friendCodes accepted friends
- * @param {(code: string, event: object) => Promise<void>} deps.sendToHub deliver an event to another user's hub
+ * @param {(code: string, event: object) => Promise<number|void>} deps.sendToHub deliver an event to another user's hub;
+ *   resolves to how many devices that user has connected (unknown → treated as online)
  * @param {(code: string, from: string) => Promise<object|null>} deps.askHub read a friend's presence
  */
 export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now = () => Date.now() }) {
@@ -42,6 +47,12 @@ export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now =
   let lastSeen = null; // { presence, at } after the last device goes offline
   let lastFanoutAt = 0;
   let lastFanoutKey = '';
+  // Friends with a device connected, learned from full fan-outs and their own presence events.
+  // Position ticks only go to them; null until known (e.g. after the hub woke from hibernation).
+  let onlineFriends = null;
+  let onlineAt = 0;
+  // Normal clients send a few messages a second at most (pings, presence ticks).
+  const gate = createMessageGate({ ratePerSecond: 5, burst: 20, maxBytes: 8 * 1024 });
 
   async function friends() {
     if (!friendCache || now() - friendCache.at > FRIEND_CACHE_MS) friendCache = { at: now(), codes: await friendCodes() };
@@ -64,10 +75,20 @@ export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now =
     const key = JSON.stringify([snapshot.online, snapshot.presence?.trackId, snapshot.presence?.playing]);
     // Position ticks are rate-limited; track and play/pause changes go out at once.
     if (!force && key === lastFanoutKey && now() - lastFanoutAt < (seek ? SEEK_MIN_INTERVAL_MS : PRESENCE_MIN_INTERVAL_MS)) return;
+    const changed = key !== lastFanoutKey;
     lastFanoutAt = now();
     lastFanoutKey = key;
     const event = { type: 'presence.friend', body: { code, ...snapshot } };
-    await Promise.all((await friends()).map((friend) => sendToHub(friend, event).catch(() => {})));
+    const everyone = await friends();
+    // Song, play/pause and online changes reach every friend; position ticks only friends who are online
+    // (an offline friend's hub would wake just to drop it; they read presence when they connect).
+    const full = force || changed || !onlineFriends || now() - onlineAt > ONLINE_REFRESH_MS;
+    const targets = full ? everyone : everyone.filter((friend) => onlineFriends.has(friend));
+    const results = await Promise.all(targets.map((friend) => sendToHub(friend, event).then((devices) => [friend, devices], () => [friend, undefined])));
+    if (full) {
+      onlineFriends = new Set(results.filter(([, devices]) => typeof devices !== 'number' || devices > 0).map(([friend]) => friend));
+      onlineAt = now();
+    }
   }
 
   return {
@@ -80,11 +101,18 @@ export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now =
         const p = await askHub(friend, code).catch(() => null);
         return p ? { code: friend, ...p } : null;
       }));
+      onlineFriends = new Set(presences.filter((p) => p?.online).map((p) => p.code));
+      onlineAt = now();
       socket.send(envelope('hello', { code, friends: presences.filter(Boolean) }, now()));
       await fanOut(true);
     },
 
     async onMessage(socket, raw) {
+      const verdict = gate.check(socket, raw, now());
+      if (verdict !== 'ok') {
+        socket.send(envelope('error', { code: verdict }, now()));
+        return;
+      }
       let message;
       try {
         message = JSON.parse(typeof raw === 'string' ? raw : new TextDecoder().decode(raw));
@@ -125,6 +153,10 @@ export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now =
     /** Events from the API or other hubs, forwarded to every open device. */
     async onEvent(event) {
       if (event.type === 'friend.accepted' || event.type === 'friend.removed') friendCache = null;
+      if (event.type === 'presence.friend' && onlineFriends && event.body?.code) {
+        if (event.body.online) onlineFriends.add(event.body.code);
+        else onlineFriends.delete(event.body.code);
+      }
       const data = envelope(event.type, event.body ?? {}, now());
       for (const socket of sockets()) {
         try { socket.send(data); } catch { /* closed meanwhile */ }
@@ -136,6 +168,7 @@ export function createHub({ code, sockets, friendCodes, sendToHub, askHub, now =
     /** A friend's hub asking what this user is playing; strangers get nothing. */
     async presenceFor(requester) {
       if (!(await friends()).includes(requester)) return null;
+      onlineFriends?.add(requester); // a friend asking has just connected
       return currentPresence();
     },
   };

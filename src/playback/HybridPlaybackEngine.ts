@@ -14,7 +14,7 @@ export interface PlaybackMedia {
   addEventListener(type: MediaEventType, listener: () => void): void;
   removeEventListener(type: MediaEventType, listener: () => void): void;
 }
-type MediaEventType = 'play' | 'playing' | 'pause' | 'seeked' | 'ended';
+type MediaEventType = 'play' | 'playing' | 'pause' | 'seeked' | 'ended' | 'systempause';
 
 /** YouTube errors where the song can't play in an embedded player (or isn't there). */
 const EMBED_REFUSED = new Set(['YT_ERROR_100', 'YT_ERROR_101', 'YT_ERROR_150', 'YT_ERROR_5', 'INVALID_VIDEO_ID', 'PLAYER_INIT_FAILED']);
@@ -46,6 +46,7 @@ export class HybridPlaybackEngine {
     this.youtube.subscribe((s) => this.onSnapshot('youtube', s));
     this.relay.subscribe((s) => this.onSnapshot('relay', s));
     this.youtube.setEndedListener(() => { if (this.active === 'youtube') this.endedListener?.(); });
+    this.youtube.setSystemPauseListener(() => { if (this.active === 'youtube') this.emit('systempause'); });
     this.relay.setEndedListener(() => { if (this.active === 'relay') this.endedListener?.(); });
     this.media = Object.defineProperties({
       addEventListener: (type: MediaEventType, listener: () => void) => { if (!this.mediaListeners.has(type)) this.mediaListeners.set(type, new Set()); this.mediaListeners.get(type)!.add(listener); },
@@ -76,6 +77,10 @@ export class HybridPlaybackEngine {
     const before = this.snapshot.status;
     this.snapshot = next;
     this.listeners.forEach((listener) => listener(next));
+    // Keep the phone's media notification honest (it otherwise says "playing" after a pause).
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      try { navigator.mediaSession.playbackState = next.status === 'playing' || next.status === 'loading' ? 'playing' : next.currentTrack ? 'paused' : 'none'; } catch { /* unsupported */ }
+    }
     if (before !== next.status) {
       if (next.status === 'playing') { this.emit('play'); this.emit('playing'); }
       else if (before === 'playing' && next.status === 'paused') this.emit('pause');

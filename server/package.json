@@ -6,7 +6,7 @@
     "dev": "node index.mjs",
     "start": "NODE_ENV=production node index.mjs",
     "smoke": "node smoke.mjs",
-    "test": "node --test provider/*.test.mjs discovery/*.test.mjs"
+    "test": "node --test *.test.mjs provider/*.test.mjs discovery/*.test.mjs"
   },
   "dependencies": {
     "bgutils-js": "^4.0.3",

@@ -173,6 +173,8 @@
 .aura-queue { width: 100%; height: 100%; overflow-y: auto; scrollbar-width: thin; }
 .aura-queue-head { margin: 12px 8px 4px; opacity: 0.8; }
 .aura-link:hover { text-decoration: underline; }
+.aura-prose p { margin: 0 0 12px; line-height: 1.6; }
+.aura-prose ul { margin: 0 0 12px; padding-left: 22px; line-height: 1.6; display: grid; gap: 6px; }
 
 /* A song that's playing: dimmed art with bouncing bars. */
 .aura-art-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / 0.45); color: white; border-radius: var(--radius-sm); }

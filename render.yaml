@@ -10,5 +10,5 @@ services:
         value: production
       - key: MOODIFY_SERVER_PORT
         value: 8787
-    healthCheckPath: /
+    healthCheckPath: /api/health
     autoDeploy: true

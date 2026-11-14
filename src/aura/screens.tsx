@@ -19,8 +19,17 @@ const musicOnly = (section: DiscoveryCatalogSection): DiscoveryCatalogSection =>
 });
 
 /** Loads a collection; cancels when the inputs change or the screen unmounts. */
-function useCollection(load: ((signal: AbortSignal) => Promise<DiscoveryCollectionResult>) | null, deps: unknown[]) {
-  const [state, setState] = useState<{ data: DiscoveryCollectionResult | null; error: string | null; loading: boolean; slow: boolean }>({ data: null, error: null, loading: !!load, slow: false });
+/** The last answer kept in this browser (Home), so a page can show it at once and refresh behind it. */
+const readSaved = (key?: string): DiscoveryCollectionResult | null => {
+  if (!key) return null;
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || 'null') as { at: number; data: DiscoveryCollectionResult } | null;
+    return saved && Date.now() - saved.at < 3 * 24 * 60 * 60 * 1000 ? saved.data : null;
+  } catch { return null; }
+};
+
+function useCollection(load: ((signal: AbortSignal) => Promise<DiscoveryCollectionResult>) | null, deps: unknown[], saveKey?: string) {
+  const [state, setState] = useState<{ data: DiscoveryCollectionResult | null; error: string | null; loading: boolean; slow: boolean }>(() => ({ data: readSaved(saveKey), error: null, loading: !!load, slow: false }));
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!load) { setState({ data: null, error: null, loading: false, slow: false }); return; }
@@ -29,8 +38,12 @@ function useCollection(load: ((signal: AbortSignal) => Promise<DiscoveryCollecti
     // The free music server sleeps when idle; say so instead of looking stuck.
     const slowTimer = setTimeout(() => setState((s) => (s.loading ? { ...s, slow: true } : s)), 5000);
     load(controller.signal)
-      .then((data) => setState({ data, error: null, loading: false, slow: false }))
-      .catch((err: unknown) => { if (!controller.signal.aborted) setState({ data: null, error: err instanceof Error ? err.message : 'Something went wrong', loading: false, slow: false }); })
+      .then((data) => {
+        setState({ data, error: null, loading: false, slow: false });
+        if (saveKey) { try { localStorage.setItem(saveKey, JSON.stringify({ at: Date.now(), data })); } catch { /* full or private */ } }
+      })
+      // A saved copy stays on screen if the refresh fails.
+      .catch((err: unknown) => { if (!controller.signal.aborted) setState((s) => ({ data: saveKey ? s.data : null, error: saveKey && s.data ? null : err instanceof Error ? err.message : 'Something went wrong', loading: false, slow: false })); })
       .finally(() => clearTimeout(slowTimer));
     return () => { controller.abort(); clearTimeout(slowTimer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,7 +107,7 @@ function MoodPills() {
 
 export function HomeScreen() {
   const player = usePlayer();
-  const home = useCollection((signal) => fetchDiscoveryHome(undefined, signal), []);
+  const home = useCollection((signal) => fetchDiscoveryHome(undefined, signal), [], 'aura.home');
   const sections = useMemo(() => (home.data?.catalog?.sections ?? []).map(musicOnly).filter((s) => s.items.length > 0), [home.data]);
   const keepListening = player.recentlyPlayed.slice(0, 8);
   return (
@@ -111,7 +124,7 @@ export function HomeScreen() {
           <div className="aura-picks">{keepListening.map((track) => <TrackRow key={track.id} track={track} queue={keepListening} compact />)}</div>
         </section>
       )}
-      <LoadState state={home} what="Home" />
+      {!home.data && <LoadState state={home} what="Home" />}
       <Sections sections={sections} featureFirst />
     </div>
   );

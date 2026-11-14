@@ -79,6 +79,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** Moodify's privacy page (the web app serves it). */
+internal const val PRIVACY_URL = "https://moodify-v2-two.vercel.app/privacy"
 private const val APK_DOWNLOAD_URL =
     "https://github.com/khageshpatil/Moodify-v2/releases/latest/download/Moodify.apk"
 
@@ -366,6 +368,7 @@ fun SettingsScreen(
                 LinkRow("All versions on GitHub") {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(APK_DOWNLOAD_URL)))
                 }
+                LinkRow("Privacy") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL))) }
                 LinkRow("Open-source notices") { showNotices = true }
             }
         }

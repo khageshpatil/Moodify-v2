@@ -5,6 +5,11 @@ import { SabrStream } from 'googlevideo/sabr-stream';
 import { EnabledTrackTypes } from 'googlevideo/utils';
 import { provider } from './provider/innerTubeProvider.mjs';
 import { discoveryGraphStore } from './discovery/DiscoveryGraphStore.mjs';
+import { createResponseCache, ttlFor } from './responseCache.mjs';
+
+/** Repeat catalogue requests are answered from memory (responseCache.mjs). */
+const responseCache = createResponseCache();
+const CACHE_KEY = Symbol('cacheKey');
 
 // Render injects PORT; MOODIFY_SERVER_PORT is the local dev override
 const port = Number(process.env.PORT || process.env.MOODIFY_SERVER_PORT || 8787);
@@ -80,12 +85,17 @@ const toUpstreamRange = (header, totalLength) => {
 const sendJson = (response, status, payload) => {
   if (response.headersSent || response.writableEnded || response.destroyed) return;
   try {
+    const body = JSON.stringify(payload);
+    const cache = response[CACHE_KEY];
+    if (cache && status === 200) responseCache.set(cache.key, body, cache.ttl);
     response.writeHead(status, {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
+      // Cacheable answers may also be kept by the browser for a while.
+      'cache-control': cache && status === 200 ? `public, max-age=${Math.min(cache.ttl, 600)}` : 'no-store',
       'access-control-allow-origin': '*',
+      ...(cache ? { 'x-moodify-cache': 'miss' } : {}),
     });
-    response.end(JSON.stringify(payload));
+    response.end(body);
   } catch {
     if (!response.destroyed) response.destroy();
   }
@@ -372,8 +382,24 @@ const server = http.createServer(async (request, response) => {
   }
   try {
     if (url.pathname === '/api/health') {
-      sendJson(response, 200, { ok: true, provider: 'youtube-music', providerCache: provider.stats(), discoveryGraph: await discoveryGraphStore.stats() });
+      sendJson(response, 200, { ok: true, provider: 'youtube-music', providerCache: provider.stats(), responseCache: responseCache.stats(), discoveryGraph: await discoveryGraphStore.stats() });
       return;
+    }
+    const ttl = request.method === 'GET' ? ttlFor(url.pathname) : 0;
+    if (ttl) {
+      const key = url.pathname + url.search;
+      const cached = responseCache.get(key);
+      if (cached) {
+        response.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': `public, max-age=${Math.min(ttl, 600)}`,
+          'access-control-allow-origin': '*',
+          'x-moodify-cache': 'hit',
+        });
+        response.end(cached);
+        return;
+      }
+      response[CACHE_KEY] = { key, ttl };
     }
     if (url.pathname === '/smoke') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });

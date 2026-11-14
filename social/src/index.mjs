@@ -7,7 +7,15 @@ import { createApi, d1Store } from './api.mjs';
 import { pushFromEnv } from './push.mjs';
 import { createHub } from './hub.mjs';
 import { ROOM_LIMITS, createRoom } from './room.mjs';
+import { createBurstLimiter } from './limits.mjs';
 import { readToken } from './tokens.mjs';
+
+/** Per isolate (best-effort) burst limits, shared by every request this isolate serves. */
+const burst = createBurstLimiter();
+/** Live connections one account may hold open at once (phones, tablets, browser tabs). */
+const MAX_LIVE_CONNECTIONS = 10;
+/** Listening rooms one account may open in an hour. */
+const ROOMS_PER_HOUR = 20;
 
 const jsonError = (status, code, message) => new Response(JSON.stringify({ error: { code, message } }), {
   status,
@@ -30,6 +38,9 @@ const withCors = (response) => {
   for (const [key, value] of Object.entries(CORS)) headers.set(key, value);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 };
+
+/** A path with ids replaced, so logs group by route and never carry codes. */
+const routeName = (path) => path.replace(/MOOD-[0-9A-Z]{4}-[0-9A-Z]{4}/gi, ':code').replace(/\/[0-9A-Z]{6,8}(?=\/|$)/gi, '/:id');
 
 const ROOM_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const roomFor = (env, roomId) => env.ROOMS.get(env.ROOMS.idFromName(roomId));
@@ -59,6 +70,25 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     return withCors(await route(request, env, ctx));
   },
+
+  /**
+   * Every 10 minutes (wrangler.toml [triggers]): keep the music server on Render awake, since
+   * its free plan sleeps after 15 idle minutes and then takes up to a minute to answer, and
+   * keep its Home answer cached so the web app's Home opens at once.
+   */
+  async scheduled(_event, env, ctx) {
+    const base = (env.MUSIC_SERVER_URL || '').replace(/\/$/, '');
+    if (!base) return;
+    ctx.waitUntil(Promise.all(['/api/health', '/api/discovery/home'].map(async (path) => {
+      try {
+        const response = await fetch(base + path, { headers: { 'User-Agent': 'moodify-social keep-warm' }, signal: AbortSignal.timeout(90_000) });
+        if (!response.ok) console.warn(JSON.stringify({ event: 'keep_warm', path, status: response.status }));
+        await response.arrayBuffer();
+      } catch (err) {
+        console.warn(JSON.stringify({ event: 'keep_warm', path, error: err?.message }));
+      }
+    })));
+  },
 };
 
 async function route(request, env, ctx) {
@@ -83,6 +113,7 @@ async function route(request, env, ctx) {
   if (url.pathname === '/v1/rooms' && request.method === 'POST') {
     const me = await authed(request, env);
     if (!me) return jsonError(401, 'unauthorized', 'Sign in again.');
+    if (!burst.allow(`room:${me.code}`, ROOMS_PER_HOUR, 3_600_000)) return jsonError(429, 'slow_down', 'Too many rooms. Try again later.');
     const roomId = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => ROOM_ALPHABET[b % 32]).join('');
     await roomFor(env, roomId).fetch(`https://room/claim?id=${roomId}`, { method: 'POST', body: JSON.stringify({ hostCode: me.code }) });
     return Response.json({ roomId, invite: `moodify://room/${roomId}` }, { status: 201 });
@@ -101,12 +132,13 @@ async function route(request, env, ctx) {
   const handle = createApi({
     store: d1Store(env.DB), secret: env.SESSION_SECRET, notify: notifyHub(env),
     push: pushFromEnv(env), defer: (work) => (ctx?.waitUntil ? ctx.waitUntil(work) : work),
-    vapidPublicKey: env.VAPID_PUBLIC_KEY || null,
+    vapidPublicKey: env.VAPID_PUBLIC_KEY || null, burst,
   });
   try {
     return await handle(request);
   } catch (err) {
-    console.error('social api error', err?.message);
+    // Workers Logs keeps these (wrangler.toml [observability]); never log bodies or tokens.
+    console.error(JSON.stringify({ event: 'api_error', method: request.method, path: routeName(url.pathname), error: err?.message, stack: err?.stack?.split('\n').slice(0, 4).join(' | ') }));
     return jsonError(500, 'server_error', 'Something went wrong.');
   }
 }
@@ -132,7 +164,9 @@ export class UserHub {
         .map((ws) => this.wrap(ws)),
       friendCodes: () => store.friendCodes(code),
       sendToHub: (friend, event) => hubFor(this.env, friend)
-        .fetch('https://hub/event', { method: 'POST', body: JSON.stringify(event) }).then(() => {}),
+        .fetch('https://hub/event', { method: 'POST', body: JSON.stringify(event) })
+        .then((response) => (response.status === 200 ? response.json() : { open: 0 }))
+        .then((body) => body.open ?? 0),
       askHub: async (friend, from) => {
         const response = await hubFor(this.env, friend).fetch('https://hub/presence', { headers: { 'X-From': from } });
         return response.ok ? response.json() : null;
@@ -171,6 +205,14 @@ export class UserHub {
     const hub = this.core(code);
 
     if (url.pathname === '/connect') {
+      // Too many open connections for one account: turn the new one away (closing the oldest
+      // instead would let 11+ devices keep knocking each other off as they reconnect).
+      if (this.state.getWebSockets().filter((ws) => ws.readyState === 1).length >= MAX_LIVE_CONNECTIONS) {
+        const [client, server] = Object.values(new WebSocketPair());
+        server.accept();
+        server.close(4008, 'too_many_connections');
+        return new Response(null, { status: 101, webSocket: client });
+      }
       const [client, server] = Object.values(new WebSocketPair());
       this.state.acceptWebSocket(server);
       server.serializeAttachment({ sharing: true, presence: null, updatedAt: 0, device: request.headers.get('X-Moodify-Device') ?? null });
@@ -179,9 +221,9 @@ export class UserHub {
     }
     if (url.pathname === '/event' && request.method === 'POST') {
       await hub.onEvent(await request.json());
-      const devices = this.state.getWebSockets().filter((ws) => ws.readyState === 1)
-        .map((ws) => ws.deserializeAttachment()?.device).filter(Boolean);
-      return Response.json({ devices });
+      const open = this.state.getWebSockets().filter((ws) => ws.readyState === 1);
+      const devices = open.map((ws) => ws.deserializeAttachment()?.device).filter(Boolean);
+      return Response.json({ devices, open: open.length });
     }
     if (url.pathname === '/presence') {
       const presence = await hub.presenceFor(request.headers.get('X-From') ?? '');
