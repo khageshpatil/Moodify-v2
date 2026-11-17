@@ -173,11 +173,14 @@ export const useCanonicalMusicPlayer = () => {
   useEffect(() => { const unsubscribe = engine.subscribe((snapshot) => { collector.observe(snapshot); setState((current) => ({ ...current, currentTime: snapshot.currentTime, duration: snapshot.duration || current.duration, isPlaying: snapshot.status === 'playing', playbackStatus: snapshot.status, playbackError: snapshot.error })); }); engine.setVolume(stateRef.current.volume); engine.setMediaSessionHandlers({ next, previous }); engine.setEndedListener(() => { const current = stateRef.current; if (current.currentTrack) setState((value) => ({ ...value, history: appendFinishedListen(value.history, current.currentTrack!, Date.now() - startedAt.current) })); if (current.repeat === 'one' && current.currentTrack) { const track = current.currentTrack; const context = queueDiscoveryContexts.current.get(`${track.provider || 'unknown'}:${track.providerId || track.id}`); collector.recordPlayIntent(toPlaybackTrack(track), context); load(track); } else next(); }); return () => { unsubscribe(); engine.setEndedListener(null); }; }, [collector, engine, load, next, previous]);
   useEffect(() => collector.subscribe(setListeningEvents), [collector]);
   useEffect(() => {
+    // Recommendations only: fetched once the first screen has loaded, so it never competes with it.
     const controller = new AbortController();
-    fetchDiscoveryGraph(controller.signal)
-      .then(setDiscoveryGraph)
-      .catch(() => { /* Graph is optional for playback; recommendations degrade gracefully. */ });
-    return () => controller.abort();
+    const timer = window.setTimeout(() => {
+      fetchDiscoveryGraph(controller.signal)
+        .then(setDiscoveryGraph)
+        .catch(() => { /* Graph is optional for playback; recommendations degrade gracefully. */ });
+    }, 8000);
+    return () => { window.clearTimeout(timer); controller.abort(); };
   }, []);
   useEffect(() => { const timers = [window.setTimeout(() => write(keys.playlists, state.playlists), 500), window.setTimeout(() => write(keys.favorites, state.favorites), 500), window.setTimeout(() => write(keys.history, state.history), 1000), window.setTimeout(() => write(keys.recent, state.recentlyPlayed), 500), window.setTimeout(() => write(keys.volume, state.volume), 300)]; return () => timers.forEach(window.clearTimeout); }, [state.playlists, state.favorites, state.history, state.recentlyPlayed, state.volume]);
   const loadMoodPlaylist = useCallback(async (mood: string, discoveryContext?: DiscoveryContext) => { const curated = getMoodPlaylist(mood); const tracks = curated.length ? curated : await searchMoodifyTracks(`${mood} music`, 15); if (!tracks.length) { toast({ title: 'No Music Found', variant: 'destructive' }); return; } const resolvedTracks = curated.length ? await Promise.all(tracks.map(async (track) => { try { const found = await searchMoodifyTracks(`${track.title} ${track.artist}`, 1); return found[0] ? { ...track, id: found[0].id, provider: found[0].provider, providerId: found[0].providerId, albumArt: found[0].albumArt || track.albumArt, duration: found[0].duration || track.duration } : track; } catch { return track; } })) : tracks; playTrack(resolvedTracks[0], resolvedTracks, discoveryContext || discoveryContextForVibe(mood, 0)); }, [playTrack]);

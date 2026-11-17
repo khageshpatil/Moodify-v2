@@ -435,7 +435,8 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/discovery/graph') {
-      sendJson(response, 200, await discoveryGraphStore.read());
+      // The recent part only: the full graph is ~18 MB.
+      sendJson(response, 200, await discoveryGraphStore.readCompact());
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/discovery/explore') {
@@ -603,4 +604,12 @@ const server = http.createServer(async (request, response) => {
 });
 
 // Bind to 0.0.0.0 so Render (and other cloud hosts) can detect the open port
+// Render stops the server with SIGTERM on every deploy: write the graph's pending changes first.
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.once(signal, () => {
+    discoveryGraphStore.flush().catch(() => {}).finally(() => process.exit(0));
+    setTimeout(() => process.exit(0), 8000).unref();
+  });
+}
+
 server.listen(port, '0.0.0.0', () => console.log(`Moodify music server listening on http://0.0.0.0:${port}`));
