@@ -174,6 +174,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel = mainViewModel
+            // Nothing is drawn until stored settings are known (the splash covers it). Drawing with the
+            // defaults first showed the welcome screens to returning users, then cross-faded to Home
+            // while Home's heavy first frame stalled the fade: seconds of onboarding on every cold start.
+            val ready by viewModel.settingsReady.collectAsStateWithLifecycle()
+            if (!ready) return@setContent
             val settings by viewModel.appSettings.collectAsStateWithLifecycle()
             val playback by viewModel.playbackState.collectAsStateWithLifecycle()
             val darkTheme = when (settings.themeMode) {
