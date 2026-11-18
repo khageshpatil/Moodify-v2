@@ -100,7 +100,8 @@ data class HomeUiState(
     val quickPicksArePersonal: Boolean = false,
     val pinnedPlaylists: List<LocalPlaylist> = emptyList(),
     val isLoading: Boolean = false,
-    val isStale: Boolean = false,
+    /** The phone has no connection (shelves show saved copies). */
+    val isOffline: Boolean = false,
     val error: String? = null,
     /** Mood ids picked during setup, shown first. */
     val favoriteMoods: List<String> = emptyList(),
@@ -182,7 +183,7 @@ fun HomeScreen(
                 item(key = "moods") {
                     MoodRow(moods = orderedMoods(state.favoriteMoods), onMood = onOpenMood)
                 }
-                if (state.isStale) {
+                if (state.isOffline) {
                     item(key = "offline") { OfflineBanner(onRetry = onRefresh) }
                     if (state.offlineTracks.isNotEmpty()) {
                         item(key = "offlineShelf") {

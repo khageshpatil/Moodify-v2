@@ -322,6 +322,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val exploreCatalog by viewModel.exploreCatalog.collectAsStateWithLifecycle()
     val isLoadingCatalog by viewModel.isLoadingCatalog.collectAsStateWithLifecycle()
     val catalogStale by viewModel.catalogIsStale.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     val catalogError by viewModel.catalogError.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchType by viewModel.searchType.collectAsStateWithLifecycle()
@@ -561,7 +562,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val chromeHeight = NavBarHeight + Spacing.md + (if (hasTrack) MiniPlayerHeight + Spacing.sm else 0.dp)
     val bottomPadding = chromeHeight + navInset + Spacing.sm
 
-    val homeState = remember(homeCatalog, history, favorites, trending, forYou, playback.currentTrack, playlists, isLoadingCatalog, catalogStale, catalogError, settings.favoriteMoods, personal, homeChips, selectedChip, isLoadingHomeMore, downloads, savedCollections, recentCollections) {
+    val homeState = remember(homeCatalog, history, favorites, trending, forYou, playback.currentTrack, playlists, isLoadingCatalog, catalogStale, isOnline, catalogError, settings.favoriteMoods, personal, homeChips, selectedChip, isLoadingHomeMore, downloads, savedCollections, recentCollections) {
         // The mini-player already shows (and resumes) the current song, so Home
         // has no "now playing" card; just don't deal that song into the picks.
         val playingId = playback.currentTrack?.id
@@ -580,7 +581,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
             quickPicksArePersonal = discover.isNotEmpty(),
             pinnedPlaylists = playlists.filter { it.isPinned && it.tracks.isNotEmpty() },
             isLoading = isLoadingCatalog,
-            isStale = catalogStale,
+            // Only "offline" when the phone is: a shelf that timed out quietly keeps its saved copy.
+            isOffline = !isOnline,
             error = catalogError,
             favoriteMoods = settings.favoriteMoods,
             keepListening = personal.keepListening.filterNot { it.id == playingId },
