@@ -1,5 +1,5 @@
 import { ArrowLeft, Clock, Heart, Library as LibraryIcon, ListMusic, Pencil, Play, RotateCw, Search as SearchIcon, SearchX, Send, Settings, Shuffle, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { Track } from '@/data/mockMusic';
 import {
@@ -9,7 +9,8 @@ import {
 import { MOODS, greeting, moodById } from './moods';
 import { usePlayer } from './PlayerContext';
 import { Artwork, EmptyState, MediaCard, SectionHeader, SkeletonRows, TrackRow, browsePath } from './ui';
-import { SendPlaylistDialog } from './social/SocialScreens';
+// Loaded when used: it pulls in the social screens.
+const SendPlaylistDialog = lazy(() => import('./social/SocialScreens').then((m) => ({ default: m.SendPlaylistDialog })));
 import { TextDialog, type TrackMenuExtra } from './TrackMenu';
 
 const NON_MUSIC = new Set(['video', 'podcast']);
@@ -396,7 +397,7 @@ export function LibraryScreen() {
       </section>
       {dialog === 'new' && <TextDialog title="New playlist" label="Playlist name" confirm="Create" onClose={() => setDialog(null)} onSubmit={(name) => { player.createPlaylist(name); setDialog(null); }} />}
       {dialog === 'rename' && playlist && <TextDialog title="Rename playlist" label="Playlist name" initial={playlist.name} confirm="Save" onClose={() => setDialog(null)} onSubmit={(name) => { player.renamePlaylist(playlist.id, name); setDialog(null); }} />}
-      {dialog === 'send' && playlist && <SendPlaylistDialog name={playlist.name} tracks={playlist.tracks} onClose={() => setDialog(null)} />}
+      {dialog === 'send' && playlist && <Suspense fallback={null}><SendPlaylistDialog name={playlist.name} tracks={playlist.tracks} onClose={() => setDialog(null)} /></Suspense>}
     </div>
   );
 }

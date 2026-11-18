@@ -1,5 +1,5 @@
 import { Home, Library, Search, Users } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import './aura.css';
 import { FullPlayer, MiniPlayer, type View } from './Player';
@@ -7,14 +7,19 @@ import { getCanonicalPlaybackEngine } from '@/playback/PlaybackEngine';
 import { PlayerProvider, usePlayer } from './PlayerContext';
 import { useTheme } from './theme';
 import { TrackMenuProvider } from './TrackMenu';
-import { PrivacyScreen } from './PrivacyScreen';
 import { BrowseScreen, HomeScreen, LibraryScreen, MoodScreen, SearchScreen } from './screens';
 import { RoomProvider } from './social/RoomProvider';
-import { RoomScreen } from './social/RoomScreen';
-import { ChatScreen } from './social/ChatScreen';
 import { useLibrarySync } from './social/librarySync';
 import { SocialProvider, useSocial } from './social/SocialProvider';
-import { AccountScreen, FriendsScreen } from './social/SocialScreens';
+import { SkeletonRows } from './ui';
+
+// Screens that aren't the first one load when opened, so the first download stays small.
+const named = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) => lazy(() => load().then((m) => ({ default: m[name] })));
+const FriendsScreen = named(() => import('./social/SocialScreens'), 'FriendsScreen');
+const AccountScreen = named(() => import('./social/SocialScreens'), 'AccountScreen');
+const ChatScreen = named(() => import('./social/ChatScreen'), 'ChatScreen');
+const RoomScreen = named(() => import('./social/RoomScreen'), 'RoomScreen');
+const PrivacyScreen = named(() => import('./PrivacyScreen'), 'PrivacyScreen');
 
 const TABS = [
   { to: '/', label: 'Home', icon: Home, end: true },
@@ -101,6 +106,7 @@ function Shell() {
         ))}
       </nav>
       <main className="aura-main">
+        <Suspense fallback={<div className="aura-page"><SkeletonRows /></div>}>
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/search" element={<SearchScreen />} />
@@ -114,6 +120,7 @@ function Shell() {
           <Route path="/mood/:id" element={<MoodScreen />} />
           <Route path="/browse/:kind/:id" element={<BrowseScreen />} />
         </Routes>
+        </Suspense>
       </main>
       <MiniPlayer onOpen={(view) => setPlayerView(view ?? 'cover')} />
       <nav className="aura-bottomnav" aria-label="Main">
