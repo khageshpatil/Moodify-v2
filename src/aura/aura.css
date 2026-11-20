@@ -117,7 +117,7 @@
 .aura-mini-track { display: flex; align-items: center; gap: var(--space-sm); min-width: 0; flex: 1; }
 .aura-mini-center { display: grid; gap: 2px; min-width: 0; }
 .aura-mini-right { display: flex; align-items: center; justify-content: flex-end; }
-.aura-mini-progress { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--aura-primary); transition: width 0.25s linear; }
+.aura-mini-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--aura-primary); transform-origin: left; transition: transform 0.25s linear; }
 .aura-desk-only { display: none !important; }
 @media (min-width: 1024px) {
   .aura-mini { left: calc(var(--nav-w) + 24px); right: 24px; bottom: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 1.5fr) auto; gap: var(--space-lg); }
@@ -179,11 +179,11 @@
 /* A song that's playing: dimmed art with bouncing bars. */
 .aura-art-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / 0.45); color: white; border-radius: var(--radius-sm); }
 .aura-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 16px; }
-.aura-bars i { width: 3px; background: currentColor; border-radius: 1px; animation: aura-bar 0.9s ease-in-out infinite; }
+.aura-bars i { width: 3px; height: 100%; background: currentColor; border-radius: 1px; transform-origin: bottom; will-change: transform; animation: aura-bar 0.9s ease-in-out infinite; }
 .aura-bars i:nth-child(2) { animation-delay: -0.3s; }
 .aura-bars i:nth-child(3) { animation-delay: -0.6s; }
-@keyframes aura-bar { 0%, 100% { height: 30%; } 50% { height: 100%; } }
-@media (prefers-reduced-motion: reduce) { .aura-bars i { animation: none; height: 70%; } .aura-spin { animation-duration: 2s; } }
+@keyframes aura-bar { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .aura-bars i { animation: none; transform: scaleY(0.7); } .aura-spin { animation-duration: 2s; } }
 @media (max-width: 639px) { .aura-hide-phone { display: none !important; } }
 
 /* Track actions: a bottom sheet on phones, a centred card on wide screens. */

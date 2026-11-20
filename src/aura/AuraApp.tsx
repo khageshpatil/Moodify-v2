@@ -76,8 +76,8 @@ function usePlaybackKeys() {
       const p = ref.current;
       const key = e.key.toLowerCase();
       if (key === ' ' || key === 'k') { e.preventDefault(); p.togglePlayPause(); }
-      else if (key === 'j') p.seekTo(Math.max(0, p.currentTime - 10));
-      else if (key === 'l') p.seekTo(p.currentTime + 10);
+      else if (key === 'j') p.seekTo(Math.max(0, p.getCurrentTime() - 10));
+      else if (key === 'l') p.seekTo(p.getCurrentTime() + 10);
       else if (e.shiftKey && key === 'n') p.playNext();
       else if (e.shiftKey && key === 'p') p.playPrevious();
     };

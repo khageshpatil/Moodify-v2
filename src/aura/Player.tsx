@@ -6,6 +6,7 @@ import { usePlayer } from './PlayerContext';
 import { useRoom } from './social/RoomProvider';
 import { useTrackMenu } from './TrackMenu';
 import { Artwork, Bars, formatTime } from './ui';
+import { usePlaybackPosition } from './usePlaybackPosition';
 
 type Player = ReturnType<typeof usePlayer>;
 
@@ -23,8 +24,9 @@ function PlayButton({ player, size, className }: { player: Player; size: number;
 /** A seek bar that only seeks when you let go (dragging doesn't stutter the song). */
 function SeekBar({ player, showTimes = true }: { player: Player; showTimes?: boolean }) {
   const [dragging, setDragging] = useState<number | null>(null);
+  const currentTime = usePlaybackPosition();
   const duration = player.duration || player.currentTrack?.duration || 0;
-  const position = Math.min(dragging ?? player.currentTime, duration || Infinity);
+  const position = Math.min(dragging ?? currentTime, duration || Infinity);
   const commit = () => { if (dragging !== null) { player.seekTo(dragging); setDragging(null); } };
   const pct = duration > 0 ? (position / duration) * 100 : 0;
   return (
@@ -67,7 +69,6 @@ export function MiniPlayer({ onOpen }: { onOpen: (view?: View) => void }) {
   const track = player.currentTrack;
   if (!track) return null;
   const duration = player.duration || track.duration || 0;
-  const progress = duration > 0 ? (player.currentTime / duration) * 100 : 0;
   const liked = player.isFavorite(track.id);
   const RepeatIcon = player.repeat === 'one' ? Repeat1 : Repeat;
   return (
@@ -109,9 +110,15 @@ export function MiniPlayer({ onOpen }: { onOpen: (view?: View) => void }) {
           <button className="aura-icon-btn" aria-label="Open full player" onClick={() => onOpen()}><Maximize2 size={18} /></button>
         </span>
       </div>
-      <div className="aura-mini-progress aura-phone-only" style={{ width: `${progress}%` }} />
+      <MiniProgress duration={duration} />
     </div>
   );
+}
+
+/** The phone mini player's progress line: the only part of it that changes every tick. */
+function MiniProgress({ duration }: { duration: number }) {
+  const position = usePlaybackPosition();
+  return <div className="aura-mini-progress aura-phone-only" style={{ transform: `scaleX(${duration > 0 ? Math.min(1, position / duration) : 0})` }} />;
 }
 
 export type View = 'cover' | 'lyrics' | 'queue';
