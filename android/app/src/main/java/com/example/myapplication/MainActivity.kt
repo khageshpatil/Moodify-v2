@@ -174,6 +174,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel = mainViewModel
+            // Nothing is drawn until stored settings are known (the splash covers it). Drawing with the
+            // defaults first showed the welcome screens to returning users, then cross-faded to Home
+            // while Home's heavy first frame stalled the fade: seconds of onboarding on every cold start.
+            val ready by viewModel.settingsReady.collectAsStateWithLifecycle()
+            if (!ready) return@setContent
             val settings by viewModel.appSettings.collectAsStateWithLifecycle()
             val playback by viewModel.playbackState.collectAsStateWithLifecycle()
             val darkTheme = when (settings.themeMode) {
@@ -317,6 +322,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val exploreCatalog by viewModel.exploreCatalog.collectAsStateWithLifecycle()
     val isLoadingCatalog by viewModel.isLoadingCatalog.collectAsStateWithLifecycle()
     val catalogStale by viewModel.catalogIsStale.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     val catalogError by viewModel.catalogError.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchType by viewModel.searchType.collectAsStateWithLifecycle()
@@ -556,7 +562,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val chromeHeight = NavBarHeight + Spacing.md + (if (hasTrack) MiniPlayerHeight + Spacing.sm else 0.dp)
     val bottomPadding = chromeHeight + navInset + Spacing.sm
 
-    val homeState = remember(homeCatalog, history, favorites, trending, forYou, playback.currentTrack, playlists, isLoadingCatalog, catalogStale, catalogError, settings.favoriteMoods, personal, homeChips, selectedChip, isLoadingHomeMore, downloads, savedCollections, recentCollections) {
+    val homeState = remember(homeCatalog, history, favorites, trending, forYou, playback.currentTrack, playlists, isLoadingCatalog, catalogStale, isOnline, catalogError, settings.favoriteMoods, personal, homeChips, selectedChip, isLoadingHomeMore, downloads, savedCollections, recentCollections) {
         // The mini-player already shows (and resumes) the current song, so Home
         // has no "now playing" card; just don't deal that song into the picks.
         val playingId = playback.currentTrack?.id
@@ -575,7 +581,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
             quickPicksArePersonal = discover.isNotEmpty(),
             pinnedPlaylists = playlists.filter { it.isPinned && it.tracks.isNotEmpty() },
             isLoading = isLoadingCatalog,
-            isStale = catalogStale,
+            // Only "offline" when the phone is: a shelf that timed out quietly keeps its saved copy.
+            isOffline = !isOnline,
             error = catalogError,
             favoriteMoods = settings.favoriteMoods,
             keepListening = personal.keepListening.filterNot { it.id == playingId },

@@ -229,6 +229,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _catalogIsStale = MutableStateFlow(false)
     val catalogIsStale: StateFlow<Boolean> = _catalogIsStale.asStateFlow()
 
+    /** Whether the phone is online, as Android sees it ("You're offline" is shown only when it isn't). */
+    val isOnline: StateFlow<Boolean> = com.moodify.app.data.Connectivity.observe(application)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.moodify.app.data.Connectivity.isOnline(application))
+
+    init {
+        // Back online with shelves that couldn't refresh: refresh them without being asked.
+        viewModelScope.launch {
+            isOnline.drop(1).filter { it }.collect { if (_catalogIsStale.value) refreshCatalog() }
+        }
+    }
+
     private val _isOpeningBrowse = MutableStateFlow(false)
     val isOpeningBrowse: StateFlow<Boolean> = _isOpeningBrowse.asStateFlow()
 

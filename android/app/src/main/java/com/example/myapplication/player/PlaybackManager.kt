@@ -127,6 +127,26 @@ class PlaybackManager private constructor(private val context: Context) {
     private var loadJob: Job? = null
     private var lastPersistAtMs = 0L
     private var historyRecordedForTrack: String? = null
+    /** Time actually spent playing the current song (for counting a play). */
+    private var listenedMs = 0L
+    private var listenedTrackId: String? = null
+
+    /**
+     * Counts the current song as played after 30 s of listening (half the song if it's under a
+     * minute). History, play counts, "Keep listening" and recommendations all build on this,
+     * so songs skipped after a few seconds no longer look like favourites.
+     */
+    private fun countListen(durationMs: Long?) {
+        val track = _state.value.currentTrack ?: return
+        if (listenedTrackId != track.id) { listenedTrackId = track.id; listenedMs = 0L }
+        if (historyRecordedForTrack == track.id) return
+        listenedMs += 500L
+        val needed = if (durationMs != null && durationMs < 60_000L) durationMs / 2 else 30_000L
+        if (listenedMs < needed) return
+        historyRecordedForTrack = track.id
+        // Outside any state update, so the database write never runs inside a CAS retry loop.
+        if (!pauseHistory) scope.launch { runCatching { historyStore.record(track) } }
+    }
     private enum class PlaybackRoute { NONE, LOCAL, DIRECT_CDN }
     @Volatile
     private var activePlaybackRoute = PlaybackRoute.NONE
@@ -225,6 +245,7 @@ class PlaybackManager private constructor(private val context: Context) {
                 val movedToNewSong = reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
                 if (movedToNewSong) {
                     historyRecordedForTrack = null
+                    listenedMs = 0L
                     refreshAttempts.remove(track.id)
                 }
                 val resolvedDurationMs = streamContracts[cacheKey]?.durationMs
@@ -306,14 +327,9 @@ class PlaybackManager private constructor(private val context: Context) {
                             )
                         }
                         publishProgress()
-                        // History is written outside the state update so the
-                        // database write never runs inside a CAS retry loop.
-                        _state.value.currentTrack?.let { track ->
-                            if (historyRecordedForTrack != track.id) {
-                                historyRecordedForTrack = track.id
-                                if (!pauseHistory) scope.launch { runCatching { historyStore.record(track) } }
-                            }
-                        }
+                        // A play is counted once it has really been listened to (see the
+                        // progress loop), not here when the song merely starts: a skip after
+                        // a few seconds must not shape history, "Keep listening" or picks.
                     }
                     Player.STATE_ENDED     -> {
                         _state.update { it.copy(isPlaying = false, isLoading = false) }
@@ -324,6 +340,7 @@ class PlaybackManager private constructor(private val context: Context) {
                         } else if (current.isRepeat && current.currentTrack != null) {
                             // A repeat is a fresh play: fresh retry budget, counted again.
                             historyRecordedForTrack = null
+                            listenedMs = 0L
                             refreshAttempts.remove(current.currentTrack.id)
                             loadAndPlay(current.currentTrack, ++loadGeneration)
                         } else if (current.isShuffle || current.currentIndex < current.queue.lastIndex) {
@@ -477,6 +494,7 @@ class PlaybackManager private constructor(private val context: Context) {
                 kotlinx.coroutines.delay(500)
                 if (_state.value.isPlaying) {
                     publishProgress()
+                    countListen(exoPlayer.duration.takeIf { it > 0 })
                     val dur = exoPlayer.duration.takeIf { it > 0 }
                     if (dur != null && dur != _state.value.durationMs) {
                         _state.update { it.copy(durationMs = dur) }
@@ -524,6 +542,7 @@ class PlaybackManager private constructor(private val context: Context) {
 
         refreshAttempts.remove(track.id)
         historyRecordedForTrack = null
+        listenedMs = 0L
         activePlaybackRoute = PlaybackRoute.NONE
         persistState()
         loadAndPlay(track, ++loadGeneration)
