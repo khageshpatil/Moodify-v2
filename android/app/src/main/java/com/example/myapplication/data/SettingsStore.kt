@@ -11,6 +11,20 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/**
+ * Streaming audio quality (Settings › Playback), chosen separately for mobile data and Wi-Fi.
+ * Rough data use per hour of listening; YouTube's actual bitrates vary a little by song.
+ */
+enum class AudioQuality(val label: String, val detail: String) {
+    LOW("Data saver", "About 25 MB an hour · starts fastest"),
+    NORMAL("Normal", "About 35 MB an hour · good on mobile data"),
+    HIGH("High", "About 70 MB an hour · the best available");
+
+    companion object {
+        fun parse(value: String?): AudioQuality? = entries.firstOrNull { it.name == value }
+    }
+}
+
 data class AppSettings(
     val language: String = "en",
     /** Effective catalogue country: the user's pick, or the detected one when [regionIsAutomatic]. */
@@ -30,8 +44,9 @@ data class AppSettings(
     val showLyricsControls: Boolean = true,
     val showLyricsTranslation: Boolean = false,
     val showLyricsRomanization: Boolean = true,
-    /** Stream the smallest audio format (downloads stay full quality). */
-    val dataSaver: Boolean = false,
+    /** Streaming quality on mobile data / hotspots, and on Wi-Fi. Downloads always use the best. */
+    val audioQualityMobile: AudioQuality = AudioQuality.NORMAL,
+    val audioQualityWifi: AudioQuality = AudioQuality.HIGH,
     /** Downloads wait for Wi-Fi (an unmetered network). */
     val downloadOnWifiOnly: Boolean = false,
     /** Plays aren't recorded in History, and "For you" stops learning. */
@@ -75,7 +90,11 @@ class SettingsStore(private val context: Context) {
             showLyricsControls = values[LYRICS_CONTROLS]?.toBooleanStrictOrNull() ?: true,
             showLyricsTranslation = values[LYRICS_TRANSLATION]?.toBooleanStrictOrNull() ?: false,
             showLyricsRomanization = values[LYRICS_ROMANIZATION]?.toBooleanStrictOrNull() ?: true,
-            dataSaver = values[DATA_SAVER]?.toBooleanStrictOrNull() ?: false,
+            // People who had the old "Data saver" switch on keep saving data everywhere.
+            audioQualityMobile = AudioQuality.parse(values[QUALITY_MOBILE])
+                ?: if (values[DATA_SAVER]?.toBooleanStrictOrNull() == true) AudioQuality.LOW else AudioQuality.NORMAL,
+            audioQualityWifi = AudioQuality.parse(values[QUALITY_WIFI])
+                ?: if (values[DATA_SAVER]?.toBooleanStrictOrNull() == true) AudioQuality.LOW else AudioQuality.HIGH,
             downloadOnWifiOnly = values[WIFI_ONLY_DOWNLOADS]?.toBooleanStrictOrNull() ?: false,
             pauseHistory = values[PAUSE_HISTORY]?.toBooleanStrictOrNull() ?: false,
             skipSilence = values[SKIP_SILENCE]?.toBooleanStrictOrNull() ?: false,
@@ -175,8 +194,8 @@ class SettingsStore(private val context: Context) {
         context.moodifySettingsDataStore.edit { values -> values[LYRICS_ROMANIZATION] = enabled.toString() }
     }
 
-    suspend fun setDataSaver(enabled: Boolean) {
-        context.moodifySettingsDataStore.edit { values -> values[DATA_SAVER] = enabled.toString() }
+    suspend fun setAudioQuality(onMobileData: Boolean, quality: AudioQuality) {
+        context.moodifySettingsDataStore.edit { values -> values[if (onMobileData) QUALITY_MOBILE else QUALITY_WIFI] = quality.name }
     }
 
     suspend fun setDownloadOnWifiOnly(enabled: Boolean) {
@@ -229,7 +248,10 @@ class SettingsStore(private val context: Context) {
         val LYRICS_CONTROLS = stringPreferencesKey("lyrics_show_controls")
         val LYRICS_TRANSLATION = stringPreferencesKey("lyrics_show_translation")
         val LYRICS_ROMANIZATION = stringPreferencesKey("lyrics_show_romanization")
+        /** The old on/off data saver: read once to pick the starting audio qualities. */
         private val DATA_SAVER = stringPreferencesKey("data_saver")
+        private val QUALITY_MOBILE = stringPreferencesKey("audio_quality_mobile")
+        private val QUALITY_WIFI = stringPreferencesKey("audio_quality_wifi")
         private val WIFI_ONLY_DOWNLOADS = stringPreferencesKey("download_wifi_only")
         private val PAUSE_HISTORY = stringPreferencesKey("pause_history")
         private val SKIP_SILENCE = stringPreferencesKey("skip_silence")

@@ -25,7 +25,9 @@ import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.moodify.app.data.AudioQuality
 import com.moodify.app.data.CatalogLocale
+import com.moodify.app.data.Connectivity
 import com.moodify.app.data.SettingsStore
 import com.moodify.app.data.Track
 import kotlinx.coroutines.CancellationException
@@ -576,9 +578,16 @@ class PlaybackManager private constructor(private val context: Context) {
         }
     }
 
-    /** Streams the smallest audio format (set from Settings › Audio quality). */
+    /** Streaming quality on mobile data and on Wi-Fi (Settings › Playback). */
     @Volatile
-    var dataSaver: Boolean = false
+    var audioQualityMobile: AudioQuality = AudioQuality.NORMAL
+
+    @Volatile
+    var audioQualityWifi: AudioQuality = AudioQuality.HIGH
+
+    /** The quality for the connection the phone is on right now (checked as each song starts). */
+    private fun currentAudioQuality() =
+        if (Connectivity.isMetered(context)) audioQualityMobile else audioQualityWifi
 
     /** When true, the queue is topped up with the current song's radio before it runs out. */
     @Volatile
@@ -1353,7 +1362,7 @@ class PlaybackManager private constructor(private val context: Context) {
         val maxProfiles = streamResolver.profileCount()
         while (offset < maxProfiles) {
             val resolved = try {
-                streamResolver.resolve(videoId, offset, dataSaver)
+                streamResolver.resolve(videoId, offset, currentAudioQuality(), keepItag = partlyCachedItag(videoId))
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
@@ -1536,6 +1545,18 @@ class PlaybackManager private constructor(private val context: Context) {
 
     private fun StreamContract.isNearExpiry(): Boolean =
         expiresAtMs <= System.currentTimeMillis() + CONTRACT_REFRESH_MARGIN_MS
+
+    /**
+     * The format of the bytes already saved for a song, if any. Asking for the same format
+     * keeps them usable after the audio quality changes (say, Wi-Fi to mobile data);
+     * otherwise [ensureCacheMatches] would reject the stream and the song would stall.
+     */
+    private fun partlyCachedItag(videoId: String): Int? = runCatching {
+        val cacheKey = streamCacheKey(videoId)
+        val cache = playbackCache.cache
+        if (cache.getCachedSpans(cacheKey).isEmpty()) return@runCatching null
+        cache.getContentMetadata(cacheKey).get(ITAG_METADATA_KEY, -1L).takeIf { it > 0 }?.toInt()
+    }.getOrNull()
 
     private fun isFullyCached(cacheKey: String): Boolean = runCatching {
         val cache = playbackCache.cache

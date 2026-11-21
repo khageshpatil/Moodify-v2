@@ -85,6 +85,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.moodify.app.data.BrowseEndpoint
+import com.moodify.app.data.MoodifyLink
+import com.moodify.app.data.MoodifyLinks
 import com.moodify.app.data.ThemeMode
 import com.moodify.app.data.Track
 import com.moodify.app.player.MoodifyPlaybackService
@@ -224,31 +226,10 @@ class MainActivity : ComponentActivity() {
         handleLink(intent, mainViewModel)
     }
 
-    /** Opens YouTube / YouTube Music links (tapped or shared) inside Moodify. */
+    /** Opens Moodify links (invites, rooms) and YouTube / YouTube Music links (tapped or shared) inside Moodify. */
     private fun handleLink(intent: Intent?, viewModel: MainViewModel) {
-        val data = intent?.data
-        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "add") {
-            data.lastPathSegment?.let(viewModel::openFriendInvite)
-            return
-        }
-        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "chat") {
-            data.lastPathSegment?.let(viewModel::openChat)
-            return
-        }
-        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "room") {
-            // Room codes are single-use, so a link Android replays later (task
-            // relaunch, Recents) is always stale: join from each link once.
-            val roomId = data.lastPathSegment?.uppercase() ?: return
-            val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
-            val handled = prefs.getStringSet(KEY_HANDLED_ROOM_LINKS, emptySet()).orEmpty()
-            if (roomId in handled) return
-            prefs.edit().putStringSet(KEY_HANDLED_ROOM_LINKS, (handled + roomId).toList().takeLast(50).toSet()).apply()
-            viewModel.openRoomInvite(roomId)
-            return
-        }
-        if (intent?.action == Intent.ACTION_VIEW && data?.scheme == "moodify" && data.host == "link") {
-            data.lastPathSegment?.let { viewModel.openDeviceLink(it, data.getQueryParameter("k")) }
-            return
+        if (intent?.action == Intent.ACTION_VIEW) {
+            MoodifyLinks.parse(intent.dataString)?.let { link -> openMoodifyLink(link, viewModel); return }
         }
         val text = when (intent?.action) {
             Intent.ACTION_VIEW -> intent.dataString
@@ -256,6 +237,24 @@ class MainActivity : ComponentActivity() {
             else -> null
         } ?: return
         com.moodify.app.data.SharedLinks.parse(text)?.let(viewModel::openLink)
+    }
+
+    private fun openMoodifyLink(link: MoodifyLink, viewModel: MainViewModel) {
+        when (link) {
+            is MoodifyLink.AddFriend -> viewModel.openFriendInvite(link.code)
+            is MoodifyLink.Chat -> viewModel.openChat(link.code)
+            is MoodifyLink.LinkDevice -> viewModel.openDeviceLink(link.linkId, link.key)
+            is MoodifyLink.Room -> {
+                // Room codes are single-use, so a link Android replays later (task
+                // relaunch, Recents) is always stale: join from each link once.
+                val roomId = link.roomId.uppercase()
+                val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+                val handled = prefs.getStringSet(KEY_HANDLED_ROOM_LINKS, emptySet()).orEmpty()
+                if (roomId in handled) return
+                prefs.edit().putStringSet(KEY_HANDLED_ROOM_LINKS, (handled + roomId).toList().takeLast(50).toSet()).apply()
+                viewModel.openRoomInvite(roomId)
+            }
+        }
     }
 }
 
@@ -914,7 +913,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                             onClearRecentSearches = viewModel::clearRecentSearches,
                             onAutoplay = viewModel::setAutoplay,
                             onNormalizeVolume = viewModel::setNormalizeVolume,
-                            onDataSaver = viewModel::setDataSaver,
+                            onAudioQuality = viewModel::setAudioQuality,
                             onSkipSilence = viewModel::setSkipSilence,
                             onAutoDownloadLiked = viewModel::setAutoDownloadLiked,
                             onDownloadOnWifiOnly = viewModel::setDownloadOnWifiOnly,

@@ -53,6 +53,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.moodify.app.data.MoodifyLinks
 import com.moodify.app.data.Track
 import com.moodify.app.data.social.RoomMember
 import com.moodify.app.data.social.RoomUiState
@@ -202,7 +203,7 @@ private fun InRoom(room: RoomUiState, friends: List<SocialUser>, actions: RoomAc
                 )
             }
             IconButton(onClick = {
-                val text = "Listen with me on Moodify: moodify://room/${room.roomId}"
+                val text = "Listen with me on Moodify: ${MoodifyLinks.room(room.roomId)}"
                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Share room"))
             }) { Icon(Icons.Rounded.Share, contentDescription = "Share room link") }
         }

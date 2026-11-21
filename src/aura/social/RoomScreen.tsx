@@ -1,7 +1,9 @@
 import { Radio, Send, Share2, SkipForward, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { isAndroid, roomLink } from '../links';
 import { usePlayer } from '../PlayerContext';
+import { GetTheApp } from './InviteScreen';
 import { Artwork, EmptyState, SectionHeader } from '../ui';
 import { useRoom } from './RoomProvider';
 import { normalizeRoomId } from './roomSync';
@@ -32,11 +34,21 @@ export function RoomScreen() {
 
   if (!social.ready) return <div className="aura-page">Loading…</div>;
   if (!social.code) {
+    // Someone opened a room link without a code: get the app, or make a code and come back to the room.
+    const invited = linkedId ? normalizeRoomId(linkedId) : null;
     return (
-      <div className="aura-page">
+      <div className="aura-page" style={invited ? { maxWidth: 560 } : undefined}>
         <h1 className="type-display-small">Listen together</h1>
-        <EmptyState icon={<Users />} title="Get your Moodify code" message="Start a room with friends: everyone hears the same song at the same moment."
-          action={<Link to="/account" className="aura-btn aura-btn-primary" style={{ marginTop: 12 }}>Get your code</Link>} />
+        <EmptyState icon={<Users />} title={invited ? "You're invited to a listening room" : 'Get your Moodify code'}
+          message={invited ? 'Everyone in the room hears the same song at the same moment. Join with a Moodify code: no phone number or email.' : 'Start a room with friends: everyone hears the same song at the same moment.'}
+          action={(
+            <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+              {invited && <GetTheApp path={`room/${invited}`} />}
+              <Link to={invited ? `/account?next=${encodeURIComponent(`/room/${invited}`)}` : '/account'} className={`aura-btn ${invited && isAndroid() ? 'aura-btn-tonal' : 'aura-btn-primary'}`}>
+                {invited ? 'Join on the web' : 'Get your code'}
+              </Link>
+            </div>
+          )} />
       </div>
     );
   }
@@ -92,7 +104,7 @@ export function RoomScreen() {
   const inRoom = new Set(room.members.map((m) => m.code));
   const sendChat = () => { if (message.trim()) { rooms.chat(message); setMessage(''); } };
   const shareLink = async () => {
-    const url = `${window.location.origin}/room/${room.roomId}`;
+    const url = roomLink(room.roomId);
     try {
       if (navigator.share) await navigator.share({ title: 'Listen with me on Moodify', url });
       else { await navigator.clipboard.writeText(url); say('Room link copied'); }

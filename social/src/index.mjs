@@ -116,7 +116,8 @@ async function route(request, env, ctx) {
     if (!burst.allow(`room:${me.code}`, ROOMS_PER_HOUR, 3_600_000)) return jsonError(429, 'slow_down', 'Too many rooms. Try again later.');
     const roomId = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => ROOM_ALPHABET[b % 32]).join('');
     await roomFor(env, roomId).fetch(`https://room/claim?id=${roomId}`, { method: 'POST', body: JSON.stringify({ hostCode: me.code }) });
-    return Response.json({ roomId, invite: `moodify://room/${roomId}` }, { status: 201 });
+    // A web link, so it works without the app; Android opens it in Moodify when installed.
+    return Response.json({ roomId, invite: `https://moodify-v2-two.vercel.app/room/${roomId}` }, { status: 201 });
   }
   const roomLive = url.pathname.match(/^\/v1\/rooms\/([0-9A-HJKMNP-TV-Z]{6})\/live$/i);
   if (roomLive) {

@@ -58,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -69,6 +70,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.moodify.app.BuildConfig
 import com.moodify.app.data.AppSettings
+import com.moodify.app.data.AudioQuality
 import com.moodify.app.data.SettingsStore
 import com.moodify.app.data.ThemeMode
 import com.moodify.app.player.PlaybackDiagnostics
@@ -80,7 +82,7 @@ import java.util.Date
 import java.util.Locale
 
 /** Moodify's privacy page (the web app serves it). */
-internal const val PRIVACY_URL = "https://moodify-v2-two.vercel.app/privacy"
+internal const val PRIVACY_URL = "${com.moodify.app.data.MoodifyLinks.WEB}/privacy"
 private const val APK_DOWNLOAD_URL =
     "https://github.com/khageshpatil/Moodify-v2/releases/latest/download/Moodify.apk"
 
@@ -121,7 +123,7 @@ class SettingsActions(
     val onClearRecentSearches: () -> Unit,
     val onAutoplay: (Boolean) -> Unit = {},
     val onNormalizeVolume: (Boolean) -> Unit = {},
-    val onDataSaver: (Boolean) -> Unit = {},
+    val onAudioQuality: (onMobileData: Boolean, AudioQuality) -> Unit = { _, _ -> },
     val onSkipSilence: (Boolean) -> Unit = {},
     val onAutoDownloadLiked: (Boolean) -> Unit = {},
     val onDownloadOnWifiOnly: (Boolean) -> Unit = {},
@@ -240,12 +242,16 @@ fun SettingsScreen(
             SettingsGroup("Playback") {
                 ToggleRow("Autoplay similar songs when the queue ends", settings.autoplay, actions.onAutoplay)
                 ToggleRow("Even out volume between songs", settings.normalizeVolume, actions.onNormalizeVolume)
-                ToggleRow(
-                    "Data saver",
-                    settings.dataSaver,
-                    actions.onDataSaver,
-                    description = "Streams at lower quality to use less mobile data. Downloads stay high quality.",
+                Spacer(Modifier.height(Spacing.sm))
+                Text("Audio quality", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                PickerRow(label = "On mobile data", value = settings.audioQualityMobile.label, onClick = { picker = "quality-mobile" })
+                PickerRow(label = "On Wi-Fi", value = settings.audioQualityWifi.label, onClick = { picker = "quality-wifi" })
+                Text(
+                    "Downloads always use the best quality.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(Modifier.height(Spacing.sm))
                 ToggleRow(
                     "Skip silence",
                     settings.skipSilence,
@@ -418,6 +424,15 @@ fun SettingsScreen(
     }
 
     when (picker) {
+        "quality-mobile", "quality-wifi" -> {
+            val onMobileData = picker == "quality-mobile"
+            AudioQualitySheet(
+                title = if (onMobileData) "Audio quality on mobile data" else "Audio quality on Wi-Fi",
+                selected = if (onMobileData) settings.audioQualityMobile else settings.audioQualityWifi,
+                onSelect = { quality -> actions.onAudioQuality(onMobileData, quality); picker = null },
+                onDismiss = { picker = null },
+            )
+        }
         "country" -> OptionPickerSheet(
             title = "Country",
             options = remember {
@@ -527,6 +542,55 @@ private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
             }
         }
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+/** Data saver / Normal / High, each with roughly how much data an hour of music uses. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun AudioQualitySheet(
+    title: String,
+    selected: AudioQuality,
+    onSelect: (AudioQuality) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(Modifier.padding(horizontal = Spacing.gutter).padding(bottom = Spacing.xl)) {
+            Text(title, style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Applies from the next song. Songs you've already played may come from the saved copy.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
+            )
+            AudioQuality.entries.forEach { quality ->
+                val isSelected = quality == selected
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 64.dp)
+                        .clip(RoundedCornerShape(Radii.md))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+                        .pressable(pressedScale = 0.99f) { onSelect(quality) }
+                        .semantics { this.selected = isSelected; role = Role.RadioButton }
+                        .padding(horizontal = Spacing.md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            quality.label,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(quality.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (isSelected) Icon(Icons.Rounded.Check, contentDescription = "Selected", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
     }
 }
 

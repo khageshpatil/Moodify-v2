@@ -4,6 +4,7 @@ import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import './aura.css';
 import { FullPlayer, MiniPlayer, type View } from './Player';
 import { getCanonicalPlaybackEngine } from '@/playback/PlaybackEngine';
+import { APK_URL } from './links';
 import { PlayerProvider, usePlayer } from './PlayerContext';
 import { useTheme } from './theme';
 import { TrackMenuProvider } from './TrackMenu';
@@ -20,6 +21,7 @@ const AccountScreen = named(() => import('./social/SocialScreens'), 'AccountScre
 const ChatScreen = named(() => import('./social/ChatScreen'), 'ChatScreen');
 const RoomScreen = named(() => import('./social/RoomScreen'), 'RoomScreen');
 const PrivacyScreen = named(() => import('./PrivacyScreen'), 'PrivacyScreen');
+const InviteScreen = named(() => import('./social/InviteScreen'), 'InviteScreen');
 
 const TABS = [
   { to: '/', label: 'Home', icon: Home, end: true },
@@ -28,7 +30,6 @@ const TABS = [
   { to: '/friends', label: 'Friends', icon: Users, end: false },
 ];
 
-const APK_URL = 'https://github.com/khageshpatil/Moodify-v2/releases/latest';
 const NOTICE_KEY = 'aura.backgroundNotice';
 
 /**
@@ -114,6 +115,7 @@ function Shell() {
           <Route path="/friends" element={<FriendsScreen />} />
           <Route path="/chat/:code" element={<ChatScreen />} />
           <Route path="/account" element={<AccountScreen />} />
+          <Route path="/add/:code" element={<InviteScreen />} />
           <Route path="/privacy" element={<PrivacyScreen />} />
           <Route path="/room" element={<RoomScreen />} />
           <Route path="/room/:id" element={<RoomScreen />} />

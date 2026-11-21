@@ -48,6 +48,19 @@
                 <data android:scheme="moodify" android:host="room" />
                 <data android:scheme="moodify" android:host="chat" />
             </intent-filter>
+            <!--
+                Invite and room links to the web app open straight in Moodify when it's
+                installed. Android checks /.well-known/assetlinks.json on the site first.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="moodify-v2-two.vercel.app" />
+                <data android:pathPrefix="/add/" />
+                <data android:pathPrefix="/room/" />
+            </intent-filter>
             <!-- "Open with Moodify" for YouTube and YouTube Music links. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

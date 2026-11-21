@@ -11,6 +11,7 @@ import com.moodify.app.data.CatalogLocale
 import com.moodify.app.data.CatalogCacheStore
 import com.moodify.app.data.SettingsStore
 import com.moodify.app.data.AppSettings
+import com.moodify.app.data.AudioQuality
 import com.moodify.app.data.SearchSuggestions
 import com.moodify.app.data.CatalogPage
 import com.moodify.app.data.BrowseEndpoint
@@ -298,7 +299,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 AppGraph.catalogLocale = CatalogLocale(settings.language, settings.region).normalized()
                 playbackManager.autoplayEnabled = settings.autoplay
                 playbackManager.normalizeVolume = settings.normalizeVolume
-                playbackManager.dataSaver = settings.dataSaver
+                playbackManager.audioQualityMobile = settings.audioQualityMobile
+                playbackManager.audioQualityWifi = settings.audioQualityWifi
                 playbackManager.pauseHistory = settings.pauseHistory
                 playbackManager.setSkipSilence(settings.skipSilence)
                 AppGraph.social.setShareListening(settings.shareListening)
@@ -750,8 +752,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setDataSaver(enabled: Boolean) {
-        viewModelScope.launch { settingsStore.setDataSaver(enabled) }
+    fun setAudioQuality(onMobileData: Boolean, quality: AudioQuality) {
+        viewModelScope.launch { settingsStore.setAudioQuality(onMobileData, quality) }
     }
 
     fun setDownloadOnWifiOnly(enabled: Boolean) {

@@ -258,11 +258,7 @@ private fun CodeCard(state: AccountUiState, context: Context, onRetry: () -> Uni
                 Spacer(Modifier.width(Spacing.xs))
                 Text("Copy")
             }
-            FilledTonalButton(onClick = {
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                    .putExtra(Intent.EXTRA_TEXT, "Add me on Moodify: $code")
-                context.startActivity(Intent.createChooser(send, "Share your code"))
-            }) {
+            FilledTonalButton(onClick = { shareCode(context, code) }) {
                 Icon(Icons.Rounded.Share, contentDescription = null)
                 Spacer(Modifier.width(Spacing.xs))
                 Text("Share")

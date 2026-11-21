@@ -47,6 +47,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -108,7 +109,16 @@ fun FriendsScreen(
     var menuFor by remember { mutableStateOf<SocialUser?>(null) }
     var profileFor by remember { mutableStateOf<SocialUser?>(null) }
     var showingCode by rememberSaveable { mutableStateOf(false) }
-    var scanned by rememberSaveable { mutableStateOf<String?>(null) }
+    /** The code to put in the Add dialog: from a scan, or from an invite link. */
+    var scanned by rememberSaveable { mutableStateOf(prefillCode) }
+    // An invite link can arrive while this screen is already showing. MainActivity clears
+    // the pending code straight away, so keep a copy and open the dialog with it.
+    LaunchedEffect(prefillCode) {
+        if (prefillCode != null) {
+            scanned = prefillCode
+            adding = true
+        }
+    }
     val scan = {
         scanFriendCode(
             context,
@@ -231,12 +241,15 @@ fun FriendsScreen(
     }
 
     if (adding) {
-        AddFriendDialog(
-            initialCode = scanned ?: prefillCode.orEmpty(),
-            onScan = { adding = false; scan() },
-            onDismiss = { adding = false; scanned = null },
-            onAdd = { code, note -> onAddFriend(code, note); adding = false; scanned = null },
-        )
+        // A different code (a second invite link) starts the dialog afresh.
+        key(scanned) {
+            AddFriendDialog(
+                initialCode = scanned.orEmpty(),
+                onScan = { adding = false; scan() },
+                onDismiss = { adding = false; scanned = null },
+                onAdd = { code, note -> onAddFriend(code, note); adding = false; scanned = null },
+            )
+        }
     }
     if (showingCode && state.myCode != null) {
         MyCodeSheet(code = state.myCode, name = state.myName, onDismiss = { showingCode = false })
