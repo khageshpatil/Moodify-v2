@@ -42,8 +42,10 @@ class MoodifyDownloadManager(
         .build()
 ) {
     private val appContext = context.applicationContext
-    private val downloadDirectory = File(appContext.filesDir, "downloads").apply { mkdirs() }
-    private val metadataFile = File(downloadDirectory, "downloads.json")
+    // Lazy: first touched inside withContext(IO), so building the player at start-up
+    // never waits on the disk (StrictMode flagged these on the main thread).
+    private val downloadDirectory by lazy { File(appContext.filesDir, "downloads").apply { mkdirs() } }
+    private val metadataFile by lazy { File(downloadDirectory, "downloads.json") }
     private val dao = MoodifyDatabase.get(appContext).moodifyDao()
     private val gson = Gson()
     private val records = ConcurrentHashMap<String, DownloadedTrack>()

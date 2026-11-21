@@ -116,14 +116,14 @@ export function memoryStore() {
   };
 }
 
-export function harness({ push = null, live = {}, vapidPublicKey = null } = {}) {
+export function harness({ push = null, live = {}, vapidPublicKey = null, playback = {} } = {}) {
   let clock = 1_800_000_000;
   const store = memoryStore();
   const events = [];
   // `live`: code -> device ids connected right now (they get events, not pings).
   const pending = [];
   const handle = createApi({
-    store, secret: SECRET, now: () => clock, push, vapidPublicKey, defer: (work) => { pending.push(work); },
+    store, secret: SECRET, now: () => clock, push, vapidPublicKey, playback, defer: (work) => { pending.push(work); },
     notify: async (code, event) => { events.push({ code, ...event }); return live[code] ?? []; },
   });
   const settle = async () => { while (pending.length) await Promise.all(pending.splice(0)); };

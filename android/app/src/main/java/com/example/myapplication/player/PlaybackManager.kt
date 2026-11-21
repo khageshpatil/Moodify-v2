@@ -35,11 +35,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.File
 import java.io.EOFException
@@ -72,6 +76,10 @@ class PlaybackManager private constructor(private val context: Context) {
 
         private val YOUTUBE_VIDEO_ID_REGEX = Regex("^[A-Za-z0-9_-]{11}$")
         private const val DIRECT_PROFILE_RETRY_COUNT = 3
+        /** Songs skipped in a row for not playing before Moodify stops and says so. */
+        private const val MAX_UNPLAYABLE_IN_A_ROW = 3
+        private const val PLAYBACK_CONFIG_PREFS = "moodify_playback"
+        private const val PLAYBACK_CONFIG_KEY = "server_config"
         private const val MIN_BUFFER_MS = 20_000
         private const val MAX_BUFFER_MS = 60_000
         private const val BUFFER_FOR_PLAYBACK_MS = 750
@@ -107,7 +115,18 @@ class PlaybackManager private constructor(private val context: Context) {
     private var serviceStarted = false
     private var loadGeneration = 0L
     private val refreshAttempts = mutableMapOf<String, Int>()
+    /**
+     * One connection pool for stream lookups and playback: the CDN connection a lookup's
+     * check opens is the one the song then starts on. (Clients share connections only
+     * when built from the same base, so both come from this one.)
+     */
+    private val baseHttpClient = OkHttpClient()
     private val streamResolver = InnerTubeStreamResolver(
+        httpClient = baseHttpClient.newBuilder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .callTimeout(30, TimeUnit.SECONDS)
+            .build(),
         localeProvider = { playbackLocale },
         loadVisitorDataFromStore = { settingsStore.getVisitorData() },
         saveVisitorDataToStore = { settingsStore.setVisitorData(it) },
@@ -124,7 +143,9 @@ class PlaybackManager private constructor(private val context: Context) {
         context = context,
     )
     private val downloadManager = MoodifyDownloadManager(context, streamResolver)
-    private val playbackCache = PlaybackCache(context)
+    // Built on first use (ExoPlayer's playback thread when a song starts), not while the player
+    // is created at start-up on the main thread: creating it touches the disk.
+    private val playbackCache by lazy { PlaybackCache(context) }
     private var preloadJob: Job? = null
     private var loadJob: Job? = null
     private var lastPersistAtMs = 0L
@@ -154,7 +175,7 @@ class PlaybackManager private constructor(private val context: Context) {
     private var activePlaybackRoute = PlaybackRoute.NONE
     private val streamContracts = ConcurrentHashMap<String, StreamContract>()
     private val routeByCacheKey = ConcurrentHashMap<String, PlaybackRoute>()
-    private val mediaHttpClient = OkHttpClient.Builder()
+    private val mediaHttpClient = baseHttpClient.newBuilder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .followRedirects(true)
@@ -185,11 +206,14 @@ class PlaybackManager private constructor(private val context: Context) {
      * `moodify:<videoId>`, so a fully cached song never touches the network
      * and a stream URL is only resolved when ExoPlayer actually needs bytes.
      */
-    private val dataSourceFactory: DataSource.Factory = playbackCache.factory(
-        ResolvingDataSource.Factory(DefaultDataSource.Factory(context, directHttpDataSourceFactory)) { dataSpec ->
-            resolvePlaybackDataSpec(dataSpec)
-        }
-    )
+    private val cachingDataSourceFactory by lazy {
+        playbackCache.factory(
+            ResolvingDataSource.Factory(DefaultDataSource.Factory(context, directHttpDataSourceFactory)) { dataSpec ->
+                resolvePlaybackDataSpec(dataSpec)
+            }
+        )
+    }
+    private val dataSourceFactory = DataSource.Factory { cachingDataSourceFactory.createDataSource() }
 
     // ── ExoPlayer ────────────────────────────────────────────────────────────
 
@@ -312,6 +336,7 @@ class PlaybackManager private constructor(private val context: Context) {
                         _state.update { it.copy(isLoading = true) }
                     }
                     Player.STATE_READY     -> {
+                        unplayableInARow = 0
                         recordDiagnostics(
                             event = "Media source ready",
                             status = if (exoPlayer.isPlaying) "Playing" else "Ready",
@@ -382,6 +407,13 @@ class PlaybackManager private constructor(private val context: Context) {
                     playbackCache.remove(cacheKey)
                     streamContracts.remove(cacheKey)
                     routeByCacheKey.remove(cacheKey)
+                }
+                // The resolver already tried every client within its time budget: retrying
+                // would only repeat that wait. Move on to the next song instead.
+                if (current != null && error.hasCause<InnerTubeStreamResolver.ResolveException>()) {
+                    android.util.Log.w("MoodifyPlayer", "No stream found for the queued song; skipping")
+                    skipUnplayable(current)
+                    return
                 }
                 if (current != null &&
                     activePlaybackRoute == PlaybackRoute.DIRECT_CDN &&
@@ -455,6 +487,11 @@ class PlaybackManager private constructor(private val context: Context) {
                     httpStatusCode = rejectedHttpStatus,
                     recoveryAction = "No automatic retries remain",
                 )
+                // A song that never got going is skipped; one that failed partway stops with the reason.
+                if (current != null && exoPlayer.currentPosition < 3_000L) {
+                    skipUnplayable(current)
+                    return
+                }
                 _state.update { it.copy(isLoading = false, isPlaying = false, errorMessage = msg) }
                 persistState()
             }
@@ -482,6 +519,10 @@ class PlaybackManager private constructor(private val context: Context) {
                 )
             }
         }
+        scope.launch(Dispatchers.IO) { loadPlaybackConfig() }
+        // Create the audio cache now, off the main thread, so its index has loaded by the first
+        // play (created lazily at that play instead, the first lookup waited ~1.5 s for it).
+        scope.launch(Dispatchers.IO) { runCatching { playbackCache.cache } }
         scope.launch {
             val downloadedIds = runCatching { downloadManager.all().map { record -> record.id }.toSet() }
                 .getOrDefault(emptySet())
@@ -538,6 +579,11 @@ class PlaybackManager private constructor(private val context: Context) {
             )
         }
         publishProgress(positionMs = 0L, durationMs = track.durationSeconds * 1000L)
+
+        // Start finding the stream now, off the main thread. On the first play of a session the
+        // service start below keeps the main thread busy for a few seconds (measured 21 Nov: the
+        // lookup began 3.4 s after the tap), and loadAndPlay runs there.
+        warmStream(track.id)
 
         // Ensure foreground service is running before we start (keeps process alive)
         ensureServiceStarted()
@@ -1035,7 +1081,7 @@ class PlaybackManager private constructor(private val context: Context) {
             )
         }
         return try {
-            val stream = resolveValidatedDirectStream(track.id, initialProfileOffset = 0)
+            val stream = resolveValidatedDirectStream(track.id, initialProfileOffset = 0, forDownload = true)
             val downloaded = downloadManager.download(track, stream) { progress ->
                 onProgress(progress)
                 _state.update { current ->
@@ -1204,7 +1250,7 @@ class PlaybackManager private constructor(private val context: Context) {
                 val streamKey = streamCacheKey(track.id)
                 // A song already fully in the audio cache starts instantly
                 // without resolving or validating a stream.
-                val playFromCache = downloaded == null && isFullyCached(streamKey)
+                val playFromCache = downloaded == null && withContext(Dispatchers.IO) { isFullyCached(streamKey) }
 
                 // Resolve directly from this device; Android has no Moodify
                 // playback fallback. Each InnerTube client can still be
@@ -1340,54 +1386,99 @@ class PlaybackManager private constructor(private val context: Context) {
                     status = "Error",
                     playerErrorCode = null,
                     httpStatusCode = null,
-                    recoveryAction = "Check the connection and retry",
+                    recoveryAction = "Skip to the next song",
                 )
-                setError("Could not load audio. Please try again.")
+                skipUnplayable(track)
             }
         }
     }
 
     /**
-     * Resolve a genuinely usable CDN contract before ExoPlayer is involved.
-     * A YouTube URL can return 206 for the first bytes and still return 403
-     * when the player advances. Rotate through distinct InnerTube clients and
-     * validate both the beginning and a later range before selecting one.
+     * Resolve a genuinely usable CDN contract before ExoPlayer is involved. The resolver
+     * asks clients in turn within a time budget and checks the CDN accepts each URL
+     * (a YouTube URL can return 206 for the first bytes and 403 later), so this either
+     * returns a stream that plays or fails within about ten seconds.
+     *
+     * [forDownload] asks for the best quality, ignoring the streaming setting and any
+     * partly saved copy: downloads always keep the best version.
      */
     private suspend fun resolveValidatedDirectStream(
         videoId: String,
         initialProfileOffset: Int,
-    ): InnerTubeStreamResolver.ResolvedStream {
-        var lastFailure: Throwable? = null
-        var offset = initialProfileOffset.coerceAtLeast(0)
-        val maxProfiles = streamResolver.profileCount()
-        while (offset < maxProfiles) {
-            val resolved = try {
-                streamResolver.resolve(videoId, offset, currentAudioQuality(), keepItag = partlyCachedItag(videoId))
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: Exception) {
-                // resolve() already tried every remaining profile. Advancing
-                // one index would repeat a subset of those same requests.
-                lastFailure = failure
-                break
-            }
-            try {
-                streamResolver.validate(resolved)
-                return resolved
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: Exception) {
-                lastFailure = failure
-                streamResolver.invalidate(videoId)
-                android.util.Log.w(
-                    "MoodifyPlayer",
-                    "Rejected stream contract profileOffset=$offset (${failure::class.simpleName})"
-                )
-                offset = streamResolver.nextProfileOffset(resolved.profileName)
-                    ?: (offset + 1)
-            }
+        forDownload: Boolean = false,
+    ): InnerTubeStreamResolver.ResolvedStream =
+        if (forDownload) {
+            streamResolver.resolve(videoId, initialProfileOffset.coerceAtLeast(0))
+        } else {
+            streamResolver.resolve(
+                videoId,
+                initialProfileOffset.coerceAtLeast(0),
+                currentAudioQuality(),
+                keepItag = withContext(Dispatchers.IO) { partlyCachedItag(videoId) },
+            )
         }
-        throw (lastFailure ?: IllegalStateException("No validated stream contract"))
+
+    /**
+     * The client order and time limits for finding streams: the last copy saved, then a fresh
+     * one from the social server (docs/social-protocol/playback.md). Either may be missing;
+     * the resolver's defaults stay for anything they leave out. Runs off the main thread.
+     */
+    private suspend fun loadPlaybackConfig() {
+        val prefs = context.getSharedPreferences(PLAYBACK_CONFIG_PREFS, Context.MODE_PRIVATE)
+        fun apply(json: String?): Boolean {
+            val config = PlaybackConfig.parse(json) ?: return false
+            streamResolver.applyPlaybackConfig(config.clients, config.timing)
+            return true
+        }
+        apply(prefs.getString(PLAYBACK_CONFIG_KEY, null))
+        val base = com.moodify.app.BuildConfig.SOCIAL_BASE_URL.trimEnd('/').takeIf { it.isNotBlank() } ?: return
+        val fresh = try {
+            kotlinx.coroutines.withTimeout(5_000) {
+                baseHttpClient.fetch(okhttp3.Request.Builder().url("$base/v1/playback").get().build()) { response ->
+                    response.body?.string()?.takeIf { response.isSuccessful }
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            if (cancelled is kotlinx.coroutines.TimeoutCancellationException) null else throw cancelled
+        } catch (offline: Exception) {
+            null
+        }
+        if (fresh != null && apply(fresh)) prefs.edit().putString(PLAYBACK_CONFIG_KEY, fresh).apply()
+    }
+
+    private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 4)
+
+    /** One-off messages for a snackbar, like "Couldn't play X. Skipped." */
+    val notices: SharedFlow<String> = _notices.asSharedFlow()
+
+    /** Songs skipped in a row because they wouldn't play; back to 0 when one plays. */
+    private var unplayableInARow = 0
+
+    /**
+     * A song that won't play is skipped with a message, instead of leaving a spinner.
+     * Not when the phone is offline (nothing would play), at the end of the queue, or
+     * after a few failures in a row (something bigger is wrong; skipping through the
+     * whole queue helps no one): then playback stops and says why.
+     */
+    private fun skipUnplayable(track: Track) {
+        val current = _state.value
+        val hasNext = current.currentIndex < current.queue.lastIndex || (current.isShuffle && current.queue.size > 1)
+        val message = when {
+            !com.moodify.app.data.Connectivity.isOnline(context) -> "You're offline. Connect to play “${track.title}”."
+            unplayableInARow >= MAX_UNPLAYABLE_IN_A_ROW -> "Songs aren't playing right now. Try again in a minute."
+            !hasNext -> "Couldn't play “${track.title}”. Try again later."
+            else -> null
+        }
+        if (message != null) {
+            unplayableInARow = 0
+            setError(message)
+            _notices.tryEmit(message) // also on Home, where the player's own message isn't visible
+            return
+        }
+        unplayableInARow++
+        recordDiagnostics(event = "Skipped an unplayable song", status = "Skipped", recoveryAction = "Next song")
+        _notices.tryEmit("Couldn't play “${track.title}”. Skipped.")
+        playNext()
     }
 
     private fun setError(message: String) {
@@ -1444,6 +1535,9 @@ class PlaybackManager private constructor(private val context: Context) {
         return false
     }
 
+    private inline fun <reified T : Throwable> Throwable.hasCause(): Boolean =
+        generateSequence(this as Throwable?) { it.cause }.take(16).any { it is T }
+
     private fun httpStatusCode(error: PlaybackException): Int? {
         var cause: Throwable? = error.cause
         while (cause != null) {
@@ -1475,6 +1569,18 @@ class PlaybackManager private constructor(private val context: Context) {
      * shuffle or repeat change. With repeat on the slot stays empty, so the song
      * ends and STATE_ENDED replays it.
      */
+    /**
+     * Looks up [videoId]'s stream in the background. loadAndPlay's own lookup for the same song
+     * joins this one (the resolver shares a lookup that's already running) instead of starting
+     * again. Songs that are downloaded or fully saved need no lookup, so none is made.
+     */
+    private fun warmStream(videoId: String) {
+        scope.launch(Dispatchers.IO) {
+            if (downloadManager.get(videoId) != null || isFullyCached(streamCacheKey(videoId))) return@launch
+            runCatching { resolveValidatedDirectStream(videoId, initialProfileOffset = 0) }
+        }
+    }
+
     private fun preloadNext() {
         val currentTrackId = _state.value.currentTrack?.id ?: return
         preloadJob?.cancel()
@@ -1523,7 +1629,7 @@ class PlaybackManager private constructor(private val context: Context) {
                 exoPlayer.addMediaItem(item)
             }
             // Warm a validated contract unless the song is already playable offline.
-            if (downloaded != null || isFullyCached(cacheKey) || hasFreshContract(cacheKey)) return@launch
+            if (downloaded != null || withContext(Dispatchers.IO) { isFullyCached(cacheKey) } || hasFreshContract(cacheKey)) return@launch
             val resolved = runCatching {
                 resolveValidatedDirectStream(nextTrack.id, initialProfileOffset = 0)
             }.onFailure {
@@ -1550,6 +1656,7 @@ class PlaybackManager private constructor(private val context: Context) {
      * The format of the bytes already saved for a song, if any. Asking for the same format
      * keeps them usable after the audio quality changes (say, Wi-Fi to mobile data);
      * otherwise [ensureCacheMatches] would reject the stream and the song would stall.
+     * Call off the main thread: the cache's methods wait while it initialises after start-up.
      */
     private fun partlyCachedItag(videoId: String): Int? = runCatching {
         val cacheKey = streamCacheKey(videoId)
@@ -1558,6 +1665,7 @@ class PlaybackManager private constructor(private val context: Context) {
         cache.getContentMetadata(cacheKey).get(ITAG_METADATA_KEY, -1L).takeIf { it > 0 }?.toInt()
     }.getOrNull()
 
+    /** Call off the main thread: the cache's methods wait while it initialises after start-up. */
     private fun isFullyCached(cacheKey: String): Boolean = runCatching {
         val cache = playbackCache.cache
         val length = ContentMetadata.getContentLength(cache.getContentMetadata(cacheKey))

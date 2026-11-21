@@ -5,13 +5,20 @@ import android.net.Uri
 import android.util.Log
 import com.moodify.app.data.AudioQuality
 import com.moodify.app.data.CatalogLocale
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -67,6 +74,55 @@ class InnerTubeStreamResolver(
     @Volatile
     private var cachedPlayerScriptUrlExpiresAtMs: Long = 0L
 
+    /**
+     * How long finding a stream may take: [budgetMs] in all, [perClientMs] per client, and
+     * after [hedgeAfterMs] without an answer the next client starts alongside (see [firstSuccess]).
+     */
+    data class Timing(val hedgeAfterMs: Long = 2_500, val perClientMs: Long = 5_000, val budgetMs: Long = 10_000)
+
+    @Volatile
+    private var timing = Timing()
+
+    /** The order clients are asked in; the social server can change it (see [applyPlaybackConfig]). */
+    @Volatile
+    private var clientOrder: List<String> = DEFAULT_CLIENT_ORDER
+
+    /** The client that last produced a working stream: asked first for the rest of the session. */
+    @Volatile
+    private var preferredClient: String? = null
+
+    /**
+     * Applies a client order and timing from the social server, so a YouTube change can be
+     * answered without a new APK. Unknown client names are ignored; timings are kept sane.
+     * Anything left out goes back to the default, so a server that drops its config undoes it.
+     */
+    fun applyPlaybackConfig(order: List<String>?, newTiming: Timing?) {
+        clientOrder = order?.filter { name -> CLIENT_PROFILES.any { it.name == name } }?.distinct()
+            ?.takeIf { it.isNotEmpty() }
+            ?: DEFAULT_CLIENT_ORDER
+        timing = newTiming?.let {
+            Timing(
+                hedgeAfterMs = it.hedgeAfterMs.coerceIn(300L, 5_000L),
+                perClientMs = it.perClientMs.coerceIn(2_000L, 20_000L),
+                budgetMs = it.budgetMs.coerceIn(5_000L, 30_000L),
+            )
+        } ?: Timing()
+    }
+
+    /** Clients in the order to ask them: the one that last worked, then the configured order. */
+    private fun sessionOrder(): List<ClientProfile> {
+        val order = clientOrder
+        val names = preferredClient?.takeIf { it in order }?.let { listOf(it) + (order - it) } ?: order
+        return names.mapNotNull { name -> CLIENT_PROFILES.firstOrNull { it.name == name } }
+    }
+
+    /**
+     * Clients from [offset] on in the session order. An offset never wraps: a rejected
+     * client must not come back later in the same fallback pass.
+     */
+    private fun orderedProfiles(offset: Int): List<ClientProfile> =
+        sessionOrder().let { it.drop(offset.coerceIn(0, it.size)) }
+
     // A resolved URL is useful only until its CDN expiry. Keep the cache
     // bounded by video/profile key and invalidate it on transport failures.
     private val resolvedCache = java.util.concurrent.ConcurrentHashMap<String, ResolvedStream>()
@@ -116,7 +172,7 @@ class InnerTubeStreamResolver(
     }
 
     /** Number of distinct InnerTube client contracts in the fallback chain. */
-    fun profileCount(): Int = CLIENT_PROFILES.size
+    fun profileCount(): Int = sessionOrder().size
 
     /** Return the index of a named profile in the resolver's stable preference order. */
     fun profileOffset(profileName: String): Int? {
@@ -187,14 +243,10 @@ class InnerTubeStreamResolver(
             .get()
             .build()
 
-        httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IOException("sw.js_data HTTP ${response.code}")
-            }
-            val body = response.body?.string().orEmpty()
-            parseVisitorDataFromSwJsData(body)
-                ?: throw ResolveException("sw.js_data contained no visitorData")
-        }
+        val (code, body) = httpClient.fetch(request) { it.code to it.body?.string().orEmpty() }
+        if (code !in 200..299) throw IOException("sw.js_data HTTP $code")
+        parseVisitorDataFromSwJsData(body)
+            ?: throw ResolveException("sw.js_data contained no visitorData")
     }
 
     private suspend fun rememberVisitorData(value: String?) {
@@ -215,8 +267,13 @@ class InnerTubeStreamResolver(
      * media source.  YouTube signs the URL and its request context together;
      * probing with the same headers and a tiny range catches a 403 while the
      * resolver can still rotate to another client/format.
+     *
+     * Each probe asks for a large range, as the player will: the CDN may serve a few
+     * KB and still refuse the whole file (seen 21 Nov: a 16 KB probe passed, playback
+     * got 403). Only the status is read; the probes run at once, and over HTTP/2 the
+     * connection stays open in the pool the player shares.
      */
-    suspend fun validate(stream: ResolvedStream): Unit = withContext(Dispatchers.IO) {
+    suspend fun validate(stream: ResolvedStream): Unit = coroutineScope {
         if (stream.isExpired) throw ResolveException("Resolved stream expired before validation")
 
         val positions = buildList {
@@ -226,45 +283,47 @@ class InnerTubeStreamResolver(
                 ?.let { add(minOf(VALIDATION_RANGE_PROBE_POSITION, it - VALIDATION_RANGE_LENGTH)) }
         }.distinct()
 
-        positions.forEach { position ->
-            val requestedLength = stream.contentLength
-                ?.minus(position)
-                ?.coerceAtMost(VALIDATION_RANGE_LENGTH)
-                ?.takeIf { it > 0L }
-                ?: VALIDATION_RANGE_LENGTH
-            val request = Request.Builder()
-                .url(stream.url)
-                .get()
-                .header(
-                    "Range",
-                    "bytes=$position-${position + requestedLength - 1}"
-                )
-                .header("Accept", "*/*")
-                .header("Accept-Encoding", "identity")
-                .apply {
-                    header("User-Agent", stream.userAgent)
-                    stream.requestHeaders.forEach { (name, value) -> header(name, value) }
-                }
-                .build()
+        positions.map { position -> async { probe(stream, position) } }.awaitAll()
+    }
 
-            httpClient.newCall(request).execute().use { response ->
-                when {
-                    response.code == 403 ->
-                        throw ResolveException(
-                            "${stream.profileName} CDN validation HTTP 403 at byte $position"
-                        )
-                    response.code in 200..299 || response.code == 416 -> Unit
-                    else -> throw ResolveException(
-                        "${stream.profileName} CDN validation HTTP ${response.code} at byte $position"
-                    )
-                }
-                Log.d(
-                    TAG,
-                    "Validated ${stream.profileName} itag=${stream.itag} " +
-                        "position=$position status=${response.code}"
-                )
+    private suspend fun probe(stream: ResolvedStream, position: Long) {
+        val requestedLength = stream.contentLength
+            ?.minus(position)
+            ?.coerceAtMost(VALIDATION_RANGE_LENGTH)
+            ?.takeIf { it > 0L }
+            ?: VALIDATION_RANGE_LENGTH
+        val request = Request.Builder()
+            .url(stream.url)
+            .get()
+            .header(
+                "Range",
+                "bytes=$position-${position + requestedLength - 1}"
+            )
+            .header("Accept", "*/*")
+            .header("Accept-Encoding", "identity")
+            .apply {
+                header("User-Agent", stream.userAgent)
+                stream.requestHeaders.forEach { (name, value) -> header(name, value) }
             }
+            .build()
+
+        // The status is all that's needed; the body is closed unread.
+        val code = httpClient.fetch(request) { response -> response.code }
+        when {
+            code == 403 ->
+                throw ResolveException(
+                    "${stream.profileName} CDN validation HTTP 403 at byte $position"
+                )
+            code in 200..299 || code == 416 -> Unit
+            else -> throw ResolveException(
+                "${stream.profileName} CDN validation HTTP $code at byte $position"
+            )
         }
+        Log.d(
+            TAG,
+            "Validated ${stream.profileName} itag=${stream.itag} " +
+                "position=$position status=$code"
+        )
     }
 
     private suspend fun resolveUncached(
@@ -273,61 +332,92 @@ class InnerTubeStreamResolver(
         quality: AudioQuality = AudioQuality.HIGH,
         keepItag: Int? = null,
     ): ResolvedStream {
-        var lastFailure: Throwable? = null
+        val timing = timing
+        val startedAt = System.currentTimeMillis()
+        // A saved visitor identity is instant; fetching a new one mustn't use up the budget.
+        withTimeoutOrNull(timing.perClientMs) { ensureVisitorData() }
 
-        ensureVisitorData()
-
-        for (profile in orderedProfiles(profileOffset)) {
-            try {
-                val poToken = if (profile.requiresPlaybackPoToken) {
-                    val provider = poTokenProvider
-                        ?: throw ResolveException("${profile.name}: local PO-token provider is unavailable")
-                    val token = provider.tokenFor(videoId, visitorData)
-                    rememberVisitorData(token.visitorData)
-                    token.value
-                } else {
-                    null
-                }
-                val signatureTimestamp = if (profile.useSignatureTimestamp) {
-                    val scriptUrl = discoverPlayerScriptUrl(videoId)
-                    if (scriptUrl == null) {
-                        null
-                    } else {
-                        runCatching { playerScriptResolver.signatureTimestamp(scriptUrl) }
-                            .onFailure {
-                                Log.w(TAG, "${profile.name}: could not read player signature timestamp")
-                            }
-                            .getOrNull()
-                    }
-                } else {
-                    null
-                }
-                if (profile.useSignatureTimestamp && signatureTimestamp == null) {
-                    Log.w(TAG, "${profile.name}: player signature timestamp unavailable")
-                }
-                Log.d(
-                    TAG,
-                    "${profile.name} player request: clientVersion=${profile.version}, " +
-                        "poToken=${poToken != null}, signatureTimestamp=${signatureTimestamp ?: "none"}, " +
-                        "visitorData=${!visitorData.isNullOrBlank()}",
-                )
-                val resolved = requestPlayer(profile, videoId, poToken, signatureTimestamp, quality, keepItag)
-                Log.d(
-                    TAG,
-                    "Resolved stream via ${profile.name}: mime=${resolved.mimeType} " +
-                        "itag=${resolved.itag} len=${resolved.contentLength}"
-                )
-                return resolved
-            } catch (failure: Exception) {
-                lastFailure = failure
-                Log.w(TAG, "${profile.name} failed (${failure::class.simpleName})")
+        val profiles = orderedProfiles(profileOffset)
+        if (profiles.isEmpty()) throw ResolveException("No playback clients left to try")
+        val stream = try {
+            withTimeoutOrNull(timing.budgetMs) {
+                firstSuccess(
+                    candidates = profiles,
+                    hedgeAfterMs = timing.hedgeAfterMs,
+                    perTryMs = timing.perClientMs,
+                    scope = resolutionScope,
+                    onFailure = { profile, failure ->
+                        Log.w(TAG, "${profile.name} failed (${failure::class.simpleName}: ${failure.message.orEmpty().take(120)})")
+                    },
+                ) { profile -> attempt(profile, videoId, quality, keepItag) }
             }
-        }
+        } catch (failure: Exception) {
+            // Only a real cancellation of this lookup stays a cancellation; anything else
+            // (including a client's own timeout) is a failure the player can act on.
+            currentCoroutineContext().ensureActive()
+            if (failure is TimeoutCancellationException) {
+                null // every client ran out of its own time
+            } else {
+                throw ResolveException("InnerTube could not resolve playback with the available clients.", failure)
+            }
+        } ?: throw ResolveException("No playable stream within ${timing.budgetMs / 1_000} s")
 
-        throw ResolveException(
-            "InnerTube could not resolve playback with the available clients.",
-            lastFailure
+        // Ask the client that worked first for the rest of the session.
+        preferredClient = stream.profileName
+        Log.d(TAG, "Stream ready via ${stream.profileName} in ${System.currentTimeMillis() - startedAt} ms")
+        return stream
+    }
+
+    /** One client's go: a player request, then a check that the CDN accepts the URL. */
+    private suspend fun attempt(
+        profile: ClientProfile,
+        videoId: String,
+        quality: AudioQuality,
+        keepItag: Int?,
+    ): ResolvedStream {
+        val poToken = if (profile.requiresPlaybackPoToken) {
+            val provider = poTokenProvider
+                ?: throw ResolveException("${profile.name}: local PO-token provider is unavailable")
+            val token = provider.tokenFor(videoId, visitorData)
+            rememberVisitorData(token.visitorData)
+            token.value
+        } else {
+            null
+        }
+        val signatureTimestamp = if (profile.useSignatureTimestamp) {
+            val scriptUrl = discoverPlayerScriptUrl(videoId)
+            if (scriptUrl == null) {
+                null
+            } else {
+                try {
+                    playerScriptResolver.signatureTimestamp(scriptUrl)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    Log.w(TAG, "${profile.name}: could not read player signature timestamp")
+                    null
+                }
+            }
+        } else {
+            null
+        }
+        if (profile.useSignatureTimestamp && signatureTimestamp == null) {
+            Log.w(TAG, "${profile.name}: player signature timestamp unavailable")
+        }
+        Log.d(
+            TAG,
+            "${profile.name} player request: clientVersion=${profile.version}, " +
+                "poToken=${poToken != null}, signatureTimestamp=${signatureTimestamp ?: "none"}, " +
+                "visitorData=${!visitorData.isNullOrBlank()}",
         )
+        val resolved = requestPlayer(profile, videoId, poToken, signatureTimestamp, quality, keepItag)
+        Log.d(
+            TAG,
+            "Resolved stream via ${profile.name}: mime=${resolved.mimeType} " +
+                "itag=${resolved.itag} len=${resolved.contentLength}"
+        )
+        validate(resolved)
+        return resolved
     }
 
     private suspend fun requestPlayer(
@@ -363,166 +453,165 @@ class InnerTubeStreamResolver(
             .post(buildPlayerBody(profile, videoId, poToken, signatureTimestamp, locale).toString().toRequestBody(JSON))
             .build()
 
-        httpClient.newCall(request).execute().use { response ->
-            val responseBody = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                throw ResolveException(
-                    "${profile.name} HTTP ${response.code}" +
-                        responseBody.takeIf { it.isNotBlank() }?.let { ": ${shorten(it)}" }.orEmpty()
-                )
-            }
-
-            val root = runCatching { JSONObject(responseBody) }.getOrElse {
-                throw ResolveException("${profile.name} returned invalid JSON", it)
-            }
-
-            root.optJSONObject("responseContext")
-                ?.optString("visitorData")
-                ?.takeIf { it.isNotBlank() }
-                ?.let { rememberVisitorData(it) }
-
-            val playability = root.optJSONObject("playabilityStatus")
-            val status = playability?.optString("status").orEmpty()
-            if (status != "OK") {
-                Log.w(TAG, "${profile.name} playability status=$status")
-                throw ResolveException("${profile.name}: playability status $status")
-            }
-
-            val streamingData = root.optJSONObject("streamingData")
-                ?: throw ResolveException("${profile.name}: no streamingData")
-            val playerScriptUrl = root.optJSONObject("assets")
-                ?.optString("js")
-                ?.takeIf { it.isNotBlank() }
-                ?.let { if (it.startsWith("http")) it else "https://www.youtube.com$it" }
-                ?: discoverPlayerScriptUrl(videoId)
-            val formats = streamingData.optJSONArray("adaptiveFormats")
-                ?: throw ResolveException("${profile.name}: no adaptive audio formats")
-
-            val candidates = buildList {
-                for (index in 0 until formats.length()) {
-                    val format = formats.optJSONObject(index) ?: continue
-                    val mimeType = format.optString("mimeType")
-                        .substringBefore(';')
-                        .trim()
-                    val url = format.optString("url").takeIf { it.isNotBlank() }
-                    val signatureCipher = format.optString("signatureCipher")
-                        .takeIf { it.isNotBlank() }
-                    val cipher = format.optString("cipher")
-                        .takeIf { it.isNotBlank() }
-                    val isAudio = !format.has("width") || format.isNull("width")
-                    if (isAudio && (url != null || signatureCipher != null || cipher != null) && mimeType.startsWith("audio/")) {
-                        add(
-                            AudioFormat(
-                                url = url,
-                                signatureCipher = signatureCipher,
-                                cipher = cipher,
-                                mimeType = mimeType,
-                                bitrate = format.optInt("bitrate", 0),
-                                contentLength = format.optString("contentLength")
-                                    .toLongOrNull(),
-                                itag = format.optInt("itag", -1)
-                            )
-                        )
-                    }
-                }
-            }
-
-            // Prefer the formats that the native youtubei resolver is most
-            // consistently able to consume.  MP4/itag 140 is convenient, but
-            // the CDN may reject it while the equivalent WebM/Opus contract
-            // (usually itag 251) is still valid.  Keep bitrate as a quality
-            // tiebreaker, never as the only selection rule.
-            val orderedCandidates = candidates.sortedWith(
-                compareByDescending<AudioFormat> { formatRank(it.itag, it.mimeType, quality, keepItag) }
-                    .thenBy { if (quality == AudioQuality.LOW) it.bitrate else -it.bitrate }
-            )
-
-            var selected: AudioFormat? = null
-            var resolvedUrl: String? = null
-            var lastDecipherFailure: Throwable? = null
-            for (candidate in orderedCandidates) {
-                try {
-                    val candidateUrl = candidate.url
-                    // A fully materialized URL is already signed for this
-                    // device request. Keep playback independent of the
-                    // server's JavaScript decipher endpoint in this case;
-                    // Render may be bot-challenged even though YouTube
-                    // accepted the original request from the device.
-                    // Direct URLs stay on the device. Ciphered formats are
-                    // transformed locally in a sandboxed player-script
-                    // runtime; they never go to a Moodify endpoint.
-                    val playableUrl = playerScriptResolver.resolve(
-                        playerScriptUrl = playerScriptUrl,
-                        directUrl = candidateUrl,
-                        signatureCipher = candidate.signatureCipher,
-                        cipher = candidate.cipher,
-                    )
-                    if (!playableUrl.isNullOrBlank()) {
-                        selected = candidate
-                        resolvedUrl = playableUrl
-                        break
-                    }
-                } catch (failure: Exception) {
-                    lastDecipherFailure = failure
-                    Log.w(TAG, "${profile.name}: unable to decipher itag=${candidate.itag} (${failure::class.simpleName})")
-                }
-            }
-
-            val selectedFormat = selected ?: throw ResolveException(
-                "${profile.name}: no playable audio URL",
-                lastDecipherFailure,
-            )
-            var finalUrl = resolvedUrl ?: throw ResolveException("${profile.name}: empty audio URL")
-            if (!poToken.isNullOrBlank() && Uri.parse(finalUrl).getQueryParameter("pot").isNullOrBlank()) {
-                finalUrl = Uri.parse(finalUrl).buildUpon()
-                    .appendQueryParameter("pot", poToken)
-                    .build()
-                    .toString()
-            }
-
-            val contentLength = selectedFormat.contentLength ?: Uri.parse(finalUrl)
-                .getQueryParameter("clen")
-                ?.toLongOrNull()
-            val expiresInSeconds = streamingData.optLong("expiresInSeconds", 21_600L)
-                .coerceAtLeast(60L)
-            val durationMs = root.optJSONObject("videoDetails")
-                ?.optString("lengthSeconds")
-                ?.toLongOrNull()
-                ?.times(1_000L)
-
-            // YouTube reports how loud this track is relative to its reference
-            // level; Moodify uses it to even out volume between songs.
-            val loudnessDb = root.optJSONObject("playerConfig")
-                ?.optJSONObject("audioConfig")
-                ?.let { config ->
-                    config.optDouble("loudnessDb", Double.NaN).takeIf { it.isFinite() }
-                        ?: config.optDouble("perceptualLoudnessDb", Double.NaN).takeIf { it.isFinite() }
-                }
-
-            return ResolvedStream(
-                loudnessDb = loudnessDb,
-                url = finalUrl,
-                mimeType = selectedFormat.mimeType,
-                bitrate = selectedFormat.bitrate,
-                contentLength = contentLength,
-                itag = selectedFormat.itag,
-                durationMs = durationMs,
-                userAgent = profile.userAgent,
-                requestHeaders = buildMap {
-                    put("User-Agent", profile.userAgent)
-                    profile.origin?.let { put("Origin", it) }
-                    profile.referer?.let { put("Referer", it) }
-                },
-                profileName = profile.name,
-                clientName = profile.clientNameId,
-                clientVersion = profile.version,
-                sourceWasCiphered = !selectedFormat.signatureCipher.isNullOrBlank() ||
-                    !selectedFormat.cipher.isNullOrBlank(),
-                // Refresh before the CDN URL reaches its actual expiry.
-                expiresAtMs = System.currentTimeMillis() +
-                    expiresInSeconds * 1_000L - URL_EXPIRY_SAFETY_MS
+        // Cancellable: a client that runs out of time stops waiting on the network.
+        val (responseCode, responseBody) = httpClient.fetch(request) { it.code to it.body?.string().orEmpty() }
+        if (responseCode !in 200..299) {
+            throw ResolveException(
+                "${profile.name} HTTP $responseCode" +
+                    responseBody.takeIf { it.isNotBlank() }?.let { ": ${shorten(it)}" }.orEmpty()
             )
         }
+
+        val root = runCatching { JSONObject(responseBody) }.getOrElse {
+            throw ResolveException("${profile.name} returned invalid JSON", it)
+        }
+
+        root.optJSONObject("responseContext")
+            ?.optString("visitorData")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { rememberVisitorData(it) }
+
+        val playability = root.optJSONObject("playabilityStatus")
+        val status = playability?.optString("status").orEmpty()
+        if (status != "OK") {
+            Log.w(TAG, "${profile.name} playability status=$status")
+            throw ResolveException("${profile.name}: playability status $status")
+        }
+
+        val streamingData = root.optJSONObject("streamingData")
+            ?: throw ResolveException("${profile.name}: no streamingData")
+        val playerScriptUrl = root.optJSONObject("assets")
+            ?.optString("js")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { if (it.startsWith("http")) it else "https://www.youtube.com$it" }
+            ?: discoverPlayerScriptUrl(videoId)
+        val formats = streamingData.optJSONArray("adaptiveFormats")
+            ?: throw ResolveException("${profile.name}: no adaptive audio formats")
+
+        val candidates = buildList {
+            for (index in 0 until formats.length()) {
+                val format = formats.optJSONObject(index) ?: continue
+                val mimeType = format.optString("mimeType")
+                    .substringBefore(';')
+                    .trim()
+                val url = format.optString("url").takeIf { it.isNotBlank() }
+                val signatureCipher = format.optString("signatureCipher")
+                    .takeIf { it.isNotBlank() }
+                val cipher = format.optString("cipher")
+                    .takeIf { it.isNotBlank() }
+                val isAudio = !format.has("width") || format.isNull("width")
+                if (isAudio && (url != null || signatureCipher != null || cipher != null) && mimeType.startsWith("audio/")) {
+                    add(
+                        AudioFormat(
+                            url = url,
+                            signatureCipher = signatureCipher,
+                            cipher = cipher,
+                            mimeType = mimeType,
+                            bitrate = format.optInt("bitrate", 0),
+                            contentLength = format.optString("contentLength")
+                                .toLongOrNull(),
+                            itag = format.optInt("itag", -1)
+                        )
+                    )
+                }
+            }
+        }
+
+        // Prefer the formats that the native youtubei resolver is most
+        // consistently able to consume.  MP4/itag 140 is convenient, but
+        // the CDN may reject it while the equivalent WebM/Opus contract
+        // (usually itag 251) is still valid.  Keep bitrate as a quality
+        // tiebreaker, never as the only selection rule.
+        val orderedCandidates = candidates.sortedWith(
+            compareByDescending<AudioFormat> { formatRank(it.itag, it.mimeType, quality, keepItag) }
+                .thenBy { if (quality == AudioQuality.LOW) it.bitrate else -it.bitrate }
+        )
+
+        var selected: AudioFormat? = null
+        var resolvedUrl: String? = null
+        var lastDecipherFailure: Throwable? = null
+        for (candidate in orderedCandidates) {
+            try {
+                val candidateUrl = candidate.url
+                // A fully materialized URL is already signed for this
+                // device request. Keep playback independent of the
+                // server's JavaScript decipher endpoint in this case;
+                // Render may be bot-challenged even though YouTube
+                // accepted the original request from the device.
+                // Direct URLs stay on the device. Ciphered formats are
+                // transformed locally in a sandboxed player-script
+                // runtime; they never go to a Moodify endpoint.
+                val playableUrl = playerScriptResolver.resolve(
+                    playerScriptUrl = playerScriptUrl,
+                    directUrl = candidateUrl,
+                    signatureCipher = candidate.signatureCipher,
+                    cipher = candidate.cipher,
+                )
+                if (!playableUrl.isNullOrBlank()) {
+                    selected = candidate
+                    resolvedUrl = playableUrl
+                    break
+                }
+            } catch (failure: Exception) {
+                lastDecipherFailure = failure
+                Log.w(TAG, "${profile.name}: unable to decipher itag=${candidate.itag} (${failure::class.simpleName})")
+            }
+        }
+
+        val selectedFormat = selected ?: throw ResolveException(
+            "${profile.name}: no playable audio URL",
+            lastDecipherFailure,
+        )
+        var finalUrl = resolvedUrl ?: throw ResolveException("${profile.name}: empty audio URL")
+        if (!poToken.isNullOrBlank() && Uri.parse(finalUrl).getQueryParameter("pot").isNullOrBlank()) {
+            finalUrl = Uri.parse(finalUrl).buildUpon()
+                .appendQueryParameter("pot", poToken)
+                .build()
+                .toString()
+        }
+
+        val contentLength = selectedFormat.contentLength ?: Uri.parse(finalUrl)
+            .getQueryParameter("clen")
+            ?.toLongOrNull()
+        val expiresInSeconds = streamingData.optLong("expiresInSeconds", 21_600L)
+            .coerceAtLeast(60L)
+        val durationMs = root.optJSONObject("videoDetails")
+            ?.optString("lengthSeconds")
+            ?.toLongOrNull()
+            ?.times(1_000L)
+
+        // YouTube reports how loud this track is relative to its reference
+        // level; Moodify uses it to even out volume between songs.
+        val loudnessDb = root.optJSONObject("playerConfig")
+            ?.optJSONObject("audioConfig")
+            ?.let { config ->
+                config.optDouble("loudnessDb", Double.NaN).takeIf { it.isFinite() }
+                    ?: config.optDouble("perceptualLoudnessDb", Double.NaN).takeIf { it.isFinite() }
+            }
+
+        return ResolvedStream(
+            loudnessDb = loudnessDb,
+            url = finalUrl,
+            mimeType = selectedFormat.mimeType,
+            bitrate = selectedFormat.bitrate,
+            contentLength = contentLength,
+            itag = selectedFormat.itag,
+            durationMs = durationMs,
+            userAgent = profile.userAgent,
+            requestHeaders = buildMap {
+                put("User-Agent", profile.userAgent)
+                profile.origin?.let { put("Origin", it) }
+                profile.referer?.let { put("Referer", it) }
+            },
+            profileName = profile.name,
+            clientName = profile.clientNameId,
+            clientVersion = profile.version,
+            sourceWasCiphered = !selectedFormat.signatureCipher.isNullOrBlank() ||
+                !selectedFormat.cipher.isNullOrBlank(),
+            // Refresh before the CDN URL reaches its actual expiry.
+            expiresAtMs = System.currentTimeMillis() +
+                expiresInSeconds * 1_000L - URL_EXPIRY_SAFETY_MS
+        )
     }
 
     private fun buildPlayerBody(
@@ -571,7 +660,7 @@ class InnerTubeStreamResolver(
             }
     }
 
-    private fun discoverPlayerScriptUrl(videoId: String): String? {
+    private suspend fun discoverPlayerScriptUrl(videoId: String): String? {
         val now = System.currentTimeMillis()
         cachedPlayerScriptUrl
             ?.takeIf { cachedPlayerScriptUrlExpiresAtMs > now }
@@ -579,41 +668,51 @@ class InnerTubeStreamResolver(
 
         val playerIdPattern = Regex("/s/player/([A-Za-z0-9_-]{1,80})/")
         val userAgent = "Mozilla/5.0 (Android 15; Mobile) AppleWebKit/537.36 Chrome/141.0.0.0 Mobile Safari/537.36"
-        val discovered = runCatching {
+        suspend fun fromIframeApi(): String {
             val iframeRequest = Request.Builder()
                 .url("https://www.youtube.com/iframe_api")
                 .header("Accept", "*/*")
                 .header("User-Agent", userAgent)
                 .build()
-            val iframeSource = httpClient.newCall(iframeRequest).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("iframe_api HTTP ${response.code}")
-                response.body?.string().orEmpty().replace("\\/", "/")
-            }
-            val playerId = playerIdPattern.find(iframeSource)?.groupValues?.getOrNull(1)
+            val (code, body) = httpClient.fetch(iframeRequest) { it.code to it.body?.string().orEmpty() }
+            if (code !in 200..299) throw IOException("iframe_api HTTP $code")
+            val playerId = playerIdPattern.find(body.replace("\\/", "/"))?.groupValues?.getOrNull(1)
                 ?: throw ResolveException("Could not identify the current YouTube player script")
-            "https://www.youtube.com/s/player/$playerId/player_es6.vflset/en_US/base.js"
-        }.recoverCatching {
+            return "https://www.youtube.com/s/player/$playerId/player_es6.vflset/en_US/base.js"
+        }
+        suspend fun fromWatchPage(): String {
             val request = Request.Builder()
                 .url("https://www.youtube.com/watch?v=$videoId&hl=en")
                 .header("Accept", "text/html")
                 .header("User-Agent", userAgent)
                 .build()
-            httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("watch page HTTP ${response.code}")
-                val html = response.body?.string().orEmpty()
-                val raw = listOf(
-                    Regex("\\\"jsUrl\\\":\\\"([^\\\"]+)\\\""),
-                    Regex("\\\"PLAYER_JS_URL\\\":\\\"([^\\\"]+)\\\""),
-                ).asSequence()
-                    .mapNotNull { it.find(html)?.groupValues?.getOrNull(1) }
-                    .firstOrNull()
-                    ?: throw ResolveException("YouTube watch page did not contain a player script URL")
-                raw.replace("\\u0026", "&")
-                    .replace("\\/", "/")
-                    .let { if (it.startsWith("http")) it else "https://www.youtube.com$it" }
+            val (code, html) = httpClient.fetch(request) { it.code to it.body?.string().orEmpty() }
+            if (code !in 200..299) throw IOException("watch page HTTP $code")
+            val raw = listOf(
+                Regex("\\\"jsUrl\\\":\\\"([^\\\"]+)\\\""),
+                Regex("\\\"PLAYER_JS_URL\\\":\\\"([^\\\"]+)\\\""),
+            ).asSequence()
+                .mapNotNull { it.find(html)?.groupValues?.getOrNull(1) }
+                .firstOrNull()
+                ?: throw ResolveException("YouTube watch page did not contain a player script URL")
+            return raw.replace("\\u0026", "&")
+                .replace("\\/", "/")
+                .let { if (it.startsWith("http")) it else "https://www.youtube.com$it" }
+        }
+        val discovered = try {
+            try {
+                fromIframeApi()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (iframeFailed: Exception) {
+                fromWatchPage()
             }
-        }.onFailure { Log.d(TAG, "Player script discovery skipped (${it::class.simpleName})") }
-            .getOrNull()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            Log.d(TAG, "Player script discovery skipped (${failure::class.simpleName})")
+            null
+        }
         return discovered
             ?.also { discovered ->
                 cachedPlayerScriptUrl = discovered
@@ -906,33 +1005,24 @@ class InnerTubeStreamResolver(
             )
         )
 
-        private fun orderedProfiles(offset: Int): List<ClientProfile> {
-            if (CLIENT_PROFILES.isEmpty()) return emptyList()
-            val preferredOrder = listOf(
-                // Live emulator/device evidence shows this client returns a
-                // directly playable stream without a token, avoiding several
-                // known-dead profile attempts on the common path.
-                "VISIONOS",
-                "ANDROID_VR",
-                "ANDROID_MUSIC",
-                "ANDROID",
-                "IOS",
-                "ANDROID_TESTSUITE",
-                "MWEB",
-                "WEB_REMIX",
-                "WEB",
-                "WEB_CREATOR",
-                "TVHTML5_SIMPLY",
-                "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
-            )
-            val profiles = preferredOrder.mapNotNull { name ->
-                CLIENT_PROFILES.firstOrNull { it.name == name }
-            }
-            // An offset is an index into this stable preference order. Never
-            // rotate and wrap: a rejected client must not reappear later in
-            // the same fallback pass.
-            return profiles.drop(offset.coerceIn(0, profiles.size))
-        }
+        /** The usual order to ask clients in, best first. */
+        internal val DEFAULT_CLIENT_ORDER = listOf(
+            // Live emulator/device evidence shows this client returns a
+            // directly playable stream without a token, avoiding several
+            // known-dead profile attempts on the common path.
+            "VISIONOS",
+            "ANDROID_VR",
+            "ANDROID_MUSIC",
+            "ANDROID",
+            "IOS",
+            "ANDROID_TESTSUITE",
+            "MWEB",
+            "WEB_REMIX",
+            "WEB",
+            "WEB_CREATOR",
+            "TVHTML5_SIMPLY",
+            "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
+        )
 
         private fun defaultHttpClient(): OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)

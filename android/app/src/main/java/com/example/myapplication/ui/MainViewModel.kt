@@ -734,9 +734,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ── Recently played albums & playlists ────────────────────────────────
-    private val recentPrefs = getApplication<android.app.Application>().getSharedPreferences("moodify_recent", android.content.Context.MODE_PRIVATE)
-    private val _recentCollections = MutableStateFlow(loadRecentCollections())
+    // Read off the main thread: the view model is built in MainActivity.onCreate, and a first
+    // SharedPreferences read waits for the file to load from disk.
+    private val recentPrefs by lazy { getApplication<android.app.Application>().getSharedPreferences("moodify_recent", android.content.Context.MODE_PRIVATE) }
+    private val _recentCollections = MutableStateFlow<List<com.moodify.app.data.CatalogItem>>(emptyList())
     val recentCollections: StateFlow<List<com.moodify.app.data.CatalogItem>> = _recentCollections.asStateFlow()
+    init {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val saved = loadRecentCollections()
+            // A collection remembered before this load finished stays on top.
+            _recentCollections.update { current -> (current + saved).distinctBy { it.id }.take(12) }
+        }
+    }
 
     private fun loadRecentCollections(): List<com.moodify.app.data.CatalogItem> = runCatching {
         val json = recentPrefs.getString("collections", null) ?: return emptyList()

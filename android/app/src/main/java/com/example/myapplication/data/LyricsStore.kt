@@ -12,7 +12,8 @@ class LyricsStore(
 ) {
     private val appContext = context.applicationContext
     private val dao = database.moodifyDao()
-    private val preferences = appContext.getSharedPreferences("moodify_lyrics", Context.MODE_PRIVATE)
+    // Lazy and read on IO: opening it touches the disk (StrictMode flagged it at start-up).
+    private val preferences by lazy { appContext.getSharedPreferences("moodify_lyrics", Context.MODE_PRIVATE) }
     private val gson = Gson()
     private val legacyImport = OnceGate()
 
@@ -22,9 +23,11 @@ class LyricsStore(
         // song or carry another recording's timings; drop them once so they are
         // re-fetched. This runs before the legacy import so it never wipes the
         // entries that import is about to move across.
-        if (preferences.getInt(KEY_MATCHING_VERSION, 1) < MATCHING_VERSION) {
-            withContext(Dispatchers.IO) { dao.clearLyrics() }
-            preferences.edit().putInt(KEY_MATCHING_VERSION, MATCHING_VERSION).apply()
+        withContext(Dispatchers.IO) {
+            if (preferences.getInt(KEY_MATCHING_VERSION, 1) < MATCHING_VERSION) {
+                dao.clearLyrics()
+                preferences.edit().putInt(KEY_MATCHING_VERSION, MATCHING_VERSION).apply()
+            }
         }
         migrateLegacySnapshot()
     }

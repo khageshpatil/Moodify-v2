@@ -170,7 +170,7 @@ class LocalPlayerScriptResolver(
         }
     }
 
-    private fun loadPlayerScript(url: String): String {
+    private suspend fun loadPlayerScript(url: String): String {
         playerScripts[url]?.let { return it }
         val request = Request.Builder()
             .url(url)
@@ -178,7 +178,8 @@ class LocalPlayerScriptResolver(
             .header("User-Agent", PLAYER_SCRIPT_USER_AGENT)
             .build()
 
-        val script = httpClient.newCall(request).execute().use { response ->
+        // Cancellable, so a lookup that runs out of time stops downloading the script.
+        val script = httpClient.fetch(request) { response ->
             if (!response.isSuccessful) {
                 throw IOException("Player script HTTP ${response.code}")
             }
@@ -249,7 +250,8 @@ class LocalPlayerScriptResolver(
         const val MAX_SCRIPT_BYTES = 8 * 1024 * 1024
         const val MAX_CACHED_PLAYER_SCRIPTS = 2
         const val QUICK_JS_MEMORY_LIMIT_BYTES = 384L * 1024L * 1024L
-        const val QUICK_JS_TIMEOUT_MS = 60_000L
+        // Well above a healthy decipher; the old 60 s let one stuck call hold up a song for a minute.
+        const val QUICK_JS_TIMEOUT_MS = 15_000L
         const val PLAYER_SCRIPT_USER_AGENT =
             "Mozilla/5.0 (Android 15; Mobile) AppleWebKit/537.36 Chrome/141.0.0.0 Mobile Safari/537.36"
     }

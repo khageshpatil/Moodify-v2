@@ -49,7 +49,9 @@ sealed interface UpdateState {
  */
 class AppUpdates(context: Context) {
     private val app = context.applicationContext
-    private val prefs = app.getSharedPreferences("moodify_updates", Context.MODE_PRIVATE)
+    // Lazy and first read on IO: the automatic check runs at start-up on the main thread.
+    private val prefs by lazy { app.getSharedPreferences("moodify_updates", Context.MODE_PRIVATE) }
+    private var checkJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
     private var download: Job? = null
@@ -68,11 +70,14 @@ class AppUpdates(context: Context) {
      * on local builds (version 1); [force] (Settings › Check) always does.
      */
     fun check(force: Boolean = false) {
+        if (checkJob?.isActive == true) return
         if (_state.value is UpdateState.Checking || _state.value is UpdateState.Downloading) return
         val now = System.currentTimeMillis()
-        if (!force && (BuildConfig.VERSION_CODE <= 1 || now - prefs.getLong(KEY_CHECKED_AT, 0) < DAY_MS)) return
-        _state.value = UpdateState.Checking
-        scope.launch {
+        if (!force && BuildConfig.VERSION_CODE <= 1) return
+        checkJob = scope.launch {
+            val checkedAt = withContext(Dispatchers.IO) { prefs.getLong(KEY_CHECKED_AT, 0) }
+            if (!force && now - checkedAt < DAY_MS) return@launch
+            _state.value = UpdateState.Checking
             val release = runCatching { fetchLatest() }.getOrElse {
                 _state.value = if (force) UpdateState.Failed(null, "Couldn't check for updates. Try again later.") else UpdateState.Idle
                 return@launch

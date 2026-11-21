@@ -360,6 +360,9 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val friendsViewModel: com.moodify.app.ui.social.FriendsViewModel = viewModel()
     val social by friendsViewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(friendsViewModel) { friendsViewModel.messages.collect { snackbar.showSnackbar(it) } }
+    // "Couldn't play X. Skipped." and other one-off messages from the player. The newest
+    // replaces the one showing, so a run of skipped songs doesn't queue up a minute of messages.
+    LaunchedEffect(manager) { manager.notices.collectLatest { snackbar.showSnackbar(it) } }
     val pendingFriendCode by viewModel.pendingFriendCode.collectAsStateWithLifecycle()
     val pendingDeviceLinkNav by viewModel.pendingDeviceLink.collectAsStateWithLifecycle()
     LaunchedEffect(pendingDeviceLinkNav) {
@@ -413,7 +416,8 @@ fun MoodifyApp(viewModel: MainViewModel) {
     val tabReselects = remember { androidx.compose.runtime.mutableStateMapOf<MainTab, Int>() }
 
     // ── Notification permission, asked on first play rather than at launch ─
-    val prefs = remember { context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE) }
+    // Opened on first use (the first play), not while Home is first drawn: opening it reads the disk.
+    val prefs by remember { lazy { context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE) } }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     fun maybeAskForNotifications() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return

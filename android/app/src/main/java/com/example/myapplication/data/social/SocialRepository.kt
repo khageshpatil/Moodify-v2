@@ -90,14 +90,18 @@ class SocialRepository(
     private val client = SocialClient(BuildConfig.SOCIAL_BASE_URL)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val gson = Gson()
-    private val inboxFile = File(appContext.filesDir, "social-inbox.json")
+    private val inboxFile by lazy { File(appContext.filesDir, "social-inbox.json") }
     private val sessionLock = Mutex()
     private val inboxLock = Mutex()
     private val chat by lazy { com.moodify.app.data.MoodifyDatabase.get(appContext).chatDao() }
-    private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    // Lazy: this repository is first built from MainActivity.onStart, on the main thread;
+    // the preferences file and device id are only needed by network work, off it.
+    private val prefs by lazy { appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
     /** This install's id for the server inbox (each device reads from its own place). */
-    private val deviceId: String = prefs.getString(KEY_DEVICE, null)
-        ?: java.util.UUID.randomUUID().toString().replace("-", "").also { prefs.edit().putString(KEY_DEVICE, it).apply() }
+    private val deviceId: String by lazy {
+        prefs.getString(KEY_DEVICE, null)
+            ?: java.util.UUID.randomUUID().toString().replace("-", "").also { prefs.edit().putString(KEY_DEVICE, it).apply() }
+    }
     private val notifier = ChatNotifier(appContext)
     /** The conversation on screen right now: no notification for it, and it's read. */
     @Volatile private var activeThread: String? = null
@@ -110,8 +114,28 @@ class SocialRepository(
     private var backoffMs = INITIAL_BACKOFF_MS
     @Volatile private var shareListening = true
 
-    private val _state = MutableStateFlow(SocialState(serverConfigured = client.isConfigured, shared = loadInbox()))
+    private val _state = MutableStateFlow(SocialState(serverConfigured = client.isConfigured))
     val state: StateFlow<SocialState> = _state.asStateFlow()
+
+    /**
+     * The saved inbox is read on IO, not here: this repository is first built on the main
+     * thread at start-up. Items that arrive before it's read are merged in, and nothing is
+     * written over the file until it has been read.
+     */
+    @Volatile private var inboxLoaded = false
+
+    init {
+        scope.launch(Dispatchers.IO) {
+            val saved = loadInbox()
+            var changedMeanwhile = false
+            _state.update { s ->
+                changedMeanwhile = s.shared.isNotEmpty()
+                s.copy(shared = (s.shared + saved).distinctBy { it.id }.take(MAX_SHARED))
+            }
+            inboxLoaded = true
+            if (changedMeanwhile) persistInbox()
+        }
+    }
 
     init {
         scope.launch {
@@ -702,6 +726,7 @@ class SocialRepository(
     }.getOrDefault(emptyList())
 
     private fun persistInbox() {
+        if (!inboxLoaded) return // written once the saved inbox has been read and merged
         runCatching { inboxFile.writeText(gson.toJson(_state.value.shared)) }
     }
 
