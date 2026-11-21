@@ -28,7 +28,7 @@ data class StoredIdentity(
  * a new phone gets the identity back from the 24-word recovery key.
  */
 class IdentityStore(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("moodify_identity", Context.MODE_PRIVATE)
+    private val prefs by lazy { context.applicationContext.getSharedPreferences("moodify_identity", Context.MODE_PRIVATE) }
 
     fun load(): StoredIdentity? {
         val sealed = prefs.getString(KEY_SEED, null) ?: return null

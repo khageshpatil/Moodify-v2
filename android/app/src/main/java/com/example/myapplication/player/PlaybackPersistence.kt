@@ -36,7 +36,8 @@ class PlaybackPersistence(
 ) {
     private val appContext = context.applicationContext
     private val dao = database.moodifyDao()
-    private val preferences = appContext.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+    // Lazy: only the legacy import reads it, off the main thread.
+    private val preferences by lazy { appContext.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE) }
     private val gson = Gson()
     // One writer at a time keeps queue snapshots in order: an older snapshot
     // can never overwrite a newer one.

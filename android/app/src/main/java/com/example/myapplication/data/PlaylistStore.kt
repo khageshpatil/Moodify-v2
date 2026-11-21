@@ -25,7 +25,8 @@ class PlaylistStore(
 ) {
     private val appContext = context.applicationContext
     private val dao = database.moodifyDao()
-    private val preferences = appContext.getSharedPreferences("moodify_library", Context.MODE_PRIVATE)
+    // Lazy: only the legacy import reads it, on IO (StrictMode flagged it at start-up).
+    private val preferences by lazy { appContext.getSharedPreferences("moodify_library", Context.MODE_PRIVATE) }
     private val gson = Gson()
     private val legacyImport = OnceGate()
 

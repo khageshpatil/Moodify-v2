@@ -96,12 +96,36 @@ fun DiscoverDeck(
     musicPlaying: Boolean = false,
     previewingId: String? = null,
 ) {
-    val deckKey = remember(tracks) { tracks.joinToString { it.id }.hashCode() }
-    var index by rememberSaveable(deckKey) { mutableIntStateOf(0) }
+    // The deck keeps its own order. Suggestions that arrive while it's on screen (Home's
+    // quick first answer, then the full one) go behind the cards already showing, so the
+    // card being looked at never swaps. Order and position survive leaving Home.
+    var deckIds by rememberSaveable { mutableStateOf(tracks.map { it.id }) }
+    var index by rememberSaveable { mutableIntStateOf(0) }
+    val known = remember { HashMap<String, Track>() }
+    tracks.forEach { known[it.id] = it }
+    val deck = deckIds.mapNotNull { known[it] }
+    LaunchedEffect(tracks) {
+        val ids = tracks.map { it.id }
+        if (ids == deckIds) return@LaunchedEffect
+        val showing = deck.drop(index).take(VISIBLE_CARDS).map { it.id }
+        deckIds = showing + ids.filterNot { it in showing }
+        index = 0
+    }
+    // Refresh (on the empty deck) may bring back the same songs: then start them again.
+    var refreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(refreshing) {
+        if (!refreshing) return@LaunchedEffect
+        kotlinx.coroutines.delay(3_000)
+        if (index >= deck.size) {
+            deckIds = tracks.map { it.id }
+            index = 0
+        }
+        refreshing = false
+    }
     // Previews are opt-in per session, and never play over your music.
     var listen by rememberSaveable { mutableStateOf(false) }
-    var lastVerdict by remember(deckKey) { mutableStateOf<DeckVerdict?>(null) }
-    val remaining = tracks.drop(index)
+    var lastVerdict by remember(deckIds) { mutableStateOf<DeckVerdict?>(null) }
+    val remaining = deck.drop(index)
     val top = remaining.firstOrNull()
     val isDark = LocalMoodifyIsDark.current
     val glow = rememberArtworkColors(top?.albumArtUrl, isDark)
@@ -177,14 +201,14 @@ fun DiscoverDeck(
                 )
                 if (top == null) {
                     DeckEmptyCard(onRefresh = {
-                        index = 0
+                        refreshing = true
                         onRefresh()
                     })
                 } else {
                     val dragProgress = (maxOf(abs(offsetX.value) / thresholdX, -offsetY.value / thresholdY)).coerceIn(0f, 1f)
                     // Cards behind the top one, drawn back to front.
-                    remaining.take(3).asReversed().forEachIndexed { reversedIndex, track ->
-                        val depth = remaining.take(3).size - 1 - reversedIndex
+                    remaining.take(VISIBLE_CARDS).asReversed().forEachIndexed { reversedIndex, track ->
+                        val depth = remaining.take(VISIBLE_CARDS).size - 1 - reversedIndex
                         if (depth == 0) return@forEachIndexed
                         val rise = if (depth == 1) dragProgress else dragProgress * 0.5f
                         val scale = lerp(1f - depth * 0.06f, 1f - (depth - 1) * 0.06f, rise)
@@ -273,7 +297,7 @@ fun DiscoverDeck(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(48.dp)) {
                         if (canUndo) {
                             androidx.compose.material3.IconButton(onClick = {
-                                val previous = tracks.getOrNull(index - 1)
+                                val previous = deck.getOrNull(index - 1)
                                 if (lastVerdict == DeckVerdict.LIKE && previous != null) onUnlike(previous)
                                 lastVerdict = null
                                 index -= 1
@@ -282,7 +306,7 @@ fun DiscoverDeck(
                             }
                         }
                         Text(
-                            "${index + 1}/${tracks.size}",
+                            "${index + 1}/${deck.size}",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -291,7 +315,7 @@ fun DiscoverDeck(
             }
         }
     }
-    LaunchedEffect(deckKey) {
+    LaunchedEffect(deckIds) {
         offsetX.snapTo(0f)
         offsetY.snapTo(0f)
     }
@@ -348,6 +372,8 @@ private fun PreviewToggle(listening: Boolean, musicPlaying: Boolean, previewing:
 }
 
 private val CARD_HEIGHT = 340.dp
+/** Cards drawn in the stack: the top one and two behind it. */
+private const val VISIBLE_CARDS = 3
 
 @Composable
 private fun DeckCard(
@@ -363,7 +389,9 @@ private fun DeckCard(
             .fillMaxWidth()
             .height(CARD_HEIGHT)
             .shadow(20.dp, RoundedCornerShape(Radii.xl))
-            .clip(RoundedCornerShape(Radii.xl)),
+            .clip(RoundedCornerShape(Radii.xl))
+            // Opaque from the start: the cards behind mustn't show through while the cover loads.
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         ArtworkImage(
             url = track.albumArtUrl,

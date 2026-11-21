@@ -122,7 +122,7 @@ export const pair = (x, y) => (x < y ? [x, y] : [y, x]);
  */
 export function createApi({
   store, secret, notify = async () => {}, push = null, defer = (work) => work, now = () => Math.floor(Date.now() / 1000),
-  vapidPublicKey = null, burst = createBurstLimiter(),
+  vapidPublicKey = null, burst = createBurstLimiter(), playback = {},
 }) {
   /** The caller's IP (Cloudflare sets it); null in tests and local tools, which skips IP limits. */
   const clientIp = (request) => request.headers.get('CF-Connecting-IP');
@@ -435,6 +435,13 @@ export function createApi({
 
     if (method === 'POST' && pathname === '/v1/auth/challenge') {
       return json(200, { challenge: await issueChallenge(secret, now() + CHALLENGE_SECONDS), expiresIn: CHALLENGE_SECONDS });
+    }
+    // Public and the same for everyone: which YouTube clients the app asks first, and its time limits.
+    if (method === 'GET' && pathname === '/v1/playback') {
+      return new Response(JSON.stringify(playback), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
+      });
     }
     if (method === 'GET' && pathname === '/v1/push/vapid') {
       return vapidPublicKey ? json(200, { publicKey: vapidPublicKey }) : error(404, 'no_web_push', 'Browser notifications are not set up on this server.');

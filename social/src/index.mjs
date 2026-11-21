@@ -9,6 +9,7 @@ import { createHub } from './hub.mjs';
 import { ROOM_LIMITS, createRoom } from './room.mjs';
 import { createBurstLimiter } from './limits.mjs';
 import { readToken } from './tokens.mjs';
+import { playbackConfig } from './playback.mjs';
 
 /** Per isolate (best-effort) burst limits, shared by every request this isolate serves. */
 const burst = createBurstLimiter();
@@ -133,7 +134,7 @@ async function route(request, env, ctx) {
   const handle = createApi({
     store: d1Store(env.DB), secret: env.SESSION_SECRET, notify: notifyHub(env),
     push: pushFromEnv(env), defer: (work) => (ctx?.waitUntil ? ctx.waitUntil(work) : work),
-    vapidPublicKey: env.VAPID_PUBLIC_KEY || null, burst,
+    vapidPublicKey: env.VAPID_PUBLIC_KEY || null, burst, playback: playbackConfig(env.PLAYBACK_CONFIG),
   });
   try {
     return await handle(request);
