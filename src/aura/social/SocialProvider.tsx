@@ -50,6 +50,8 @@ interface SocialContextValue {
   setAvatar(avatar: ProfileAvatar | null): Promise<void>;
   deleteAccount(): Promise<void>;
   addFriend(code: string, note?: string): Promise<string>;
+  /** Who has [code] (name and picture), or null when no one does. Needs your own code. */
+  lookup(code: string): Promise<SocialUser | null>;
   answer(code: string, accept: boolean): Promise<void>;
   remove(code: string): Promise<void>;
   block(code: string): Promise<void>;
@@ -522,6 +524,15 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       const { data } = await api<{ status: string; user: { displayName: string } }>('POST', '/v1/friends/requests', { code, note: note || undefined }, await token());
       await refresh();
       return data.status === 'friends' ? `You and ${data.user.displayName} are now friends.` : `Request sent to ${data.user.displayName}.`;
+    },
+    async lookup(code) {
+      try {
+        const { data } = await api<{ user: SocialUser }>('GET', `/v1/users/${encodeURIComponent(code)}`, undefined, await token());
+        return data.user;
+      } catch (err) {
+        if (err instanceof SocialError && err.status === 404) return null;
+        throw err;
+      }
     },
     async answer(code, accept) { await api('POST', `/v1/friends/requests/${code}/${accept ? 'accept' : 'ignore'}`, {}, await token()); await refresh(); },
     async remove(code) { await api('DELETE', `/v1/friends/${code}`, undefined, await token()); await refresh(); },

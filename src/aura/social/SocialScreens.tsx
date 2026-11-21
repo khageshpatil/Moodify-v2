@@ -2,7 +2,8 @@ import { Check, Copy, Link2, MoreVertical, Play, QrCode, Share2, ShieldCheck, Us
 import type { Track } from '@/data/mockMusic';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { inviteLink } from '../links';
 import { usePlayer } from '../PlayerContext';
 import { setTheme, useTheme } from '../theme';
 import { Artwork, EmptyState, SectionHeader, hueFor } from '../ui';
@@ -125,7 +126,12 @@ export const errorText = (err: unknown) => (err instanceof Error ? err.message :
 
 export function AccountScreen() {
   const social = useSocial();
-  const [mode, setMode] = useState<'create' | 'restore' | 'link'>('create');
+  const navigate = useNavigate();
+  // ?next=/add/MOOD-… or /room/ID: an invite to go back to once you have your code here.
+  const [params] = useSearchParams();
+  const next = (() => { const n = params.get('next'); return n && n.startsWith('/') && !n.startsWith('//') ? n : null; })();
+  const goNext = () => { if (next) navigate(next, { replace: true }); };
+  const [mode, setMode] = useState<'create' | 'restore' | 'link'>(params.get('mode') === 'link' ? 'link' : params.get('mode') === 'restore' ? 'restore' : 'create');
   const [name, setName] = useState('');
   const [words, setWords] = useState('');
   const [newWords, setNewWords] = useState<string[] | null>(null);
@@ -158,7 +164,8 @@ export function AccountScreen() {
             <button className="aura-chip" aria-pressed={mode === 'link'} onClick={() => setMode('link')}>Link my phone</button>
             <button className="aura-chip" aria-pressed={mode === 'restore'} onClick={() => setMode('restore')}>24 words</button>
           </div>
-          {mode === 'link' ? <LinkPanel onDone={() => say('Linked. Welcome back.')} /> : (
+          {next && <div className="aura-banner">After this, you'll go back to your invite.</div>}
+          {mode === 'link' ? <LinkPanel onDone={() => { say('Linked. Welcome back.'); goNext(); }} /> : (
             <>
               {mode === 'restore' && (
                 <textarea className="aura-field" rows={3} value={words} onChange={(e) => setWords(e.target.value)} placeholder="Recovery key (24 words)" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
@@ -166,8 +173,9 @@ export function AccountScreen() {
               <input className="aura-field" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} placeholder={mode === 'restore' ? 'Your name (if the server forgot it)' : 'What friends see you as'} />
               <button className="aura-btn aura-btn-primary" disabled={busy || (mode === 'create' ? name.trim().length < 2 : !words.trim())}
                 onClick={() => run(async () => {
-                  if (mode === 'create') setNewWords(await social.create(name));
-                  else { await social.restore(words, name); say('Welcome back.'); }
+                  // On the way to an invite, go straight there; the recovery key waits in Settings.
+                  if (mode === 'create') { const created = await social.create(name); if (next) goNext(); else setNewWords(created); }
+                  else { await social.restore(words, name); say('Welcome back.'); goNext(); }
                 })}>
                 {busy ? 'Working…' : mode === 'restore' ? 'Restore' : 'Create my code'}
               </button>
@@ -196,7 +204,7 @@ export function AccountScreen() {
             <div className="type-display-small aura-mono" style={{ color: 'var(--aura-primary)' }}>{social.code}</div>
             <div className="aura-row" style={{ marginTop: 12, flexWrap: 'wrap' }}>
               <button className="aura-btn aura-btn-tonal" onClick={() => { void navigator.clipboard?.writeText(social.code!); say('Code copied'); }}><Copy size={16} />Copy</button>
-              {'share' in navigator && <button className="aura-btn aura-btn-tonal" onClick={() => void navigator.share({ text: `Add me on Moodify: ${social.code}` })}><Share2 size={16} />Share</button>}
+              {'share' in navigator && <button className="aura-btn aura-btn-tonal" onClick={() => void navigator.share({ text: `Add me on Moodify: ${inviteLink(social.code!)}` }).catch(() => undefined)}><Share2 size={16} />Share</button>}
             </div>
             <div className="type-body-medium aura-muted" style={{ marginTop: 12 }}>
               {social.registered ? (social.connected ? 'Connected' : 'Signed in') : social.serverConfigured ? 'Saved in this browser, not connected yet.' : 'Saved in this browser. It connects when Moodify social goes live.'}
@@ -505,14 +513,14 @@ function AddFriendDialog({ onClose, onAdd }: { onClose: () => void; onAdd: (code
 /** Your code as a QR: a friend scans it in Moodify on their phone (Friends › Add › Scan). */
 function CodeQrDialog({ code, name, onClose }: { code: string; name: string; onClose: () => void }) {
   const [qr, setQr] = useState('');
-  useEffect(() => { void QRCode.toDataURL(`moodify://add/${code}`, { margin: 1, width: 260, color: { dark: '#0B0B0F', light: '#FFFFFF' } }).then(setQr); }, [code]);
+  useEffect(() => { void QRCode.toDataURL(inviteLink(code), { margin: 1, width: 260, color: { dark: '#0B0B0F', light: '#FFFFFF' } }).then(setQr); }, [code]);
   return (
     <div className="aura-dialog-backdrop" onClick={onClose}>
       <div className="aura-dialog" role="dialog" aria-label="Your Moodify code" onClick={(e) => e.stopPropagation()} style={{ justifyItems: 'center', textAlign: 'center' }}>
         <div className="type-title-large">{name}</div>
         <div className="type-title-medium aura-mono" style={{ color: 'var(--aura-primary)' }}>{code}</div>
         {qr && <img src={qr} width={260} height={260} alt={`QR code for ${code}`} style={{ borderRadius: 16 }} />}
-        <div className="type-body-medium aura-muted">Your friend scans this in Moodify on their phone: Friends › Add › Scan.</div>
+        <div className="type-body-medium aura-muted">Your friend scans this with their phone's camera, or in Moodify: Friends › Add › Scan.</div>
         <button className="aura-btn aura-btn-tonal" onClick={onClose}>Done</button>
       </div>
     </div>

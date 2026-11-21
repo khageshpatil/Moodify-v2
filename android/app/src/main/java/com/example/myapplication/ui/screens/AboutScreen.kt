@@ -82,7 +82,7 @@ import java.util.Date
 import java.util.Locale
 
 /** Moodify's privacy page (the web app serves it). */
-internal const val PRIVACY_URL = "https://moodify-v2-two.vercel.app/privacy"
+internal const val PRIVACY_URL = "${com.moodify.app.data.MoodifyLinks.WEB}/privacy"
 private const val APK_DOWNLOAD_URL =
     "https://github.com/khageshpatil/Moodify-v2/releases/latest/download/Moodify.apk"
 

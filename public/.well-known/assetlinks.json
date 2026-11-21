@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.moodify.app",
+      "sha256_cert_fingerprints": [
+        "3F:86:F9:A4:AB:08:4D:6F:E0:64:53:34:3E:86:79:71:CC:B9:F7:A3:57:6B:AB:5F:1D:26:EB:7E:E2:53:20:8F"
+      ]
+    }
+  }
+]

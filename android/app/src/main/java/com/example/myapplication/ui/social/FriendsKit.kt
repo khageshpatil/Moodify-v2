@@ -53,6 +53,7 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import com.moodify.app.data.MoodifyLinks
 import com.moodify.app.data.social.FriendPresence
 import com.moodify.app.data.social.MoodifyIdentity
 import com.moodify.app.data.social.SocialUser
@@ -72,14 +73,16 @@ fun friendStatus(presence: FriendPresence?): String = when {
     else -> "Offline"
 }
 
-/** The add-me link inside a code's QR; any camera app opens Moodify with it. */
-fun addLink(code: String) = "moodify://add/$code"
+/**
+ * The add-me link that's shared and inside a code's QR. Any camera app opens it:
+ * in Moodify when it's installed, otherwise on the web, where they can get the app.
+ */
+fun addLink(code: String) = MoodifyLinks.addFriend(code)
 
 /** A Moodify code from what a scanned QR (or pasted text) says, or null. */
 fun codeFromScan(raw: String?): String? {
     val text = raw?.trim() ?: return null
-    val fromLink = Regex("""moodify://add/([A-Za-z0-9-]+)""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
-    return MoodifyIdentity.normalizeCode(fromLink ?: text)
+    return MoodifyIdentity.normalizeCode(MoodifyLinks.friendCodeIn(text) ?: text)
 }
 
 /**

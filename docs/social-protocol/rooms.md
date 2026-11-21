@@ -8,7 +8,7 @@ The server code is `social/src/room.mjs` (logic, tested in Node) and the `Room` 
 
 | Call | What it does |
 |---|---|
-| `POST /v1/rooms` (Bearer) | Opens a room with you as host. Replies `201 {roomId, invite}`. `roomId` is 6 Crockford characters, for example `K7P2QX`; `invite` is `moodify://room/K7P2QX`. |
+| `POST /v1/rooms` (Bearer) | Opens a room with you as host. Replies `201 {roomId, invite}`. `roomId` is 6 Crockford characters, for example `K7P2QX`; `invite` is `https://moodify-v2-two.vercel.app/room/K7P2QX`. |
 | `GET /v1/rooms/{roomId}/live?token=…` (WebSocket) | Joins the room. Replies `404 room_not_found` for a room that was never opened or has ended. |
 
 - Anyone signed in who has the code can join. Room codes are random and short-lived, and a room ends 2 minutes after its last member leaves.
@@ -122,7 +122,7 @@ A `track` is `{trackId, title, artist, artworkUrl, durationMs}` and is cleaned l
 
 - **Reconnecting.** A dropped connection is retried with backoff from 2 to 30 seconds while the person is still in the room. `404` means the room has ended; the client stops.
 - **Keep-alive.** Clients send a WebSocket ping every 20 s, with no read timeout; a quiet room is normal.
-- **Links.** A `moodify://room/{id}` link is joined once. Android replays a task's original link when it relaunches the app, and room codes are single-use, so a replayed link is ignored.
+- **Links.** Rooms are shared as `https://moodify-v2-two.vercel.app/room/{id}`. Without the app, that page offers the Android app or joining on the web. With the app, Android opens the link in Moodify (an App Link, verified by `/.well-known/assetlinks.json`). Older `moodify://room/{id}` links still work. On Android a room link is joined once: Android replays a task's original link when it relaunches the app, and room codes are single-use, so a replayed link is ignored.
 
 ## 7. Following a friend
 
