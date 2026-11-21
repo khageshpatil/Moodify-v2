@@ -3,6 +3,7 @@ package com.moodify.app.player
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.moodify.app.data.AudioQuality
 import com.moodify.app.data.CatalogLocale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
@@ -75,18 +76,24 @@ class InnerTubeStreamResolver(
     private val inFlight = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Deferred<ResolvedStream>>()
 
     /**
-     * [dataSaver] prefers the smallest Opus stream (~50 kbps) for streaming on
-     * metered connections; downloads always resolve at full quality.
+     * [quality] picks the stream size (Settings › Playback, per network; see [formatRank]).
+     * [keepItag] is the format of a partly saved copy: when offered, it wins over [quality]
+     * so the saved bytes stay usable. Downloads always resolve at the default, the best available.
      */
-    suspend fun resolve(videoId: String, profileOffset: Int = 0, dataSaver: Boolean = false): ResolvedStream = withContext(Dispatchers.IO) {
+    suspend fun resolve(
+        videoId: String,
+        profileOffset: Int = 0,
+        quality: AudioQuality = AudioQuality.HIGH,
+        keepItag: Int? = null,
+    ): ResolvedStream = withContext(Dispatchers.IO) {
         // A changed offset intentionally selects the next InnerTube client
         // after a CDN 403 instead of returning the same signed URL again.
-        val requestKey = "$videoId:$profileOffset" + if (dataSaver) ":ds" else ""
+        val requestKey = "$videoId:$profileOffset:${quality.name}:${keepItag ?: ""}"
         resolvedCache[requestKey]?.takeUnless { it.isExpired }?.let { return@withContext it }
         val deferred = inFlight.getOrPut(requestKey) {
             resolutionScope.async {
                 try {
-                    resolveUncached(videoId, profileOffset, dataSaver).also { resolvedCache[requestKey] = it }
+                    resolveUncached(videoId, profileOffset, quality, keepItag).also { resolvedCache[requestKey] = it }
                 } finally {
                     inFlight.remove(requestKey)
                 }
@@ -260,7 +267,12 @@ class InnerTubeStreamResolver(
         }
     }
 
-    private suspend fun resolveUncached(videoId: String, profileOffset: Int, dataSaver: Boolean = false): ResolvedStream {
+    private suspend fun resolveUncached(
+        videoId: String,
+        profileOffset: Int,
+        quality: AudioQuality = AudioQuality.HIGH,
+        keepItag: Int? = null,
+    ): ResolvedStream {
         var lastFailure: Throwable? = null
 
         ensureVisitorData()
@@ -299,7 +311,7 @@ class InnerTubeStreamResolver(
                         "poToken=${poToken != null}, signatureTimestamp=${signatureTimestamp ?: "none"}, " +
                         "visitorData=${!visitorData.isNullOrBlank()}",
                 )
-                val resolved = requestPlayer(profile, videoId, poToken, signatureTimestamp, dataSaver)
+                val resolved = requestPlayer(profile, videoId, poToken, signatureTimestamp, quality, keepItag)
                 Log.d(
                     TAG,
                     "Resolved stream via ${profile.name}: mime=${resolved.mimeType} " +
@@ -323,7 +335,8 @@ class InnerTubeStreamResolver(
         videoId: String,
         poToken: String?,
         signatureTimestamp: Int?,
-        dataSaver: Boolean = false,
+        quality: AudioQuality = AudioQuality.HIGH,
+        keepItag: Int? = null,
     ): ResolvedStream {
         val locale = localeProvider().normalized()
         val request = Request.Builder()
@@ -420,8 +433,8 @@ class InnerTubeStreamResolver(
             // (usually itag 251) is still valid.  Keep bitrate as a quality
             // tiebreaker, never as the only selection rule.
             val orderedCandidates = candidates.sortedWith(
-                compareByDescending<AudioFormat> { formatPreference(it, dataSaver) }
-                    .thenBy { if (dataSaver) it.bitrate else -it.bitrate }
+                compareByDescending<AudioFormat> { formatRank(it.itag, it.mimeType, quality, keepItag) }
+                    .thenBy { if (quality == AudioQuality.LOW) it.bitrate else -it.bitrate }
             )
 
             var selected: AudioFormat? = null
@@ -714,19 +727,28 @@ class InnerTubeStreamResolver(
             return null
         }
 
-        private fun formatPreference(format: AudioFormat, dataSaver: Boolean = false): Int = when {
-            // Data saver: smallest Opus first, then the small AAC stream.
-            dataSaver && format.itag == 249 -> 700
-            dataSaver && format.itag == 250 -> 650
-            dataSaver && format.itag == 139 -> 620
-            format.itag == 251 -> 600
-            format.itag == 250 -> 550
-            format.itag == 249 -> 500
-            format.mimeType == "audio/webm" -> 450
-            format.itag == 140 -> 300
-            format.itag == 139 -> 250
-            format.mimeType == "audio/mp4" -> 200
-            else -> 100
+        /**
+         * How much a format suits the chosen quality (higher is better). YouTube's audio
+         * itags: 249 Opus ~50 kbps, 250 Opus ~70 kbps, 251 Opus ~130-160 kbps, 774 Opus
+         * ~256 kbps (rarely offered), 139 AAC ~48 kbps, 140 AAC 128 kbps. Opus comes first
+         * at each level: the CDN sometimes rejects 140 while the Opus stream still plays.
+         * Every format stays in the list, so a song plays even when the ideal one is missing.
+         * [keepItag], the format of a partly saved copy, outranks them all.
+         */
+        internal fun formatRank(itag: Int, mimeType: String, quality: AudioQuality, keepItag: Int? = null): Int {
+            if (itag == keepItag) return 2000
+            val order = when (quality) {
+                AudioQuality.LOW -> listOf(249, 139, 250, 251, 140, 774)
+                AudioQuality.NORMAL -> listOf(250, 251, 140, 249, 139, 774)
+                AudioQuality.HIGH -> listOf(774, 251, 140, 250, 249, 139)
+            }
+            val index = order.indexOf(itag)
+            return when {
+                index >= 0 -> 1000 - index * 50
+                mimeType == "audio/webm" -> 300
+                mimeType == "audio/mp4" -> 200
+                else -> 100
+            }
         }
 
         // Profile values are public client identifiers, not Moodify secrets.

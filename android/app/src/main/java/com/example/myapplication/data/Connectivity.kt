@@ -21,6 +21,10 @@ object Connectivity {
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
+    /** Mobile data, or a hotspot: anything the system treats as costing data. */
+    fun isMetered(context: Context): Boolean =
+        context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered ?: true
+
     fun observe(context: Context): Flow<Boolean> = callbackFlow {
         val manager = context.getSystemService(ConnectivityManager::class.java)
         if (manager == null) {

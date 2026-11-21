@@ -914,7 +914,7 @@ fun MoodifyApp(viewModel: MainViewModel) {
                             onClearRecentSearches = viewModel::clearRecentSearches,
                             onAutoplay = viewModel::setAutoplay,
                             onNormalizeVolume = viewModel::setNormalizeVolume,
-                            onDataSaver = viewModel::setDataSaver,
+                            onAudioQuality = viewModel::setAudioQuality,
                             onSkipSilence = viewModel::setSkipSilence,
                             onAutoDownloadLiked = viewModel::setAutoDownloadLiked,
                             onDownloadOnWifiOnly = viewModel::setDownloadOnWifiOnly,
