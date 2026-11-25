@@ -40,7 +40,7 @@ Moodify is better than most hobby music apps.
 | 0 | Only you | Rotate and back up the signing key, delete the stray worker and the test accounts | Risk you can't undo |
 | 1 | Stop people leaving | Fast starts, a fast web app, invite links that work, honest states | First impressions |
 | 2 | Music experience | Plays that count, skips that teach, cleaner art, data saver, synced web lyrics | Why people stay |
-| 3 | UI/UX redesign pass | A friends-first Home, calmer visuals, fixes screen by screen | What makes Moodify feel like Moodify |
+| 3 | UI/UX redesign pass | The Android redesign (3.5): a new Home, mood pages, podcasts, all unused YouTube Music features, in five steps | What makes Moodify feel like Moodify |
 | 4 | Social | Request notifications, chat basics, moderation, shared playlists | The differentiator |
 | 5 | Engineering health | CI tests, splitting big files, removing dead code, resilience to YouTube changes | Keeps the rest possible |
 | 6 | Bigger bets | Recaps, shareable cards, Blend, group chats | Growth |
@@ -212,6 +212,77 @@ Moodify is better than most hobby music apps.
 - **One name and one mark** everywhere: "Moodify" (not "MoodiFy KP"), the same wave icon on Android, the web favicon and the README.
 - **Contrast:** colours tinted from the artwork must keep text readable (the pink-on-pink cases). Enforce at least 4.5:1 for body text.
 - **Spacing:** the mini player plus the bottom navigation take about a sixth of the screen on Android. A slimmer mini player (56 dp) and nav (64 dp) give content back.
+
+### 3.5 The Android redesign plan (25 November 2026)
+
+A full UX research pass turned Phase 3 into a concrete Android redesign. Where it differs from 3.1–3.4, this section wins. The full reasoning (audit, listener types, competitor patterns, visual direction, every screen) is in the shared doc *Moodify Android Redesign: UX Research*.
+
+**Direction: Mood Spectrum.** Keep Aura's dark-first, artwork-coloured player and Plus Jakarta Sans. Rebuild components on Material 3 Expressive. Make the nine moods the identity: each mood owns a colour and a shape. The frame stays neutral; colour arrives with the music and the mood.
+
+**Home answers three questions in this order:** how do I get back to what I was playing, what should I play now, what are my friends playing. New order: greeting and avatar · All / Music / Podcasts chips · Jump back in (2 × 3) · mood chips · Friends now · Discover card (the deck opens full screen) · at most four shelves.
+
+**Podcasts are in.** YouTube Music has Hindi and regional shows. Today the app filters them out (`NON_MUSIC_TYPES` in `Catalog.kt`, `NON_MUSIC_CHIPS` in `MainActivity.kt`, the episode check in `InnerTubeCatalogClient.kt`); that filter becomes a Podcasts category.
+
+**All ten unused YouTube Music features are adopted** (marked *YT* below): podcasts, song versions of music videos (square art, clean audio), suggestions with artwork, Home mood chips feeding mood pages, new releases, artist radio and bio, related sections, charts by country and type, album details, and playlist suggestions. Anything that needs a Google sign-in stays out, except an optional one-time import of YouTube Music likes, off by default, that keeps nothing afterwards.
+
+Each redesign phase ends with a short test with five listeners before the next starts.
+
+#### R1 · Foundations
+Gate: every text pair passes contrast in both themes.
+- [ ] Contrast fixes: `aura-muted` #8A899A dark / #66647A light, `aura-secondary` light #B04A18, `aura-outline` dark #706F7C
+- [ ] Mood colours (each hue mixed 45% towards black for containers) and mood shapes (Material 3 Expressive shape set)
+- [ ] Anek as the display face; lyrics set in Anek (matching Latin, Devanagari, Gurmukhi)
+- [ ] Material 3 Expressive components and Material Symbols Rounded
+- [ ] Docked 56 dp mini player on a 64 dp nav bar
+- [ ] Clean song titles everywhere
+- [ ] *YT* Song version of music videos: square art, clean audio
+
+#### R2 · Home and moods
+Gate: 5 listeners reach a song they want in 2 taps.
+- [ ] Category chips: All, Music, Podcasts
+- [ ] Jump back in grid
+- [ ] Mood chips ordered by favourites and time of day
+- [ ] Friends now strip and invite card
+- [ ] Discover card and full-screen deck (skip, play, like; previews on with a first-time hint)
+- [ ] At most four shelves; charts move to Search
+- [ ] Feel rules: skeletons the shape of the content, remembered category and scroll, the same long-press sheet everywhere
+- [ ] Mood pages: colour header, one-tap mood mix
+- [ ] *YT* "Fresh for {mood}" shelf from Home mood chips
+- [ ] *YT* Podcasts category: shows, follow, episodes, resume, downloads
+- [ ] Search Browse: genres and languages, podcast categories
+- [ ] *YT* Charts by country and type, with a country picker
+- [ ] *YT* New releases page and "New from artists you play"
+- [ ] *YT* Suggestions with artwork, play straight from the list
+- [ ] Search result filters including Podcasts and Episodes
+- [ ] Library chips, hidden empty tiles, merge duplicate playlists
+
+#### R3 · Player and pages
+Gate: listeners find Listen together without help.
+- [ ] Full player: lyric preview line, friend line, button group (Lyrics, Queue, Listen together, More)
+- [ ] Podcast controls: back 15 s, forward 30 s, speed, episode description
+- [ ] Lyrics: display face, romanisation toggle, share card
+- [ ] Labelled queue: Up next, then songs like this
+- [ ] *YT* Related sections as "More like this"
+- [ ] *YT* Artist radio, shuffle all, bio, singles and EPs
+- [ ] *YT* Album year, type and other versions
+- [ ] *YT* Playlist suggestions and autoplay after a playlist
+
+#### R4 · Friends
+Gate: "play a mood, like a song, send it to a friend" completes with TalkBack on a real phone.
+- [ ] Friends tab: requests first, code card collapsed after the first friend, archived chats, start a room
+- [ ] Chat: ticks, typing, reply, send what I'm playing
+- [ ] Rooms from a friend, a chat or the player; room banner on the mini player
+- [ ] Onboarding: code step, recovery words later, sharing explained
+- [ ] Push notifications for friend requests
+
+#### R5 · Polish and reach
+- [ ] Grouped Settings, diagnostics behind a long-press on the version
+- [ ] Weekly recap with friends and a share card
+- [ ] Home-screen widget
+- [ ] Tablet and foldable layouts
+- [ ] *YT* Optional one-time import of YouTube Music likes, off by default
+
+**Still open:** friends-first versus personal radio (this plan keeps Friends as a tab, below resume and moods on Home); who the listeners really are (five interviews); dark or system theme by default; whether mood mixes come from Moodify's recommender or YouTube's mood playlists; reliable episode resume. Song-version pairing and rich suggestions should be checked on live responses before detailed design.
 
 ---
 
