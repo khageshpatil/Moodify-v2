@@ -271,9 +271,14 @@ Gate: listeners find Listen together without help.
 Gate: "play a mood, like a song, send it to a friend" completes with TalkBack on a real phone.
 - [ ] Friends tab: requests first, code card collapsed after the first friend, archived chats, start a room
 - [ ] Chat: ticks, typing, reply, send what I'm playing
-- [ ] Rooms from a friend, a chat or the player; room banner on the mini player
+- [ ] **Listen along replaces Follow.** One idea, two depths: Listen along (your player follows a friend's, and the friend is told: "Kabir is listening along") grows into a room with **Ask to join**. "Just play" becomes **Play this song**. A room member's status reads "Listening", never "Following the host". Protocol change: presence carries a "listening along" flag to the friend only (today the friend is deliberately not told).
+- [ ] Listening along on the player: the friend's avatar on the cover, "2 listening along" on the friend's side, quick reactions that float over the cover, and a "Stopped listening along · Undo" toast instead of a silent stop when you pause
+- [ ] Rooms from a friend, a chat, a mood ("Start a Chill room") or the player; room banner on the mini player
+- [ ] Rooms as music: "Picked by" on every song and the picker's avatar in the queue; optional **Pass the aux** turns (the queue interleaves one pick per person); a thumbs-up on listeners' suggestions; **autoplay when the queue ends** (today a room pauses); joiners see the last 3 songs played
+- [ ] Session card when a room or a 10-minute Listen along ends: "42 minutes with Ananya and Kabir · 11 songs", Save as playlist, Share; rooms appear in History
+- [ ] Privacy: a "Let friends listen along" switch separate from sharing what you play, hide from one friend, listen privately for 1 hour; being listened along to never sends a push
 - [ ] Onboarding: code step, recovery words later, sharing explained
-- [ ] Push notifications for friend requests
+- [ ] Push notifications for friend requests and room invites
 
 #### R5 · Polish and reach
 - [ ] Grouped Settings, diagnostics behind a long-press on the version
