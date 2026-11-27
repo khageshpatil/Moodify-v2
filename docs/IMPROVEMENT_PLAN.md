@@ -40,7 +40,7 @@ Moodify is better than most hobby music apps.
 | 0 | Only you | Rotate and back up the signing key, delete the stray worker and the test accounts | Risk you can't undo |
 | 1 | Stop people leaving | Fast starts, a fast web app, invite links that work, honest states | First impressions |
 | 2 | Music experience | Plays that count, skips that teach, cleaner art, data saver, synced web lyrics | Why people stay |
-| 3 | UI/UX redesign pass | The Android redesign (3.5): a new Home, mood pages, podcasts, all unused YouTube Music features, in five steps | What makes Moodify feel like Moodify |
+| 3 | UI/UX redesign pass | The Android redesign (3.5): a Quick picks hero, one Jump back in, one-tap Similar and Send, then moods that mean something | What makes Moodify feel like Moodify |
 | 4 | Social | Request notifications, chat basics, moderation, shared playlists | The differentiator |
 | 5 | Engineering health | CI tests, splitting big files, removing dead code, resilience to YouTube changes | Keeps the rest possible |
 | 6 | Bigger bets | Recaps, shareable cards, Blend, group chats | Growth |
@@ -213,81 +213,100 @@ Moodify is better than most hobby music apps.
 - **Contrast:** colours tinted from the artwork must keep text readable (the pink-on-pink cases). Enforce at least 4.5:1 for body text.
 - **Spacing:** the mini player plus the bottom navigation take about a sixth of the screen on Android. A slimmer mini player (56 dp) and nav (64 dp) give content back.
 
-### 3.5 The Android redesign plan (25 November 2026)
+### 3.5 The Android redesign plan (revised 27 November 2026)
 
-A full UX research pass turned Phase 3 into a concrete Android redesign. Where it differs from 3.1–3.4, this section wins. The full reasoning (audit, listener types, competitor patterns, visual direction, every screen) is in the shared doc *Moodify Android Redesign: UX Research*.
+This replaces the 25 November version of 3.5. That version (Mood Spectrum) was reviewed adversarially against the code on 27 November and drawn next to the "refine Aura" option (3.1–3.4) on a comparison canvas. Where this section differs from 3.1–3.4, this section wins.
 
-**Direction: Mood Spectrum.** Keep Aura's dark-first, artwork-coloured player and Plus Jakarta Sans. Rebuild components on Material 3 Expressive. Make the nine moods the identity: each mood owns a colour and a shape. The frame stays neutral; colour arrives with the music and the mood.
+**What changed and why**
+- **The Discover deck goes.** It took about 40% of the first screen, and its likes came from covers nobody heard. YouTube's own **Quick picks** are better picks, so they become the Home hero.
+- **Moods earn the brand before they get it.** A mood page is a keyword search today (`"chill vibes"` in `Moods.kt`, passed to `searchCatalog` in `MoodScreen.kt`), so everyone gets the same list. Giving moods their own colours and shapes first would amplify a promise the app doesn't keep yet.
+- **Material 3 Expressive, Anek and podcasts wait.** The app is on material3 1.4.0, where the Expressive components are experimental, and no Expressive API is used yet. Podcasts and most of the unused YouTube Music features add InnerTube parsing (the surface that already got the home IP flagged) and pull Moodify towards being a YouTube Music clone rather than a friends app.
+- **The app is already dark by default** (`ThemeMode.DARK` in `SettingsStore.kt`), so "dark-first" is not a change.
+- **Privacy comes before polish.** Sharing what you play is still on by default (`shareListening = true`).
 
-**Home answers three questions in this order:** how do I get back to what I was playing, what should I play now, what are my friends playing. New order: greeting and avatar · All / Music / Podcasts chips · Jump back in (2 × 3) · mood chips · Friends now · Discover card (the deck opens full screen) · at most four shelves.
+**Decided by the owner (27 November)**
+1. Remove the Discover deck completely.
+2. Quick picks become a hero carousel at the top of Home, in the style of ArchiveTune's.
+3. One "Jump back in" section instead of both "Keep listening" and "Recently played".
+4. Similar music within one tap from the player and every song.
+5. Send a song to a friend in one tap.
 
-**Podcasts are in.** YouTube Music has Hindi and regional shows. Today the app filters them out (`NON_MUSIC_TYPES` in `Catalog.kt`, `NON_MUSIC_CHIPS` in `MainActivity.kt`, the episode check in `InnerTubeCatalogClient.kt`); that filter becomes a Podcasts category.
+#### Home, top to bottom
+1. **Greeting and avatar** (the avatar opens your profile and settings).
+2. **Quick picks hero.** YouTube's regional Quick picks (`Recommendations.kt`, the shelf YouTube Music shows first on Home) in a horizontal carousel of large cards, each about 320 dp tall: the cover filling the card, a dark gradient, title and artist at the bottom, and a "playing" badge on the current song.
+   - Tap plays the song and continues with its radio (the existing autoplay). Long-press opens the song sheet.
+   - Clean titles (2.2) and square art (2.3) matter most here, because these are the biggest images in the app. For 16:9 video frames, fill with a blurred copy instead of cropping.
+   - Implementation: ArchiveTune uses `HorizontalCenteredHeroCarousel`, which isn't in material3 1.4.0 (it arrives in 1.5; ArchiveTune is on 1.5.0-beta01). Use `HorizontalMultiBrowseCarousel` (stable in 1.4.0) with a large preferred item width, and switch to the centred hero carousel once 1.5 is stable. Moodify's own code; study ArchiveTune, don't copy it.
+3. **Mood chips**: one set, Moodify's moods only (the YouTube "Explore" filter chips go).
+4. **Jump back in**: one 2 × 3 grid of the songs, albums and playlists you played most recently, mixed and newest first. The first item shows its progress and "Resume".
+   - This replaces "Keep listening" (your 12 most-played songs, `MainViewModel.kt`) and "Recently played" (recent albums and playlists). Both answered "take me back", so they read as duplicates.
+   - Most-played songs move to Library as **Your top songs** and keep feeding recommendations.
+5. **Friends now**, only when a friend is online or sent you something in the last 24 hours. Otherwise nothing; inviting lives on the Friends tab. Most people have no friends on Moodify yet, and an empty strip reminds them of that every day.
+6. **At most four shelves**: Picked for you (the personal picks that used to feed the deck), More like {artist}, Forgotten favourites, then one catalogue shelf. Then an end card: "That's it for now" with Search.
 
-**All ten unused YouTube Music features are adopted** (marked *YT* below): podcasts, song versions of music videos (square art, clean audio), suggestions with artwork, Home mood chips feeding mood pages, new releases, artist radio and bio, related sections, charts by country and type, album details, and playlist suggestions. Anything that needs a Google sign-in stays out, except an optional one-time import of YouTube Music likes, off by default, that keeps nothing afterwards.
+Removed with the deck: `DiscoverDeck.kt`, the Discover blend, the preview player and the "Hear previews" setting.
 
-Each redesign phase ends with a short test with five listeners before the next starts.
+#### Similar music in one tap
+Today it's the third item in the player's ⋮ sheet (`PlayerMoreSheet` in `Sheets.kt`), and people rarely find it, although its suggestions are some of the best in the app.
+- **Player**: the bottom row becomes Lyrics · Similar · Queue · Send. Save to playlist and Download move into ⋮.
+- **Song sheet** (long-press any song): Similar music becomes the second item, after Play next.
+- **Queue**: after "Up next", a "Similar to {song}" section from the same related endpoint, so the queue never runs dry.
 
-#### R1 · Foundations
-Gate: every text pair passes contrast in both themes.
-- [ ] Contrast fixes: `aura-muted` #8A899A dark / #66647A light, `aura-secondary` light #B04A18, `aura-outline` dark #706F7C
-- [ ] Mood colours (each hue mixed 45% towards black for containers) and mood shapes (Material 3 Expressive shape set)
-- [ ] Anek as the display face; lyrics set in Anek (matching Latin, Devanagari, Gurmukhi)
-- [ ] Material 3 Expressive components and Material Symbols Rounded
-- [ ] Docked 56 dp mini player on a 64 dp nav bar
-- [ ] Clean song titles everywhere
-- [ ] *YT* Song version of music videos: square art, clean audio
+#### Send to a friend in one tap
+Today: ⋮, then Send to a friend, then a picker, then a tap on the friend.
+- **Song sheet and the player's Send**: a row of up to five friend avatars at the top, most recent chat first. One tap sends straight away, with a snackbar "Sent to Ananya · Undo" (the send waits about 4 s so Undo can cancel it). "Add a note" is optional, after sending.
+- **Player shortcut**: once you've sent something, the Send button shows your last friend's avatar. Tapping it sends the current song to them; long-press opens the full row.
+- **With no friends yet**: Send becomes "Invite with this song": a web link that plays the song and offers to add you (from the UX review). A song makes a better invitation than a code.
+- It reuses the existing song message type and `SendToFriendSheet`; no protocol change.
 
-#### R2 · Home and moods
-Gate: 5 listeners reach a song they want in 2 taps.
-- [ ] Category chips: All, Music, Podcasts
-- [ ] Jump back in grid
-- [ ] Mood chips ordered by favourites and time of day
-- [ ] Friends now strip and invite card
-- [ ] Discover card and full-screen deck (skip, play, like; previews on with a first-time hint)
-- [ ] At most four shelves; charts move to Search
-- [ ] Feel rules: skeletons the shape of the content, remembered category and scroll, the same long-press sheet everywhere
-- [ ] Mood pages: colour header, one-tap mood mix
-- [ ] *YT* "Fresh for {mood}" shelf from Home mood chips
-- [ ] *YT* Podcasts category: shows, follow, episodes, resume, downloads
-- [ ] Search Browse: genres and languages, podcast categories
-- [ ] *YT* Charts by country and type, with a country picker
-- [ ] *YT* New releases page and "New from artists you play"
-- [ ] *YT* Suggestions with artwork, play straight from the list
-- [ ] Search result filters including Podcasts and Episodes
-- [ ] Library chips, hidden empty tiles, merge duplicate playlists
+#### Visual direction
+- **Keep:** Aura, dark by default, Plus Jakarta Sans, the artwork-coloured player.
+- **Adopt now** (all from the 25 November plan): contrast fixes (`aura-muted` #8A899A dark / #66647A light, `aura-secondary` light #B04A18, `aura-outline` dark #706F7C), a docked 56 dp mini player on a 64 dp nav bar (gives back about 40 px), and the same long-press sheet everywhere.
+- **Later, once moods are real:** each mood owning a colour and a shape, mood pages with a coloured header.
+- **Deferred:** Material 3 Expressive rebuild, Anek, podcasts, and the YouTube Music features that don't serve the hero, Similar or Jump back in.
 
-#### R3 · Player and pages
-Gate: listeners find Listen together without help.
-- [ ] Full player: lyric preview line, friend line, button group (Lyrics, Queue, Listen together, More)
-- [ ] Podcast controls: back 15 s, forward 30 s, speed, episode description
-- [ ] Lyrics: display face, romanisation toggle, share card
-- [ ] Labelled queue: Up next, then songs like this
-- [ ] *YT* Related sections as "More like this"
-- [ ] *YT* Artist radio, shuffle all, bio, singles and EPs
-- [ ] *YT* Album year, type and other versions
-- [ ] *YT* Playlist suggestions and autoplay after a playlist
+#### Steps
+**R0 · Before any redesign** (small)
+- [ ] Sharing what you play off by default; ask about it, with two equal choices, when someone creates their code; a "Friends can see this" chip in the player while it's on
+- [ ] Profile the remaining ~7 s cold-start stall on a real phone and fix it
 
-#### R4 · Friends
-Gate: "play a mood, like a song, send it to a friend" completes with TalkBack on a real phone.
+**R1 · Home**
+Gate: on your phone, from a cold start, a song you want is playing within two taps.
+- [ ] Quick picks hero carousel
+- [ ] Remove the Discover deck and everything only it uses
+- [ ] Jump back in merges Keep listening and Recently played; Your top songs moves to Library
+- [ ] Friends now only when someone is around
+- [ ] Picked for you shelf; at most four shelves and an end card
+- [ ] Clean titles everywhere (2.2) and square art with blurred fill (2.3)
+- [ ] *YT* Song versions of music videos for square art and clean audio (makes the hero look like a music app)
+- [ ] Docked mini player and nav; contrast fixes
+
+**R2 · One tap**
+Gate: Similar and Send each take one tap from the player.
+- [ ] Similar in the player row, the song sheet and the queue
+- [ ] One-tap send with Undo, last-friend shortcut, invite-with-this-song when you have no friends
+
+**R3 · Friends and rooms** (the 25 November R4 list, unchanged in substance)
 - [ ] Friends tab: requests first, code card collapsed after the first friend, archived chats, start a room
+- [ ] **Listen along replaces Follow**; it grows into a room with **Ask to join**; "Just play" becomes **Play this song**; the friend is told "Kabir is listening along" (protocol change: presence carries the flag to that friend only)
+- [ ] Rooms as music: "Picked by" on each song, optional Pass the aux, autoplay when the queue ends, joiners see the last 3 songs
+- [ ] Session card when a room or a 10-minute Listen along ends
+- [ ] Privacy: "Let friends listen along" switch separate from sharing, hide from one friend, listen privately for 1 hour
 - [ ] Chat: ticks, typing, reply, send what I'm playing
-- [ ] **Listen along replaces Follow.** One idea, two depths: Listen along (your player follows a friend's, and the friend is told: "Kabir is listening along") grows into a room with **Ask to join**. "Just play" becomes **Play this song**. A room member's status reads "Listening", never "Following the host". Protocol change: presence carries a "listening along" flag to the friend only (today the friend is deliberately not told).
-- [ ] Listening along on the player: the friend's avatar on the cover, "2 listening along" on the friend's side, quick reactions that float over the cover, and a "Stopped listening along · Undo" toast instead of a silent stop when you pause
-- [ ] Rooms from a friend, a chat, a mood ("Start a Chill room") or the player; room banner on the mini player
-- [ ] Rooms as music: "Picked by" on every song and the picker's avatar in the queue; optional **Pass the aux** turns (the queue interleaves one pick per person); a thumbs-up on listeners' suggestions; **autoplay when the queue ends** (today a room pauses); joiners see the last 3 songs played
-- [ ] Session card when a room or a 10-minute Listen along ends: "42 minutes with Ananya and Kabir · 11 songs", Save as playlist, Share; rooms appear in History
-- [ ] Privacy: a "Let friends listen along" switch separate from sharing what you play, hide from one friend, listen privately for 1 hour; being listened along to never sends a push
-- [ ] Onboarding: code step, recovery words later, sharing explained
 - [ ] Push notifications for friend requests and room invites
 
-#### R5 · Polish and reach
-- [ ] Grouped Settings, diagnostics behind a long-press on the version
-- [ ] Weekly recap with friends and a share card
-- [ ] Home-screen widget
-- [ ] Tablet and foldable layouts
-- [ ] *YT* Optional one-time import of YouTube Music likes, off by default
+**R4 · Moods that mean something**
+Gate: two people with different taste get different songs from the same mood.
+- [ ] Mood mixes personalised: run the mood against the listener's top artists and languages
+- [ ] Onboarding asks which languages you listen in (several), and its last button plays the chosen mood
+- [ ] Then the mood identity: colour and shape per mood, mood pages, "Fresh for {mood}"
 
-**Still open:** friends-first versus personal radio (this plan keeps Friends as a tab, below resume and moods on Home); who the listeners really are (five interviews); dark or system theme by default; whether mood mixes come from Moodify's recommender or YouTube's mood playlists; reliable episode resume. Song-version pairing and rich suggestions should be checked on live responses before detailed design.
+**R5 · Later, if R1–R4 land**
+- [ ] Material 3 Expressive components and Anek, once material3 1.5 is stable
+- [ ] Podcasts (the `NON_MUSIC_TYPES` / `NON_MUSIC_CHIPS` filters become a category) and the remaining YouTube Music features
+- [ ] Weekly recap, widget, tablet layouts
+
+**Still open:** how to measure the gates beyond your own phone and the friends already on Moodify (there are no analytics; simple opt-in, on-device counters would do); whether "Picked for you" survives once the hero exists; reliable episode resume if podcasts ever come.
 
 ---
 
